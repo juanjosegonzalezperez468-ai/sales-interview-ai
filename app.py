@@ -30,50 +30,50 @@ supabase: Client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_
 # --- MODELOS ---
 #class Empresa(db.Model):
     __tablename__ = 'empresas'
-    id = db.Column(UUID(as_uuid=True), primary_key=True)
-    nombre_empresa = db.Column(db.Text, nullable=False)
-    pais = db.Column(db.Text)
-    industria = db.Column(db.Text)
-    tamano = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, server_default=db.FetchedValue())
-    vacantes = db.relationship('Vacante', backref='empresa_rel', cascade="all, delete-orphan")
+    #id = db.Column(UUID(as_uuid=True), primary_key=True)
+    #nombre_empresa = db.Column(db.Text, nullable=False)
+    #pais = db.Column(db.Text)
+    #industria = db.Column(db.Text)
+    #tamano = db.Column(db.Text)
+    #created_at = db.Column(db.DateTime, server_default=db.FetchedValue())
+    #vacantes = db.relationship('Vacante', backref='empresa_rel', cascade="all, delete-orphan")
 
 #class UsuarioEmpresa(db.Model):
     __tablename__ = 'usuarios_empresa'
-    id = db.Column(db.String, primary_key=True)
-    empresa_id = db.Column(UUID(as_uuid=True), db.ForeignKey('empresas.id', ondelete='CASCADE'))
-    nombre_completo = db.Column(db.Text)
-    email = db.Column(db.Text, unique=True, nullable=False)
-    rol_en_empresa = db.Column(db.Text, default='admin')
-    empresa = db.relationship('Empresa', backref='usuarios')
+    #id = db.Column(db.String, primary_key=True)
+    #empresa_id = db.Column(UUID(as_uuid=True), db.ForeignKey('empresas.id', ondelete='CASCADE'))
+    #nombre_completo = db.Column(db.Text)
+    #email = db.Column(db.Text, unique=True, nullable=False)
+    #rol_en_empresa = db.Column(db.Text, default='admin')
+    #empresa = db.relationship('Empresa', backref='usuarios')
 
 #class Vacante(db.Model):
     __tablename__ = 'vacantes'
-    id = db.Column(db.Integer, primary_key=True)
-    id_vacante_publico = db.Column(db.String, nullable=False, unique=True)
-    empresa_id = db.Column(UUID(as_uuid=True), db.ForeignKey('empresas.id', ondelete='CASCADE'))
-    cargo = db.Column(db.String, nullable=False)
-    preguntas = db.Column(db.JSON)
-    activa = db.Column(db.Boolean, default=True)
-    entrevistas_rel = db.relationship('Entrevista', backref='vacante_info', lazy=True, cascade="all, delete-orphan")
+    #id = db.Column(db.Integer, primary_key=True)
+    #id_vacante_publico = db.Column(db.String, nullable=False, unique=True)
+    #empresa_id = db.Column(UUID(as_uuid=True), db.ForeignKey('empresas.id', ondelete='CASCADE'))
+    #cargo = db.Column(db.String, nullable=False)
+    #preguntas = db.Column(db.JSON)
+    #activa = db.Column(db.Boolean, default=True)
+    #entrevistas_rel = db.relationship('Entrevista', backref='vacante_info', lazy=True, cascade="all, delete-orphan")
 
 #class Entrevista(db.Model):
     __tablename__ = 'entrevistas'
-    id = db.Column(db.String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    vacante_id = db.Column(db.Integer, db.ForeignKey('vacantes.id', ondelete='CASCADE'), nullable=False)
-    empresa_id = db.Column(UUID(as_uuid=True), db.ForeignKey('empresas.id', ondelete='CASCADE'), nullable=False)
-    nombre_candidato = db.Column(db.Text, nullable=False)
-    identificacion = db.Column(db.Text, nullable=False)
-    score = db.Column(db.Float, default=0)
-    veredicto = db.Column(db.Text)
-    tag = db.Column(db.Text)
-    analisis_ia = db.Column(db.Text) 
-    comentarios_tecnicos = db.Column(db.Text)
-    respuestas_detalle = db.Column(db.JSON)
-    fecha = db.Column(db.DateTime, server_default=db.FetchedValue())
+    #id = db.Column(db.String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    #vacante_id = db.Column(db.Integer, db.ForeignKey('vacantes.id', ondelete='CASCADE'), nullable=False)
+    #empresa_id = db.Column(UUID(as_uuid=True), db.ForeignKey('empresas.id', ondelete='CASCADE'), nullable=False)
+    #nombre_candidato = db.Column(db.Text, nullable=False)
+    #identificacion = db.Column(db.Text, nullable=False)
+    #score = db.Column(db.Float, default=0)
+    #veredicto = db.Column(db.Text)
+    #tag = db.Column(db.Text)
+    #analisis_ia = db.Column(db.Text) 
+    #comentarios_tecnicos = db.Column(db.Text)
+    #respuestas_detalle = db.Column(db.JSON)
+    #fecha = db.Column(db.DateTime, server_default=db.FetchedValue())
 
 with app.app_context():
-    db.create_all()
+    #db.create_all()
 
 # ============================================
 # MOTOR DE EVALUACIÓN SIN IA - SOLO LÓGICA
@@ -340,12 +340,12 @@ def procesar():
     )
 
     try:
-        db.session.add(nueva_entrevista)
-        db.session.commit()
+        #db.session.add(nueva_entrevista)
+        #db.session.commit()
         logger.info(f"✅ Candidato guardado: {nombre} - Score: {score_final}% - {veredicto}")
         return render_template('gracias.html')
     except Exception as e:
-        db.session.rollback()
+        #db.session.rollback()
         logger.error(f"❌ Error guardando: {e}")
         return f"Error guardando: {e}", 500
 
@@ -474,8 +474,8 @@ def nueva_vacante():
             preguntas=nuevas_preguntas
         )
         
-        db.session.add(nueva)
-        db.session.commit()
+        #db.session.add(nueva)
+        #db.session.commit()
         
         return redirect(url_for('gestionar_vacantes'))
 
@@ -527,7 +527,7 @@ def editar_vacante(id_publico):
             })
         
         v.preguntas = nuevas_preguntas
-        db.session.commit()
+        #db.session.commit()
         return redirect(url_for('gestionar_vacantes'))
 
     return render_template('editar_vacante.html', vacante=v)
@@ -594,12 +594,12 @@ def clonar_plantilla(plantilla_id):
     )
     
     try:
-        db.session.add(nueva_v)
-        db.session.commit()
+        #db.session.add(nueva_v)
+        #db.session.commit()
         logger.info(f"✅ Vacante clonada: {id_u}")
         return redirect(url_for('vacante_lista', id_publico=id_u))
     except Exception as e:
-        db.session.rollback()
+        #db.session.rollback()
         logger.error(f"❌ Error: {e}")
         return f"Error: {e}", 500
 
@@ -624,8 +624,8 @@ def login():
                     session.update({
                         'logeado': True,
                         'user_id': res.user.id,
-                        'empresa_id': str(u_db.empresa_id),
-                        'nombre_empresa': u_db.empresa.nombre_empresa if u_db.empresa else "Mi Empresa"
+                        #'empresa_id': str(u_db.empresa_id),
+                        #'nombre_empresa': u_db.empresa.nombre_empresa if u_db.empresa else "Mi Empresa"
                     })
                     
                     logger.info(f"✅ Login: {email}")
@@ -667,8 +667,8 @@ def registro():
                     industria=industria,
                     tamano=tamano_empresa
                 )
-                db.session.add(nueva_empresa)
-                db.session.flush()
+                #db.session.add(nueva_empresa)
+                #db.session.flush()
 
                 nuevo_usuario = UsuarioEmpresa(
                     id=user_id,
@@ -677,7 +677,7 @@ def registro():
                     empresa_id=empresa_uuid,
                     rol_en_empresa='admin'
                 )
-                db.session.add(nuevo_usuario)
+                #db.session.add(nuevo_usuario)
 
                 cargo_display = cargo_inicial if cargo_inicial else "Asesor Comercial"
                 id_v_publico = f"JOB-{int(time.time())}"
@@ -697,8 +697,8 @@ def registro():
                     preguntas=preguntas_base,
                     activa=True
                 )
-                db.session.add(primera_vacante)
-                db.session.commit()
+                #db.session.add(primera_vacante)
+                #db.session.commit()
                 
                 session.update({
                     'logeado': True,
@@ -711,7 +711,7 @@ def registro():
                 return redirect(url_for('dashboard'))
 
         except Exception as e:
-            db.session.rollback()
+            #db.session.rollback()
             logger.error(f"❌ Registro error: {e}")
             return f"Error: {e}", 400
 
@@ -733,11 +733,11 @@ def eliminar_candidato(id):
     
     if candidato and candidato.empresa_id == emp_id:
         try:
-            db.session.delete(candidato)
-            db.session.commit()
+            #db.session.delete(candidato)
+            #db.session.commit()
             return jsonify({"success": True})
         except Exception as e:
-            db.session.rollback()
+            #db.session.rollback()
             return jsonify({"success": False})
     
     return jsonify({"success": False})
