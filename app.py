@@ -28,7 +28,7 @@ app.secret_key = os.getenv('FLASK_SECRET_KEY', 'una-clave-muy-secreta')
 supabase: Client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_KEY'))
 
 # --- MODELOS ---
-class Empresa(db.Model):
+#class Empresa(db.Model):
     __tablename__ = 'empresas'
     id = db.Column(UUID(as_uuid=True), primary_key=True)
     nombre_empresa = db.Column(db.Text, nullable=False)
@@ -38,7 +38,7 @@ class Empresa(db.Model):
     created_at = db.Column(db.DateTime, server_default=db.FetchedValue())
     vacantes = db.relationship('Vacante', backref='empresa_rel', cascade="all, delete-orphan")
 
-class UsuarioEmpresa(db.Model):
+#class UsuarioEmpresa(db.Model):
     __tablename__ = 'usuarios_empresa'
     id = db.Column(db.String, primary_key=True)
     empresa_id = db.Column(UUID(as_uuid=True), db.ForeignKey('empresas.id', ondelete='CASCADE'))
@@ -47,7 +47,7 @@ class UsuarioEmpresa(db.Model):
     rol_en_empresa = db.Column(db.Text, default='admin')
     empresa = db.relationship('Empresa', backref='usuarios')
 
-class Vacante(db.Model):
+#class Vacante(db.Model):
     __tablename__ = 'vacantes'
     id = db.Column(db.Integer, primary_key=True)
     id_vacante_publico = db.Column(db.String, nullable=False, unique=True)
@@ -57,7 +57,7 @@ class Vacante(db.Model):
     activa = db.Column(db.Boolean, default=True)
     entrevistas_rel = db.relationship('Entrevista', backref='vacante_info', lazy=True, cascade="all, delete-orphan")
 
-class Entrevista(db.Model):
+#class Entrevista(db.Model):
     __tablename__ = 'entrevistas'
     id = db.Column(db.String, primary_key=True, default=lambda: str(uuid.uuid4()))
     vacante_id = db.Column(db.Integer, db.ForeignKey('vacantes.id', ondelete='CASCADE'), nullable=False)
@@ -366,8 +366,8 @@ def dashboard():
         session.clear()
         return redirect(url_for('login'))
     
-    usuario = UsuarioEmpresa.query.get(user_id)
-    empresa = Empresa.query.get(emp_id)
+    #usuario = UsuarioEmpresa.query.get(user_id)
+    #empresa = Empresa.query.get(emp_id)
 
     if not usuario or not empresa:
         session.clear()
@@ -618,7 +618,7 @@ def login():
             })
             
             if res.user:
-                u_db = UsuarioEmpresa.query.filter_by(id=res.user.id).first()
+                #u_db = UsuarioEmpresa.query.filter_by(id=res.user.id).first()
                 
                 if u_db:
                     session.update({
