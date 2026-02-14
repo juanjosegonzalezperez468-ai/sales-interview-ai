@@ -1,0 +1,28 @@
+{
+    "usuarios": [
+        {
+            "usuario": "admin_empresa_a",
+            "password": "123",
+            "empresa_id": "EMP-A",
+            "nombre_empresa": "Coca Cola"
+        },
+        {
+            "usuario": "admin_empresa_b",
+            "password": "456",
+            "empresa_id": "EMP-B",
+            "nombre_empresa": "Pepsi"
+        },
+        {
+            "usuario": "interviews sistem",
+            "password": "0109",
+            "empresa_id": "EMP-1770757417",
+            "nombre_empresa": "interviews sistem"
+        },
+        {
+            "usuario": "juan jose",
+            "password": "0109",
+            "empresa_id": "EMP-1770757455",
+            "nombre_empresa": "interviews sistem"
+        }
+    ]
+}

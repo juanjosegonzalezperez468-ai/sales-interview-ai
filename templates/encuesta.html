@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Postulación | Sales AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <div class="max-w-3xl mx-auto py-12 px-4">
+        <div class="bg-white shadow-2xl rounded-3xl overflow-hidden border border-gray-100">
+            <div class="bg-gradient-to-r from-blue-600 to-blue-800 p-8 text-white text-center">
+                <h1 class="text-3xl font-bold">Portal del Candidato</h1>
+                <p class="text-blue-100 mt-2 text-lg">Inicia tu proceso de selección asistido por IA</p>
+            </div>
+
+            <form action="/procesar" method="POST" class="p-8 space-y-8">
+                <input type="hidden" name="id_vacante" id="id_vacante_hidden" value="{{ id_seleccionada }}">
+                
+                <div class="bg-blue-50 p-6 rounded-2xl border border-blue-100">
+                    <label class="block text-sm font-bold text-blue-900 mb-3 uppercase tracking-wider">1. Cargo al que aspiras</label>
+            
+                    <select id="select-vacante" onchange="actualizarFormulario()" required 
+                            class="w-full p-4 border-2 border-white rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white text-gray-700 text-lg">
+                        <option value="">-- Selecciona una vacante --</option>
+                        {% for v in vacantes %}
+                            <option value="{{ v.id_vacante_publico }}" {% if v.id_vacante_publico == id_seleccionada %}selected{% endif %}>
+                                {{ v.cargo }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Nombre Completo</label>
+                        <input type="text" name="nombre" placeholder="Ej: Juan Pérez" required 
+                               class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Identificación (CC)</label>
+                        <input type="text" name="cc" placeholder="Número de documento" required 
+                               class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                </div>
+
+                <hr class="border-gray-100">
+
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                        <span class="bg-blue-100 text-blue-600 p-2 rounded-lg mr-3">📝</span> 
+                        Cuestionario de Evaluación
+                    </h3>
+                    
+                    <div id="contenedor-preguntas" class="space-y-6">
+                        </div>
+                </div>
+
+                <div id="seccion-envio" class="hidden pt-6">
+                    <button type="submit" 
+                            class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-5 rounded-2xl transition shadow-lg transform hover:scale-[1.02] text-xl">
+                        Finalizar Postulación 🚀
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+<script>
+const vacantesData = JSON.parse('{{ vacantes_dict | tojson | safe }}');
+
+function actualizarFormulario() {
+    const selector = document.getElementById('select-vacante');
+    const idV = selector.value; 
+    const contenedor = document.getElementById('contenedor-preguntas');
+    const seccionEnvio = document.getElementById('seccion-envio');
+    const hiddenId = document.getElementById('id_vacante_hidden');
+
+    contenedor.innerHTML = '';
+    if(hiddenId) hiddenId.value = idV;
+
+    const vacante = vacantesData[idV];
+
+    if (idV && vacante) {
+        const preguntas = Array.isArray(vacante.preguntas) ? vacante.preguntas : [];
+
+        if (preguntas.length === 0) {
+            contenedor.innerHTML = '<p class="text-center text-orange-500 font-bold py-10">Esta vacante no tiene preguntas configuradas.</p>';
+            seccionEnvio.classList.add('hidden');
+            return;
+        }
+
+        seccionEnvio.classList.remove('hidden');
+
+        preguntas.forEach((q) => {
+            const div = document.createElement('div');
+            div.className = "bg-white p-6 rounded-2xl border-2 border-gray-50 shadow-sm space-y-4 mb-4";
+            
+            let inputHtml = '';
+            const labelHtml = `<label class="block text-lg font-medium text-gray-800 mb-2">${q.texto}</label>
+                               <input type="hidden" name="preguntas_custom[]" value="${q.id}">`;
+
+            // --- CASO 1: OPCIÓN MÚLTIPLE (Botones Radio) ---
+            if (q.tipo === 'multiple' && q.reglas && q.reglas.opciones) {
+                inputHtml = `<div class="grid grid-cols-1 gap-2">`;
+                q.reglas.opciones.forEach(opcion => {
+                    inputHtml += `
+                        <label class="flex items-center p-3 border border-gray-200 rounded-xl hover:bg-blue-50 cursor-pointer transition">
+                            <input type="radio" name="radio_${q.id}" value="${opcion}" required 
+                                   onchange="document.getElementById('hidden-${q.id}').value = this.value"
+                                   class="w-4 h-4 text-blue-600 focus:ring-blue-500">
+                            <span class="ml-3 text-gray-700 font-medium">${opcion}</span>
+                        </label>`;
+                });
+                // Input oculto para que el valor viaje en el array respuestas_custom[]
+                inputHtml += `<input type="hidden" name="respuestas_custom[]" id="hidden-${q.id}" required></div>`;
+            } 
+            // --- CASO 2: SÍ / NO ---
+            else if (q.tipo === 'si_no' || q.tipo === 'booleana' || q.tipo === 'seleccion') {
+                inputHtml = `
+                    <select name="respuestas_custom[]" required class="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="">-- Selecciona una opción --</option>
+                        <option value="si">Sí</option>
+                        <option value="no">No</option>
+                    </select>`;
+            } 
+            // --- CASO 3: ABIERTA ---
+            else if (q.tipo === 'abierta') {
+                inputHtml = `
+                    <textarea name="respuestas_custom[]" required rows="3" placeholder="Escribe tu respuesta aquí..."
+                              class="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"></textarea>`;
+            }
+            // --- CASO 4: TEXTO SIMPLE ---
+            else {
+                inputHtml = `
+                    <input type="text" name="respuestas_custom[]" required placeholder="Tu respuesta"
+                           class="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">`;
+            }
+
+            div.innerHTML = labelHtml + inputHtml;
+            contenedor.appendChild(div);
+        });
+    } else {
+        contenedor.innerHTML = '<div class="text-center py-10 text-gray-400 italic">Por favor, selecciona una vacante arriba para cargar las preguntas.</div>';
+        seccionEnvio.classList.add('hidden');
+    }
+}
+
+window.onload = function() {
+    if (document.getElementById('select-vacante').value !== "") {
+        actualizarFormulario();
+    }
+};
+</script>
+</body>
+</html>

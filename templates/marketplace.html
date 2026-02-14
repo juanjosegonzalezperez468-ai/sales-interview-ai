@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Marketplace de Plantillas | Sales AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 font-sans">
+
+    <nav class="bg-slate-900 text-white p-4 shadow-xl">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-black tracking-tighter italic">SALES AI <span class="font-light text-slate-400">| TEMPLATE STORE</span></h1>
+            <a href="/dashboard" class="text-xs font-bold hover:text-blue-400 transition">← VOLVER AL DASHBOARD</a>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto py-12 px-6">
+        <div class="mb-12">
+            <h2 class="text-4xl font-black text-slate-800 tracking-tight">Librería de Roles</h2>
+            <p class="text-slate-500 mt-2 font-medium text-lg">Selecciona una arquitectura de evaluación validada y lánzala en segundos.</p>
+        </div>
+
+        <div class="flex gap-3 mb-10">
+            <span class="px-4 py-2 bg-blue-600 text-white rounded-full text-xs font-bold shadow-md cursor-pointer">Todos</span>
+            <span class="px-4 py-2 bg-white text-slate-500 border border-slate-200 rounded-full text-xs font-bold hover:bg-slate-50 transition cursor-pointer">Operativo</span>
+            <span class="px-4 py-2 bg-white text-slate-500 border border-slate-200 rounded-full text-xs font-bold hover:bg-slate-50 transition cursor-pointer">Comercial</span>
+            <span class="px-4 py-2 bg-white text-slate-500 border border-slate-200 rounded-full text-xs font-bold hover:bg-slate-50 transition cursor-pointer">Técnico</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            
+            <div class="bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden flex flex-col hover:border-blue-300 transition-all group">
+                <div class="p-8">
+                    <div class="flex justify-between items-start mb-6">
+                        <span class="bg-blue-50 text-blue-600 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Nivel 1: Operativo</span>
+                        <span class="text-2xl">⚡</span>
+                    </div>
+                    <h3 class="text-2xl font-black text-slate-800 mb-3 group-hover:text-blue-600 transition-colors">Filtro Express</h3>
+                    <p class="text-slate-500 text-sm font-medium leading-relaxed mb-6">
+                        Ideal para logística, conductores y campo. Evalúa disponibilidad inmediata, zona de residencia y requisitos físicos mínimos.
+                    </p>
+                    <div class="space-y-3 mb-8">
+                        <div class="flex items-center text-xs font-bold text-slate-400">
+                            <span class="mr-2">📋</span> 8 Preguntas de Screening
+                        </div>
+                        <div class="flex items-center text-xs font-bold text-slate-400">
+                            <span class="mr-2">⚖️</span> Scoring: 40% Críticos | 60% Perfil
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-auto p-6 bg-slate-50 border-t border-slate-100">
+                    <button onclick="instalarPlantilla('operativo_express')" class="w-full bg-slate-900 hover:bg-blue-600 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all shadow-lg active:scale-95">
+                        Usar esta Plantilla
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden flex flex-col hover:border-indigo-300 transition-all group">
+                <div class="p-8">
+                    <div class="flex justify-between items-start mb-6">
+                        <span class="bg-indigo-50 text-indigo-600 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Nivel 2: Comercial</span>
+                        <span class="text-2xl">💰</span>
+                    </div>
+                    <h3 class="text-2xl font-black text-slate-800 mb-3 group-hover:text-indigo-600 transition-colors">Ventas Retail / Campo</h3>
+                    <p class="text-slate-500 text-sm font-medium leading-relaxed mb-6">
+                        Enfocado en habilidades de cierre, experiencia en cumplimiento de cuotas y tolerancia a la frustración.
+                    </p>
+                    <div class="space-y-3 mb-8">
+                        <div class="flex items-center text-xs font-bold text-slate-400">
+                            <span class="mr-2">📋</span> 12 Preguntas de Desempeño
+                        </div>
+                        <div class="flex items-center text-xs font-bold text-slate-400">
+                            <span class="mr-2">⚖️</span> Scoring: Basado en Logros
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-auto p-6 bg-slate-50 border-t border-slate-100">
+                    <button onclick="instalarPlantilla('comercial_ventas')" class="w-full bg-slate-900 hover:bg-indigo-600 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all shadow-lg active:scale-95">
+                        Usar esta Plantilla
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden flex flex-col hover:border-emerald-300 transition-all group">
+                <div class="p-8">
+                    <div class="flex justify-between items-start mb-6">
+                        <span class="bg-emerald-50 text-emerald-600 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Nivel 1: Técnico</span>
+                        <span class="text-2xl">🛠️</span>
+                    </div>
+                    <h3 class="text-2xl font-black text-slate-800 mb-3 group-hover:text-emerald-600 transition-colors">Técnico de Campo</h3>
+                    <p class="text-slate-500 text-sm font-medium leading-relaxed mb-6">
+                        Valida certificaciones, herramientas propias, licencias de conducción y conocimientos técnicos básicos.
+                    </p>
+                    <div class="space-y-3 mb-8">
+                        <div class="flex items-center text-xs font-bold text-slate-400">
+                            <span class="mr-2">📋</span> 10 Preguntas de Validación
+                        </div>
+                        <div class="flex items-center text-xs font-bold text-slate-400">
+                            <span class="mr-2">⚖️</span> Scoring: Certificación Obligatoria
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-auto p-6 bg-slate-50 border-t border-slate-100">
+                    <button onclick="instalarPlantilla('tecnico_campo')" class="w-full bg-slate-900 hover:bg-emerald-600 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all shadow-lg active:scale-95">
+                        Usar esta Plantilla
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        function instalarPlantilla(id) {
+            if(confirm('¿Quieres cargar esta plantilla? Se creará una nueva vacante en tu carpeta.')) {
+                // Aquí llamaremos a la ruta de Python para clonar
+                window.location.href = `/clonar_plantilla/${id}`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Carpeta de Vacantes | Sales AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 p-6">
+    <div class="max-w-5xl mx-auto">
+        
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-2">
+                <span class="text-2xl">📂</span>
+                <h1 class="text-xl font-bold text-slate-800">Carpeta de Vacantes</h1>
+            </div>
+            <a href="/dashboard" class="text-slate-400 hover:text-blue-600 font-bold text-xs transition">
+                ← Volver al Dashboard
+            </a>
+        </div>
+
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+            <table class="w-full text-left">
+                <thead class="bg-slate-50/50 border-b border-slate-100">
+                    <tr class="text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                        <th class="px-6 py-4">ID Público</th>
+                        <th class="px-6 py-4">Cargo Personalizado</th>
+                        <th class="px-6 py-4">Link de Postulación</th>
+                        <th class="px-6 py-4 text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    {% for v in vacantes %}
+                    <tr class="hover:bg-blue-50/30 transition-colors">
+                        <td class="px-6 py-4 font-mono text-[10px] text-slate-400">
+                            {{ v.id_vacante_publico }}
+                        </td>
+                        
+                        <td class="px-6 py-4 font-bold text-slate-700 text-sm">
+                            {{ v.cargo }}
+                        </td>
+                        
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-2">
+                                <input type="text" readonly 
+                                       value="{{ request.host_url }}?vacante={{ v.id_vacante_publico }}" 
+                                       id="link-{{ v.id_vacante_publico }}"
+                                       class="bg-slate-50 border border-slate-100 text-[10px] text-slate-500 p-2 rounded-lg w-64 outline-none font-mono">
+                                <button onclick="copiarLink('{{ v.id_vacante_publico }}')" 
+                                        class="p-2 hover:bg-white rounded-lg transition border border-transparent hover:border-slate-200 active:scale-90" 
+                                        title="Copiar Link">
+                                    📋
+                                </button>
+                            </div>
+                        </td>
+
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex justify-end gap-2">
+                                <a href="{{ url_for('vacante_lista', id_publico=v.id_vacante_publico) }}" 
+                                   class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-lg text-xs font-bold transition">
+                                    Vista Previa
+                                </a>
+                                <a href="{{ url_for('editar_vacante', id_publico=v.id_vacante_publico) }}" 
+                                   class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm active:scale-95">
+                                    Editar
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function copiarLink(id) {
+            const copyText = document.getElementById("link-" + id);
+            navigator.clipboard.writeText(copyText.value).then(() => {
+                alert("¡Link de postulación copiado!");
+            });
+        }
+    </script>
+</body>
+</html>

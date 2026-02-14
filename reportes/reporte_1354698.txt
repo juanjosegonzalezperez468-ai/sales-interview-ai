@@ -1,0 +1,19 @@
+==============================================
+       REPORTE TÉCNICO DE EVALUACIÓN IA       
+==============================================
+
+CANDIDATO:       CARLOS MARIO RESTREPO
+CARGO:           FILTRO EXPRESS OPERATIVO
+IDENTIFICACIÓN:  1354698
+PUNTAJE FINAL:   55.0/100
+VEREDICTO:       RECHAZADO
+
+--- DETALLES DE COMPETENCIAS ---
+✅ LOGROS: ¿Vives en la ciudad de la vacante?, ¿Tienes disponibilidad para viajar?, ¿Tienes experiencia en el cargo?, ¿Dispones del horario requerido?, ¿Aceptas el salario ofrecido?, ¿Tienes documentos al día?
+❌ BRECHAS: Describe brevemente tu última función, ¿Cuándo puedes iniciar?
+
+--- ANÁLISIS DEL SISTEMA ---
+¿Vives en la ciudad de la vacante?: Correcto | ¿Tienes disponibilidad para viajar?: Correcto | ¿Tienes experiencia en el cargo?: Correcto | ¿Dispones del horario requerido?: Correcto | ¿Aceptas el salario ofrecido?: Correcto | Describe brevemente tu última función: Domina 1 conceptos clave. | ¿Tienes documentos al día?: Correcto | ¿Cuándo puedes iniciar?: Respuesta demasiado corta (mínimo 15 palabras).
+
+----------------------------------------------
+REGISTRO ORIGINAL: N/A

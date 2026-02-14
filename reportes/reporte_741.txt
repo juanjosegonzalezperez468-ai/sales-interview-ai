@@ -1,0 +1,19 @@
+==============================================
+       REPORTE TÉCNICO DE EVALUACIÓN IA       
+==============================================
+
+CANDIDATO:       FELIPE OROZCO
+CARGO:           ASESOR COMERCIAL SENIOR
+IDENTIFICACIÓN:  741
+PUNTAJE FINAL:   0/100
+VEREDICTO:       DESCALIFICADO (KO)
+
+--- DETALLES DE COMPETENCIAS ---
+✅ LOGROS: Ninguno
+❌ BRECHAS: Ninguna
+
+--- ANÁLISIS DEL SISTEMA ---
+No cumple requisito crítico: tienes licencia de conduccion
+
+----------------------------------------------
+REGISTRO ORIGINAL: N/A

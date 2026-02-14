@@ -1,0 +1,25 @@
+==============================================
+       REPORTE TÉCNICO DE RECLUTAMIENTO       
+==============================================
+
+FECHA EVALUACIÓN: 2026-02-01 23:04:34
+CANDIDATO:        CARLOS RUIZ
+IDENTIFICACIÓN:   445566
+PUNTAJE OBTENIDO: 100/100
+VEREDICTO FINAL:  CONTRATACIÓN INMEDIATA (Excelente manejo técnico)
+
+----------------------------------------------
+ANÁLISIS DE COMPETENCIAS TÉCNICAS:
+----------------------------------------------
+✅ FORTALEZAS: cobertura, navegar, instalacion, beneficio, fibra
+
+❌ DEBILIDADES: simetri, estabilidad, megas, latencia, velocidad, promocion
+
+----------------------------------------------
+RESUMEN EJECUTIVO: El candidato domina 5 conceptos clave y omitió 6.
+----------------------------------------------
+
+ENTREVISTA ORIGINAL:
+"Hola, tengo mucha experiencia en ventas de calle. Sé hablar muy bien con la gente y convencerlos de comprar. Conozco la cobertura de la ciudad porque he caminado todos los barrios. Sé que el beneficio de un buen servicio es la fidelidad del cliente. No sé mucho de la parte técnica como la fibra o la instalacion, pero aprendo rápido cualquier cosa sobre navegar en internet."
+
+Generado por: Sales AI Corporate System

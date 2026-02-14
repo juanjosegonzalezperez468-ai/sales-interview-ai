@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vacante Lista | Sales AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 p-4 md:p-8 font-sans">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-3">
+                <span class="text-4xl">🚀</span>
+                <div>
+                    <h1 class="text-2xl font-black text-slate-800 uppercase tracking-tight">¡Vacante Lista!</h1>
+                    <p class="text-slate-500 text-sm">Configuración y difusión del cargo</p>
+                </div>
+            </div>
+            <a href="/dashboard" class="hidden md:block text-slate-400 hover:text-blue-600 font-bold transition">
+                ← Volver al Dashboard
+            </a>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-8">
+            <div class="md:col-span-1 space-y-6">
+                <div class="bg-white p-6 rounded-3xl shadow-xl border border-slate-100">
+                    <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <span>🔗</span> Compartir Link
+                    </h2>
+                    
+                    <p class="text-slate-600 text-sm mb-4">Copia este enlace para que los candidatos se postulen:</p>
+                    
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-4 break-all font-mono text-xs text-blue-600">
+                        <span id="linkTexto">{{ link }}</span>
+                    </div>
+
+                    <div class="space-y-3">
+                        <button onclick="copiarLink()" 
+                                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition shadow-lg shadow-blue-100 active:scale-95 flex items-center justify-center gap-2">
+                            <span>📋</span> Copiar Enlace
+                        </button>
+                        
+                        <a href="https://wa.me/?text=Hola! Postúlate aquí para el cargo de {{ vacante.cargo }}: {{ link }}" 
+                           target="_blank"
+                           class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-xl transition shadow-lg shadow-emerald-100 active:scale-95 flex items-center justify-center gap-2">
+                            <span>💬</span> WhatsApp
+                        </a>
+                    </div>
+                </div>
+
+                <div class="bg-blue-900 p-6 rounded-3xl shadow-xl text-white">
+                    <h3 class="font-bold mb-2 flex items-center gap-2">
+                        <span>💡</span> Tip de Reclutador
+                    </h3>
+                    <p class="text-blue-100 text-xs leading-relaxed">
+                        Esta vacante utiliza preguntas <b>Knock-out (KO)</b>. Si un candidato no cumple con el criterio "Ideal", la IA lo marcará automáticamente como rechazado en tu dashboard.
+                    </p>
+                </div>
+            </div>
+
+            <div class="md:col-span-2">
+                <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
+                    <div class="bg-slate-800 p-6 text-white flex justify-between items-center">
+                        <div>
+                            <span class="text-blue-400 text-[10px] font-black uppercase tracking-widest">Vista Previa del Cargo</span>
+                            <h2 class="text-xl font-bold">{{ vacante.cargo }}</h2>
+                        </div>
+                        <a href="{{ link }}" target="_blank" class="bg-white/10 hover:bg-white/20 p-2 rounded-lg transition text-xs font-bold">
+                            👁️ Ver como candidato
+                        </a>
+                    </div>
+
+                    <div class="p-6 space-y-6">
+                        <h3 class="text-slate-400 text-[11px] font-black uppercase tracking-widest">Estructura de la Encuesta</h3>
+                        
+                        <div class="space-y-4">
+                            {% for p in vacante.preguntas %}
+                            <div class="group p-4 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-blue-100 transition-all">
+                                <div class="flex justify-between items-start gap-4">
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <span class="text-xs font-bold text-blue-600">Q{{ loop.index }}</span>
+                                            {% if p.knockout %}
+                                            <span class="bg-rose-100 text-rose-600 text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-tighter">Filtro KO</span>
+                                            {% endif %}
+                                        </div>
+                                        <p class="text-slate-700 font-bold leading-tight">{{ p.texto }}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="block text-[10px] font-black text-slate-400 uppercase">Peso</span>
+                                        <span class="text-sm font-mono font-bold text-slate-600">{{ p.peso }}%</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-3 pt-3 border-t border-slate-100 flex items-center gap-4 text-[10px]">
+                                    <span class="text-slate-500 italic"><b>Tipo:</b> {{ p.tipo }}</span>
+                                    <span class="text-blue-500 font-bold italic"><b>Ideal:</b> {{ p.reglas.ideal if p.reglas.ideal else p.reglas.palabras_clave }}</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 text-center md:hidden">
+            <a href="/dashboard" class="text-slate-400 hover:text-blue-600 font-bold transition">
+                ← Volver al Dashboard
+            </a>
+        </div>
+    </div>
+
+    <script>
+    function copiarLink() {
+        const linkFinal = document.getElementById('linkTexto').innerText;
+        navigator.clipboard.writeText(linkFinal).then(() => {
+            alert("✅ ¡Link copiado!\nYa puedes enviarlo a tus candidatos.");
+        }).catch(err => {
+            prompt("Copia el link manualmente:", linkFinal);
+        });
+    }
+    </script>
+</body>
+</html>

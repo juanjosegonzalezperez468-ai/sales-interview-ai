@@ -1,0 +1,164 @@
+{
+    "MKT-1770778902": {
+        "id": "MKT-1770778902",
+        "nombre_cargo": "Filtro Express Operativo",
+        "activa": true,
+        "preguntas": [
+            {
+                "id": "q_1",
+                "texto": "¿Vives en la ciudad?",
+                "tipo": "booleana",
+                "peso": 10,
+                "knockout": true,
+                "reglas": {
+                    "ideal": "si"
+                }
+            },
+            {
+                "id": "q_2",
+                "texto": "¿Disponibilidad viajar?",
+                "tipo": "booleana",
+                "peso": 10,
+                "knockout": true,
+                "reglas": {
+                    "ideal": "si"
+                }
+            }
+        ]
+    },
+    "MKT-1770778957": {
+        "id": "MKT-1770778957",
+        "nombre_cargo": "Filtro Express Operativo",
+        "activa": true,
+        "preguntas": [
+            {
+                "id": "q_1",
+                "texto": "¿Vives en la ciudad?",
+                "tipo": "booleana",
+                "peso": 10,
+                "knockout": true,
+                "reglas": {
+                    "ideal": "si"
+                }
+            },
+            {
+                "id": "q_2",
+                "texto": "¿Disponibilidad viajar?",
+                "tipo": "booleana",
+                "peso": 10,
+                "knockout": true,
+                "reglas": {
+                    "ideal": "si"
+                }
+            }
+        ]
+    },
+    "MKT-1770781051": {
+        "id": "MKT-1770781051",
+        "nombre_cargo": "Filtro Express Operativo",
+        "activa": true,
+        "preguntas": [
+            {
+                "id": "q_1",
+                "texto": "¿Vives en la ciudad?",
+                "tipo": "booleana",
+                "peso": 10,
+                "knockout": true,
+                "reglas": {
+                    "ideal": "si"
+                }
+            },
+            {
+                "id": "q_2",
+                "texto": "¿Disponibilidad viajar?",
+                "tipo": "booleana",
+                "peso": 10,
+                "knockout": true,
+                "reglas": {
+                    "ideal": "si"
+                }
+            }
+        ]
+    },
+    "MKT-1770781489": {
+        "id": "MKT-1770781489",
+        "nombre_cargo": "Filtro Express Operativo",
+        "activa": true,
+        "preguntas": [
+            {
+                "id": "q_1",
+                "texto": "¿Vives en la ciudad?",
+                "tipo": "booleana",
+                "peso": 10,
+                "knockout": true,
+                "reglas": {
+                    "ideal": "si"
+                }
+            },
+            {
+                "id": "q_2",
+                "texto": "¿Disponibilidad viajar?",
+                "tipo": "booleana",
+                "peso": 10,
+                "knockout": true,
+                "reglas": {
+                    "ideal": "si"
+                }
+            }
+        ]
+    },
+    "MKT-1770782083": {
+        "id": "MKT-1770782083",
+        "nombre_cargo": "Filtro Express Operativo",
+        "activa": true,
+        "preguntas": [
+            {
+                "id": "q_1",
+                "texto": "¿Vives en la ciudad?",
+                "tipo": "booleana",
+                "peso": 10,
+                "knockout": true,
+                "reglas": {
+                    "ideal": "si"
+                }
+            },
+            {
+                "id": "q_2",
+                "texto": "¿Disponibilidad viajar?",
+                "tipo": "booleana",
+                "peso": 10,
+                "knockout": true,
+                "reglas": {
+                    "ideal": "si"
+                }
+            }
+        ]
+    },
+    "MKT-1770782099": {
+        "id": "MKT-1770782099",
+        "nombre_cargo": "Filtro Express Operativo",
+        "activa": true,
+        "preguntas": [
+            {
+                "id": "q_1",
+                "texto": "¿Vives en la ciudad?",
+                "tipo": "booleana",
+                "peso": 10,
+                "knockout": true,
+                "reglas": {
+                    "ideal": "si"
+                }
+            },
+            {
+                "id": "q_2",
+                "texto": "¿Disponibilidad viajar?",
+                "tipo": "booleana",
+                "peso": 10,
+                "knockout": true,
+                "reglas": {
+                    "ideal": "si"
+                }
+            }
+        ]
+    }
+}

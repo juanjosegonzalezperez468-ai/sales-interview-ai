@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Configuración de Vacante | Sales AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 p-4 md:p-8 font-sans">
+    <div class="max-w-3xl mx-auto">
+        
+        <div class="mb-6">
+            <a href="/dashboard" class="text-slate-400 hover:text-blue-600 font-bold text-sm transition">← Volver al Dashboard</a>
+        </div>
+
+        <div class="flex items-center gap-3 mb-8">
+            <div class="bg-blue-600 p-3 rounded-2xl text-2xl shadow-lg shadow-blue-200">⚙️</div>
+            <h1 class="text-2xl font-black text-slate-800 tracking-tight">Configuración de Vacante</h1>
+        </div>
+
+        <form method="POST" id="form-vacante" class="space-y-6">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                <label class="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Nombre del Cargo</label>
+                <input type="text" name="cargo" value="{{ vacante.cargo }}" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-700">
+            </div>
+
+            <div id="contenedor-preguntas" class="space-y-6">
+                {% for p in vacante.preguntas %}
+                <div class="pregunta-card bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-4 relative transition-all">
+                    <input type="hidden" name="p_id[]" value="{{ p.id or 'q' ~ loop.index }}">
+                    
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-black text-blue-600 uppercase tracking-widest">Pregunta #{{ loop.index }}</span>
+                        <button type="button" onclick="this.closest('.pregunta-card').remove()" class="text-slate-300 hover:text-rose-500 transition font-bold text-lg">✕</button>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Texto de la pregunta</label>
+                        <input type="text" name="p_texto[]" value="{{ p.texto }}" class="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm outline-none focus:bg-white transition" placeholder="Ej: ¿Tienes experiencia en ventas?">
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Tipo de respuesta</label>
+                            <select name="p_tipo[]" onchange="alternarCampos(this)" class="tipo-select w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm outline-none font-medium">
+                                <option value="si_no" {% if p.tipo == 'si_no' %}selected{% endif %}>Sí / No</option>
+                                <option value="multiple" {% if p.tipo == 'multiple' %}selected{% endif %}>Opción Múltiple</option>
+                                <option value="abierta" {% if p.tipo == 'abierta' %}selected{% endif %}>Abierta (IA / Keywords)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Peso en la nota (%)</label>
+                            <input type="number" name="p_peso[]" value="{{ p.peso }}" class="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-medium">
+                        </div>
+                    </div>
+
+                    <div class="seccion-multiple {% if p.tipo != 'multiple' %}hidden{% endif %} space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <label class="block text-[10px] font-black uppercase text-slate-400">Opciones (Máximo 4)</label>
+                        <div class="lista-opciones space-y-2">
+                            {% if p.tipo == 'multiple' and p.reglas.opciones %}
+                                {% for opcion in p.reglas.opciones %}
+                                <div class="flex items-center gap-2">
+                                    <input type="text" name="p_opciones_lista[]" value="{{ opcion }}" class="flex-1 p-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-400">
+                                    <button type="button" onclick="this.parentElement.remove()" class="text-slate-300 hover:text-rose-500">✕</button>
+                                </div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        <button type="button" onclick="agregarOpcion(this)" class="text-blue-600 text-[10px] font-black uppercase hover:underline">+ Añadir Opción</button>
+                    </div>
+
+                    <div class="seccion-regla">
+                        <label class="label-regla block text-[10px] font-black uppercase text-slate-400 mb-1">
+                            {% if p.tipo == 'multiple' %}Respuesta Correcta (Debe ser idéntica a una opción){% else %}Regla (Ideal / Keywords){% endif %}
+                        </label>
+                        <input type="text" name="p_regla[]" value="{{ p.reglas.ideal if p.reglas.ideal else p.reglas.palabras_clave }}" 
+                               class="w-full p-3 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-700 font-bold" placeholder="Ej: si | Opción 1 | ventas">
+                    </div>
+
+                    <div class="flex items-center gap-2 pt-2">
+                        <input type="checkbox" name="p_ko[]" value="{{ loop.index0 }}" {% if p.knockout %}checked{% endif %} class="w-4 h-4 rounded border-slate-300 text-blue-600">
+                        <label class="text-[10px] font-bold text-rose-500 uppercase tracking-tighter">¿Pregunta Eliminatoria (KO)?</label>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="space-y-4">
+                <button type="button" onclick="agregarPregunta()" class="w-full py-4 border-2 border-dashed border-slate-200 rounded-3xl text-slate-400 font-bold hover:bg-slate-100 hover:border-blue-300 hover:text-blue-500 transition-all">
+                    + Añadir Nueva Pregunta
+                </button>
+
+                <div class="sticky bottom-6 pt-4">
+                    <button type="submit" class="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all tracking-widest">
+                        GUARDAR CAMBIOS
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Cambia la vista si es múltiple o no
+        function alternarCampos(select) {
+            const card = select.closest('.pregunta-card');
+            const seccionMultiple = card.querySelector('.seccion-multiple');
+            const labelRegla = card.querySelector('.label-regla');
+            
+            if (select.value === 'multiple') {
+                seccionMultiple.classList.remove('hidden');
+                labelRegla.innerText = "Respuesta Correcta (Debe ser idéntica a una opción)";
+            } else {
+                seccionMultiple.classList.add('hidden');
+                labelRegla.innerText = "Regla (Ideal / Keywords)";
+            }
+        }
+
+        // Añade una opción de respuesta (Max 4)
+        function agregarOpcion(btn) {
+            const lista = btn.previousElementSibling;
+            if (lista.children.length < 4) {
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-2";
+                div.innerHTML = `
+                    <input type="text" name="p_opciones_lista[]" placeholder="Escribe la opción..." class="flex-1 p-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-400">
+                    <button type="button" onclick="this.parentElement.remove()" class="text-slate-300 hover:text-rose-500">✕</button>
+                `;
+                lista.appendChild(div);
+            } else {
+                alert("Máximo 4 opciones permitidas.");
+            }
+        }
+
+        // Añade una pregunta completa
+        function agregarPregunta() {
+            const contenedor = document.getElementById('contenedor-preguntas');
+            const index = contenedor.children.length;
+            const nuevaHtml = `
+                <div class="pregunta-card bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-4 relative">
+                    <input type="hidden" name="p_id[]" value="q_nueva_${Date.now()}">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-black text-blue-600 uppercase tracking-widest">Nueva Pregunta</span>
+                        <button type="button" onclick="this.closest('.pregunta-card').remove()" class="text-slate-300 hover:text-rose-500 transition font-bold text-lg">✕</button>
+                    </div>
+                    <input type="text" name="p_texto[]" placeholder="Texto de la pregunta..." class="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm outline-none focus:bg-white transition">
+                    <div class="grid grid-cols-2 gap-4">
+                        <select name="p_tipo[]" onchange="alternarCampos(this)" class="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-medium">
+                            <option value="si_no">Sí / No</option>
+                            <option value="multiple">Opción Múltiple</option>
+                            <option value="abierta">Abierta (IA)</option>
+                        </select>
+                        <input type="number" name="p_peso[]" placeholder="Peso %" class="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm">
+                    </div>
+                    <div class="seccion-multiple hidden space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <label class="block text-[10px] font-black uppercase text-slate-400">Opciones (Máximo 4)</label>
+                        <div class="lista-opciones space-y-2"></div>
+                        <button type="button" onclick="agregarOpcion(this)" class="text-blue-600 text-[10px] font-black uppercase">+ Añadir Opción</button>
+                    </div>
+                    <div class="seccion-regla">
+                        <label class="label-regla block text-[10px] font-black uppercase text-slate-400 mb-1">Regla (Ideal / Keywords)</label>
+                        <input type="text" name="p_regla[]" class="w-full p-3 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-700 font-bold">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" name="p_ko[]" value="${index}" class="w-4 h-4 rounded text-blue-600">
+                        <label class="text-[10px] font-bold text-rose-500 uppercase">¿KO?</label>
+                    </div>
+                </div>`;
+            contenedor.insertAdjacentHTML('beforeend', nuevaHtml);
+        }
+        
+        // --- VALIDACIÓN DE SUMA 100% Y RE-INDEXACIÓN ---
+        document.getElementById('form-vacante').onsubmit = function(e) {
+            const pesos = document.getElementsByName('p_peso[]');
+            let total = 0;
+
+            // 1. Validar la suma de pesos
+            pesos.forEach(p => {
+                total += parseFloat(p.value || 0);
+            });
+
+            // Usamos un pequeño margen de error para decimales si fuera necesario (99.99 a 100.01)
+            if (Math.abs(total - 100) > 0.01) {
+                e.preventDefault();
+                alert("🚨 No se puede guardar: La suma de los pesos debe ser exactamente 100%.\n\nActual total: " + total + "%");
+                return false;
+            }
+
+            // 2. Sincronizar índices de los Checkboxes de KO
+            // Esto es vital porque si el usuario borró la pregunta 1, 
+            // la que era la 2 ahora debe enviar el índice 0 al backend.
+            const cards = document.querySelectorAll('.pregunta-card');
+            cards.forEach((card, i) => {
+                const checkbox = card.querySelector('input[type="checkbox"]');
+                if (checkbox) {
+                    checkbox.value = i; // Re-asignamos el índice real según la posición actual
+                }
+            });
+            
+            return true;
+        };
+    </script>
+</body>
+</html>

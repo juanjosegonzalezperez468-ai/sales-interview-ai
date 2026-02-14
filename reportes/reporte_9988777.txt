@@ -1,0 +1,25 @@
+==============================================
+       REPORTE TÉCNICO DE RECLUTAMIENTO       
+==============================================
+
+FECHA EVALUACIÓN: 2026-02-02 10:01:52
+CANDIDATO:        LAURA RESTREPO
+IDENTIFICACIÓN:   9988777
+PUNTAJE OBTENIDO: 54/100
+VEREDICTO FINAL:  EN ESPERA (Conocimiento básico)
+
+----------------------------------------------
+ANÁLISIS DE COMPETENCIAS TÉCNICAS:
+----------------------------------------------
+✅ FORTALEZAS: simetri, estabilidad, megas, latencia, beneficio, promocion
+
+❌ DEBILIDADES: cobertura, navegar, instalacion, fibra, velocidad
+
+----------------------------------------------
+RESUMEN EJECUTIVO: El candidato domina 6 conceptos clave y omitió 5.
+----------------------------------------------
+
+ENTREVISTA ORIGINAL:
+"Hola, me considero una excelente vendedora. Siempre llego a la meta y me enfoco en la promoción de los servicios. Tengo mucha estabilidad laboral y me gusta dar un buen trato al cliente. No conozco mucho sobre la latencia o la simetria de la red, pero sé que el beneficio de tener internet es vital hoy en día. No entiendo bien qué son las megas pero sé vender cualquier plan."
+
+Generado por: Sales AI Corporate System

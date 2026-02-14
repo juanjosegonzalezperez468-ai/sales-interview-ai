@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurar Nueva Vacante | Sales AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <div class="max-w-4xl mx-auto py-10 px-4">
+        <div class="bg-white shadow-xl rounded-2xl overflow-hidden">
+            <div class="bg-blue-600 p-6 text-white">
+                <h1 class="text-2xl font-bold">🚀 Configurador de Vacante Profesional</h1>
+                <p class="text-blue-100">Define los pesos, tipos de pregunta y filtros críticos (Knock-out).</p>
+            </div>
+
+            <form action="/guardar_vacante" method="POST" class="p-8 space-y-8">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">ID de Vacante (Código Único)</label>
+                        <input type="text" name="id_vacante" value="{{ vacante.id_vacante if vacante else '' }}" 
+                                {{ 'readonly' if vacante else '' }} required 
+                                class="w-full p-3 border border-gray-300 rounded-lg {{ 'bg-gray-100' if vacante else '' }}">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Nombre del Cargo</label>
+                        <input type="text" name="cargo" value="{{ vacante.cargo if vacante else '' }}" required 
+                                class="w-full p-3 border border-gray-300 rounded-lg">
+                    </div>
+                </div>
+
+                <hr>
+
+                <div>
+                    <h3 class="text-lg font-bold text-gray-800 mb-2 flex items-center">
+                        <span class="bg-emerald-100 text-emerald-600 p-2 rounded-full mr-2">⚙️</span> 
+                        Configuración de Preguntas y Evaluación
+                    </h3>
+                    <p class="text-sm text-gray-500 mb-6">
+                        Define qué preguntarás, cuánto pesa cada respuesta y si es una pregunta eliminatoria (Knock-out).
+                    </p>
+                    
+                    <div id="contenedor-preguntas" class="space-y-4 mb-6">
+                        </div>
+
+                    <button type="button" onclick="agregarPregunta()" 
+                            class="w-full py-3 border-2 border-dashed border-blue-300 rounded-xl text-blue-600 font-bold hover:bg-blue-50 transition">
+                        + Añadir Nueva Pregunta
+                    </button>
+                </div>
+
+                <div class="pt-6">
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition shadow-lg transform hover:scale-[1.01]">
+                        ✅ Guardar Vacante y Activar Evaluación
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    let preguntaCount = 0;
+
+    function agregarPregunta() {
+        const contenedor = document.getElementById('contenedor-preguntas');
+        const div = document.createElement('div');
+        div.className = "bg-gray-50 p-6 rounded-2xl border border-gray-200 relative shadow-sm animate-fade-in";
+        div.innerHTML = `
+            <button type="button" onclick="this.parentElement.remove()" class="absolute top-4 right-4 text-gray-400 hover:text-red-500">✕ Eliminar</button>
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Texto de la Pregunta</label>
+                <input type="text" name="pregunta[]" required class="w-full p-3 border rounded-lg text-sm focus:ring-2 focus:ring-blue-400 outline-none">
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Tipo</label>
+                    <select name="tipo[]" class="w-full p-3 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none transition appearance-none bg-white">
+                        <option value="abierta">Respuesta Abierta (Análisis IA)</option>
+                        <option value="multiple">Opción Múltiple (Cerrada)</option>
+                        <option value="booleana">Sí / No</option>
+                        <option value="escala_1_5">Escala del 1 al 5</option>
+                        <option value="escala_1_10">Escala del 1 al 10</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Peso (%)</label>
+                    <input type="number" name="peso[]" id="peso-${preguntaCount}" required min="0" max="100" class="w-full p-2 border rounded-lg text-sm text-center bg-white">
+                </div>
+                <div class="flex items-center justify-center pt-4">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" name="ko[]" value="${preguntaCount}" onchange="gestionarKO(this, ${preguntaCount})" class="w-5 h-5 text-red-600">
+                        <span class="ml-2 text-xs font-bold text-red-600 uppercase">¿Es Knock-out?</span>
+                    </label>
+                </div>
+            </div>
+            <div class="mt-4">
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Regla (Keywords o Ideal)</label>
+                <input type="text" name="regla_valor[]" required class="w-full p-2 border border-blue-100 rounded-lg text-sm bg-blue-50">
+            </div>
+        `;
+        contenedor.appendChild(div);
+        preguntaCount++;
+    }
+
+    function gestionarKO(checkbox, id) {
+        const inputPeso = document.getElementById(`peso-${id}`);
+        if (checkbox.checked) {
+            inputPeso.value = 0;
+            inputPeso.readOnly = true;
+            inputPeso.classList.add('bg-gray-200', 'cursor-not-allowed');
+        } else {
+            inputPeso.readOnly = false;
+            inputPeso.classList.remove('bg-gray-200', 'cursor-not-allowed');
+        }
+    }
+
+    // FUNCIÓN DE CARGA SEGURO PARA EDITAR
+  // FUNCIÓN DE CARGA SEGURO PARA EDITAR
+    window.onload = function() {
+        // Esta línea es crítica: sin etiquetas < > extras dentro del JS
+        const datosVacante = {{ vacante | tojson | safe if vacante else 'null' }};
+        
+        if (datosVacante && datosVacante.preguntas) {
+            // Limpiamos el contenedor por si hay una pregunta vacía por defecto
+            document.getElementById('contenedor-preguntas').innerHTML = '';
+            
+            datosVacante.preguntas.forEach((p, index) => {
+                agregarPregunta();
+                const inputs = document.getElementsByName('pregunta[]');
+                const tipos = document.getElementsByName('tipo[]');
+                const pesos = document.getElementsByName('peso[]');
+                const reglas = document.getElementsByName('regla_valor[]');
+                const kos = document.getElementsByName('ko[]');
+
+                inputs[index].value = p.texto || "";
+                tipos[index].value = p.tipo || "abierta";
+                pesos[index].value = p.peso || 0;
+                
+                if (p.tipo === 'abierta' && p.reglas && p.reglas.palabras_clave) {
+                    reglas[index].value = p.reglas.palabras_clave.join(', ');
+                } else if (p.reglas && p.reglas.ideal) {
+                    reglas[index].value = p.reglas.ideal;
+                }
+
+                if (p.knockout === true) {
+                    kos[index].checked = true;
+                    gestionarKO(kos[index], index);
+                }
+            });
+        } else {
+            // Si es nueva, solo una pregunta vacía
+            agregarPregunta(); 
+        }
+    };
+</script>
+    <style>
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+
+</body>
+</html>

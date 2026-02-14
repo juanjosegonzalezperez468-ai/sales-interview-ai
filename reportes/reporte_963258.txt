@@ -1,0 +1,19 @@
+==============================================
+       REPORTE TÉCNICO DE EVALUACIÓN IA       
+==============================================
+
+CANDIDATO:       MARIANA VELEZ
+CARGO:           ASESOR COMERCIAL SENIOR
+IDENTIFICACIÓN:  963258
+PUNTAJE FINAL:   0/100
+VEREDICTO:       DESCALIFICADO (KO)
+
+--- DETALLES DE COMPETENCIAS ---
+✅ LOGROS: Ninguno
+❌ BRECHAS: Ninguna
+
+--- ANÁLISIS DEL SISTEMA ---
+No cumple requisito crítico: tienes licencia de conduccion
+
+----------------------------------------------
+REGISTRO ORIGINAL: N/A

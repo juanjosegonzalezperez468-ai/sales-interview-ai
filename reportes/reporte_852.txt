@@ -1,0 +1,19 @@
+==============================================
+       REPORTE TÉCNICO DE EVALUACIÓN IA       
+==============================================
+
+CANDIDATO:       JAIRO
+CARGO:           ASESOR COMERCIAL SENIOR
+IDENTIFICACIÓN:  852
+PUNTAJE FINAL:   0/100
+VEREDICTO:       DESCALIFICADO (KO)
+
+--- DETALLES DE COMPETENCIAS ---
+✅ LOGROS: Ninguno
+❌ BRECHAS: Ninguna
+
+--- ANÁLISIS DEL SISTEMA ---
+No cumple requisito crítico: ¿Tienes disponibilidad para viajar?
+
+----------------------------------------------
+REGISTRO ORIGINAL: N/A

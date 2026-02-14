@@ -1,0 +1,25 @@
+==============================================
+       REPORTE TÉCNICO DE RECLUTAMIENTO       
+==============================================
+
+FECHA EVALUACIÓN: 2026-02-04 19:23:01
+CANDIDATO:         MARIANA VELEZ
+IDENTIFICACIÓN:    753159
+PUNTAJE OBTENIDO: 45/100
+VEREDICTO FINAL:  RECHAZADO
+
+----------------------------------------------
+ANÁLISIS DE COMPETENCIAS TÉCNICAS:
+----------------------------------------------
+✅ FORTALEZAS: simetri, latencia, fibra, velocidad
+
+❌ DEBILIDADES: estabilidad, megas, cobertura, navegar, instalacion, beneficio, promocion
+
+----------------------------------------------
+RESUMEN EJECUTIVO: El candidato domina 4 conceptos clave.
+----------------------------------------------
+
+ENTREVISTA ORIGINAL:
+"Para garantizar una conectividad superior, nuestra empresa ofrece fibra óptica pura hasta el hogar. Esto nos permite asegurar una latencia mínima, ideal para gaming y videollamadas sin retrasos. Además, contamos con simetría total en la banda ancha, lo que significa que el cliente sube archivos a la misma velocidad que los descarga. Finalmente, manejamos un índice de reuso optimizado para evitar saturación y ofrecemos un canal de soporte técnico especializado 24/7."
+
+Generado por: Sales AI Corporate System

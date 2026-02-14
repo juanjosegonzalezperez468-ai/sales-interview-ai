@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Sales AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Sidebar con efecto galaxia */
+        .sidebar-galaxy {
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            position: relative;
+        }
+        
+        .sidebar-galaxy::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(1px 1px at 20% 30%, white, transparent),
+                radial-gradient(1px 1px at 60% 70%, white, transparent),
+                radial-gradient(1px 1px at 50% 50%, white, transparent);
+            background-size: 200px 200px;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        /* Animaciones suaves */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Hover effects */
+        .hover-lift:hover {
+            transform: translateY(-2px);
+            transition: all 0.2s ease;
+        }
+
+        /* Custom scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="flex h-screen overflow-hidden">
+        <!-- SIDEBAR -->
+        <aside class="w-64 sidebar-galaxy text-white flex flex-col relative z-10">
+            <!-- Logo -->
+            <div class="p-6 flex items-center gap-3">
+                <img 
+                    src="{{ url_for('static', filename='img/logo-salesai.webp') }}" 
+                    alt="Sales AI" 
+                    class="h-10 w-auto"
+                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                >
+                <div class="hidden items-center gap-2" style="display: none;">
+                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-sm font-bold">S</div>
+                    <span class="text-lg font-bold">Sales AI</span>
+                </div>
+            </div>
+
+            <!-- Navegación -->
+            <nav class="flex-1 px-3 py-4 space-y-1">
+                <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-blue-600/20 border-l-4 border-blue-500 text-white font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                    </svg>
+                    <span>Vacantes</span>
+                </a>
+
+                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                    <span>Candidatos</span>
+                </a>
+
+                <a href="/marketplace" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    </svg>
+                    <span>Plantillas</span>
+                </a>
+
+                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    </svg>
+                    <span>Empresa</span>
+                </a>
+            </nav>
+
+            <!-- Empresa y Usuario -->
+            <div class="p-4 border-t border-white/10 space-y-3">
+                <div class="flex items-center gap-2 text-sm text-gray-400 px-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    </svg>
+                    <span>{{ nombre_empresa }}</span>
+                </div>
+
+                <div class="flex items-center gap-3 px-2 py-2 rounded-lg bg-white/5">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-sm font-bold">
+                        {{ usuario.nombre_completo[0] if usuario else 'A' }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-white truncate">{{ usuario.nombre_completo if usuario else 'Admin' }}</p>
+                        <p class="text-xs text-gray-400">Admin</p>
+                    </div>
+                    <a href="/logout" class="text-gray-400 hover:text-white transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <main class="flex-1 overflow-y-auto custom-scrollbar">
+            <!-- Header -->
+            <header class="bg-white border-b border-gray-200 px-8 py-5 sticky top-0 z-10">
+                <div class="flex items-center justify-between">
+                    <h1 class="text-2xl font-bold text-gray-900">
+                        Hola, {{ usuario.nombre_completo.split()[0] if usuario else 'Admin' }} 👋
+                    </h1>
+                    <div class="flex items-center gap-4">
+                        <button class="relative p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                            </svg>
+                            {% if total_c > 0 %}
+                            <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                            {% endif %}
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Métricas -->
+            <div class="p-8">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <!-- Vacantes Activas -->
+                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200 hover-lift fade-in">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="p-3 bg-blue-500 rounded-xl">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <p class="text-sm text-blue-700 font-medium mb-1">Vacantes Activas</p>
+                        <p class="text-4xl font-bold text-blue-900 mb-1">{{ total_v }}</p>
+                        <p class="text-xs text-blue-600">Abiertas y activas</p>
+                    </div>
+
+                    <!-- Candidatos Evaluados -->
+                    <div class="bg-gradient-to-br from-teal-50 to-teal-100 rounded-2xl p-6 border border-teal-200 hover-lift fade-in" style="animation-delay: 0.1s;">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="p-3 bg-teal-500 rounded-xl">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <p class="text-sm text-teal-700 font-medium mb-1">Candidatos Evaluados</p>
+                        <p class="text-4xl font-bold text-teal-900 mb-1">{{ total_c }}</p>
+                        <p class="text-xs text-teal-600">Analizados con IA</p>
+                    </div>
+
+                    <!-- Tasa de Filtrado -->
+                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 border border-purple-200 hover-lift fade-in" style="animation-delay: 0.2s;">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="p-3 bg-purple-500 rounded-xl">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <p class="text-sm text-purple-700 font-medium mb-1">Tasa de Filtrado IA</p>
+                        <p class="text-4xl font-bold text-purple-900 mb-1">
+                            {% if total_c > 0 %}{{ ((entrevistas|selectattr('veredicto', 'equalto', 'RECOMENDADO')|list|length / total_c) * 100)|round|int }}%{% else %}0%{% endif %}
+                        </p>
+                        <p class="text-xs text-purple-600">Filtrados automáticamente</p>
+                    </div>
+                </div>
+
+                <!-- Sección de Candidatos -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden fade-in" style="animation-delay: 0.3s;">
+                    <!-- Header de la tabla -->
+                    <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                        <h2 class="text-xl font-bold text-gray-900">Últimos Candidatos Evaluados</h2>
+                        <a href="/gestionar_vacantes" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                            Crear Vacante
+                        </a>
+                    </div>
+
+                    <!-- Estado vacío o tabla -->
+                    {% if total_c == 0 %}
+                    <div class="px-6 py-16 text-center">
+                        <div class="inline-block p-6 bg-blue-50 rounded-full mb-6">
+                            <svg class="w-16 h-16 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-3">¡Workspace activado!</h3>
+                        <p class="text-gray-600 mb-6 max-w-md mx-auto">
+                            Aún no tienes candidatos. Comparte el link de tu vacante<br>
+                            para que la IA empiece a trabajar por ti.
+                        </p>
+                        <a href="/gestionar_vacantes" class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition">
+                            Ver mis vacantes
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                            </svg>
+                        </a>
+                    </div>
+                    {% else %}
+                    <!-- Tabla de candidatos -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50 border-b border-gray-200">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Candidato</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Cargo</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Score IA</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Veredicto</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Fecha</th>
+                                    <th class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                {% for candidato in entrevistas[:10] %}
+                                <tr class="hover:bg-gray-50 transition">
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-sm">
+                                                {{ candidato.nombre[0] }}
+                                            </div>
+                                            <div>
+                                                <p class="font-medium text-gray-900">{{ candidato.nombre }}</p>
+                                                <p class="text-sm text-gray-500">ID: {{ candidato.id[:8] }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <p class="text-sm text-gray-900">{{ candidato.cargo }}</p>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-2xl font-bold text-gray-900">{{ candidato.score }}%</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        {% if candidato.veredicto == 'RECOMENDADO' %}
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                                            Apto
+                                        </span>
+                                        {% elif candidato.veredicto == 'REVISAR' %}
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                            <span class="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                                            En Revisión
+                                        </span>
+                                        {% else %}
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                            <span class="w-2 h-2 bg-red-500 rounded-full"></span>
+                                            Descartado
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <p class="text-sm text-gray-600">{{ candidato.fecha }}</p>
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <button 
+                                                onclick="verAnalisis('{{ candidato.id }}')"
+                                                class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                                                title="Ver análisis"
+                                            >
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                                </svg>
+                                            </button>
+                                            <button 
+                                                onclick="eliminarCandidato('{{ candidato.id }}')"
+                                                class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                                                title="Eliminar"
+                                            >
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal de análisis detallado -->
+    <div id="modal-analisis" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl animate-slide-in">
+            <!-- Header del modal -->
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 flex items-center justify-between text-white">
+                <div class="flex items-center gap-4">
+                    <div id="modal-avatar" class="w-16 h-16 rounded-full bg-white/20 backdrop-blur flex items-center justify-center text-2xl font-bold">
+                        A
+                    </div>
+                    <div>
+                        <h2 id="modal-nombre" class="text-2xl font-bold">Cargando...</h2>
+                        <p class="text-blue-100 text-sm">ID: <span id="modal-id">---</span></p>
+                    </div>
+                </div>
+                <button onclick="cerrarModal()" class="p-2 hover:bg-white/20 rounded-lg transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Score y metadata -->
+            <div class="px-8 py-6 bg-gray-50 border-b border-gray-200">
+                <div class="grid grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <p class="text-sm text-gray-600 mb-2">Score IA</p>
+                        <div class="relative inline-block">
+                            <svg class="w-24 h-24 transform -rotate-90">
+                                <circle cx="48" cy="48" r="40" stroke="#e5e7eb" stroke-width="8" fill="none"/>
+                                <circle id="modal-score-circle" cx="48" cy="48" r="40" stroke="#3b82f6" stroke-width="8" fill="none"
+                                    stroke-dasharray="251.2" stroke-dashoffset="0" class="transition-all duration-1000"/>
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span id="modal-score-text" class="text-2xl font-bold text-gray-900">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 mb-2">Cargo</p>
+                        <p id="modal-cargo" class="font-semibold text-gray-900">---</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 mb-2">Veredicto</p>
+                        <span id="modal-veredicto-badge" class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                            <span id="modal-tag">🟡</span>
+                            <span id="modal-veredicto">---</span>
+                        </span>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 mb-2">Fecha</p>
+                        <p id="modal-fecha" class="font-semibold text-gray-900">---</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contenido scrolleable -->
+            <div class="overflow-y-auto max-h-[60vh] custom-scrollbar">
+                <!-- Resumen ejecutivo -->
+                <div class="px-8 py-6 border-b border-gray-200">
+                    <div class="flex items-center gap-2 mb-3">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <h3 class="text-lg font-bold text-gray-900">Resumen Ejecutivo</h3>
+                    </div>
+                    <p id="modal-resumen" class="text-gray-700 leading-relaxed">Cargando análisis...</p>
+                </div>
+
+                <!-- Fortalezas -->
+                <div class="px-8 py-6 bg-green-50 border-b border-gray-200">
+                    <div class="flex items-center gap-2 mb-4">
+                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <h3 class="text-lg font-bold text-green-900">Fortalezas</h3>
+                    </div>
+                    <ul id="modal-fortalezas" class="space-y-2">
+                        <li class="flex items-start gap-2 text-green-800">
+                            <span class="text-green-600 mt-1">•</span>
+                            <span>Cargando...</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Riesgos -->
+                <div class="px-8 py-6 bg-yellow-50 border-b border-gray-200">
+                    <div class="flex items-center gap-2 mb-4">
+                        <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        <h3 class="text-lg font-bold text-yellow-900">Riesgos / Debilidades</h3>
+                    </div>
+                    <ul id="modal-riesgos" class="space-y-2">
+                        <li class="flex items-start gap-2 text-yellow-800">
+                            <span class="text-yellow-600 mt-1">•</span>
+                            <span>Cargando...</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Respuestas detalladas -->
+                <div class="px-8 py-6">
+                    <div class="flex items-center gap-2 mb-4">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                        <h3 class="text-lg font-bold text-gray-900">Respuestas Detalladas</h3>
+                    </div>
+                    <div id="modal-respuestas" class="space-y-3">
+                        <p class="text-gray-500">Cargando respuestas...</p>
+                    </div>
+                </div>
+
+                <!-- Recomendación final -->
+                <div class="px-8 py-6 bg-blue-50 border-t border-gray-200">
+                    <div class="flex items-center gap-2 mb-3">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                        <h3 class="text-lg font-bold text-blue-900">Recomendación</h3>
+                    </div>
+                    <p id="modal-recomendacion" class="text-blue-800 font-medium">---</p>
+                </div>
+            </div>
+
+            <!-- Footer con acciones -->
+            <div class="px-8 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+                <p class="text-xs text-gray-500">
+                    <span class="font-medium">Método:</span> <span id="modal-metodo">Evaluación lógica automatizada</span>
+                </p>
+                <div class="flex items-center gap-3">
+                    <button onclick="cerrarModal()" class="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg font-medium transition">
+                        Cerrar
+                    </button>
+                    <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+                        </svg>
+                        Descargar PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Función para abrir el modal y cargar datos
+        function verAnalisis(candidatoId) {
+            // Mostrar modal inmediatamente
+            document.getElementById('modal-analisis').classList.remove('hidden');
+            
+            // Fetch de datos
+            fetch(`/api/candidato/${candidatoId}`)
+                .then(res => res.json())
+                .then(data => {
+                    // Avatar con inicial
+                    const inicial = data.nombre.charAt(0).toUpperCase();
+                    document.getElementById('modal-avatar').textContent = inicial;
+                    
+                    // Datos básicos
+                    document.getElementById('modal-nombre').textContent = data.nombre;
+                    document.getElementById('modal-id').textContent = data.identificacion;
+                    document.getElementById('modal-cargo').textContent = data.cargo;
+                    document.getElementById('modal-fecha').textContent = data.fecha;
+                    
+                    // Score con animación circular
+                    const score = data.score;
+                    const circumference = 251.2; // 2 * π * 40
+                    const offset = circumference - (score / 100) * circumference;
+                    document.getElementById('modal-score-text').textContent = score + '%';
+                    document.getElementById('modal-score-circle').style.strokeDashoffset = offset;
+                    
+                    // Color del círculo según score
+                    const circulo = document.getElementById('modal-score-circle');
+                    if (score >= 75) circulo.style.stroke = '#10b981'; // Verde
+                    else if (score >= 40) circulo.style.stroke = '#f59e0b'; // Amarillo
+                    else circulo.style.stroke = '#ef4444'; // Rojo
+                    
+                    // Veredicto con color
+                    document.getElementById('modal-tag').textContent = data.tag;
+                    document.getElementById('modal-veredicto').textContent = data.veredicto;
+                    
+                    const badge = document.getElementById('modal-veredicto-badge');
+                    badge.className = 'inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium';
+                    if (data.veredicto.includes('RECOMENDADO')) {
+                        badge.classList.add('bg-green-100', 'text-green-800');
+                    } else if (data.veredicto.includes('REVISAR')) {
+                        badge.classList.add('bg-yellow-100', 'text-yellow-800');
+                    } else {
+                        badge.classList.add('bg-red-100', 'text-red-800');
+                    }
+                    
+                    // Análisis
+                    const analisis = data.analisis;
+                    document.getElementById('modal-resumen').textContent = analisis.resumen || 'Sin análisis disponible';
+                    document.getElementById('modal-recomendacion').textContent = analisis.recomendacion || 'Validar manualmente';
+                    document.getElementById('modal-metodo').textContent = analisis.metodo || 'Evaluación automatizada';
+                    
+                    // Fortalezas
+                    const fortalezasHTML = (analisis.fortalezas || []).map(f => 
+                        `<li class="flex items-start gap-2 text-green-800">
+                            <svg class="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>${f}</span>
+                        </li>`
+                    ).join('');
+                    document.getElementById('modal-fortalezas').innerHTML = fortalezasHTML || '<li class="text-gray-500">Sin fortalezas registradas</li>';
+                    
+                    // Riesgos
+                    const riesgosHTML = (analisis.riesgos || []).map(r => 
+                        `<li class="flex items-start gap-2 text-yellow-800">
+                            <svg class="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>${r}</span>
+                        </li>`
+                    ).join('');
+                    document.getElementById('modal-riesgos').innerHTML = riesgosHTML || '<li class="text-gray-500">Sin riesgos identificados</li>';
+                    
+                    // Respuestas detalladas
+                    const respuestasHTML = (data.respuestas || []).map(r => {
+                        const puntos = r.puntos || 0;
+                        const peso = r.peso || 0;
+                        const porcentaje = peso > 0 ? Math.round((puntos / peso) * 100) : 0;
+                        const esAbierta = r.tipo === 'abierta';
+                        
+                        let colorClase = 'bg-gray-100';
+                        let iconHTML = '';
+                        
+                        if (!esAbierta) {
+                            if (puntos === peso && peso > 0) {
+                                colorClase = 'bg-green-50 border-green-200';
+                                iconHTML = '<span class="text-2xl">✅</span>';
+                            } else if (puntos === 0) {
+                                colorClase = 'bg-red-50 border-red-200';
+                                iconHTML = '<span class="text-2xl">❌</span>';
+                            } else {
+                                colorClase = 'bg-yellow-50 border-yellow-200';
+                                iconHTML = '<span class="text-2xl">⚠️</span>';
+                            }
+                        } else {
+                            colorClase = 'bg-blue-50 border-blue-200';
+                            iconHTML = '<span class="text-2xl">📝</span>';
+                        }
+                        
+                        return `
+                            <div class="border rounded-lg p-4 ${colorClase}">
+                                <div class="flex items-start justify-between gap-4 mb-2">
+                                    <div class="flex-1">
+                                        <p class="font-semibold text-gray-900 mb-1">${r.pregunta}</p>
+                                        <p class="text-gray-700">${r.respuesta}</p>
+                                    </div>
+                                    <div class="text-right flex-shrink-0">
+                                        ${iconHTML}
+                                        ${!esAbierta ? `<p class="text-sm font-bold text-gray-900 mt-1">${puntos}/${peso} pts</p>` : '<p class="text-xs text-gray-500 mt-1">Revisión manual</p>'}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                    document.getElementById('modal-respuestas').innerHTML = respuestasHTML || '<p class="text-gray-500">Sin respuestas registradas</p>';
+                })
+                .catch(err => {
+                    console.error('Error cargando análisis:', err);
+                    document.getElementById('modal-resumen').textContent = 'Error al cargar el análisis';
+                });
+        }
+
+        function cerrarModal() {
+            document.getElementById('modal-analisis').classList.add('hidden');
+        }
+
+        function eliminarCandidato(candidatoId) {
+            if (!confirm('¿Estás seguro de eliminar este candidato?')) return;
+            
+            fetch(`/eliminar_candidato/${candidatoId}`, {
+                method: 'POST'
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error al eliminar');
+                }
+            });
+        }
+
+        // Cerrar modal con tecla ESC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                cerrarModal();
+            }
+        });
+    </script>
+</body>
+</html>

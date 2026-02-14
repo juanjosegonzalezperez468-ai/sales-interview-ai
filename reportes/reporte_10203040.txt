@@ -1,0 +1,25 @@
+==============================================
+       REPORTE TÉCNICO DE RECLUTAMIENTO       
+==============================================
+
+FECHA EVALUACIÓN: 2026-02-02 20:52:37
+CANDIDATO:         CARLOS MARIO RESTREPO
+IDENTIFICACIÓN:    10203040
+PUNTAJE OBTENIDO: 45/100
+VEREDICTO FINAL:  RECHAZADO
+
+----------------------------------------------
+ANÁLISIS DE COMPETENCIAS TÉCNICAS:
+----------------------------------------------
+✅ FORTALEZAS: simetri, estabilidad, latencia, fibra, velocidad
+
+❌ DEBILIDADES: megas, cobertura, navegar, instalacion, beneficio, promocion
+
+----------------------------------------------
+RESUMEN EJECUTIVO: El candidato domina 5 conceptos clave.
+----------------------------------------------
+
+ENTREVISTA ORIGINAL:
+"Nuestra solución de fibra óptica se diferencia por ofrecer una latencia mínima ideal para aplicaciones críticas. Además, contamos con simetría total, lo que garantiza la misma velocidad de subida y bajada, operando bajo un modelo de reuso exclusivo para empresas que asegura estabilidad constante."
+
+Generado por: Sales AI Corporate System
