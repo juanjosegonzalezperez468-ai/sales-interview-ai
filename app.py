@@ -29,7 +29,7 @@ supabase: Client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_
 
 # --- MODELOS ---
 #class Empresa(db.Model):
-    __tablename__ = 'empresas'
+    # __tablename__ = 'empresas'
     #id = db.Column(UUID(as_uuid=True), primary_key=True)
     #nombre_empresa = db.Column(db.Text, nullable=False)
     #pais = db.Column(db.Text)
@@ -795,4 +795,5 @@ def api_candidato(id):
     })
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 10000))
+    app.run(host='0.0.0.0', port=port, debug=False)

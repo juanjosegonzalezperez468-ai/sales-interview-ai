@@ -68,7 +68,7 @@ print("=" * 50)
 
 try:
     import socket
-    host = "db.haifwpumfswqbsvcrxkx.supabase.co"
+    #host = "db.haifwpumfswqbsvcrxkx.supabase.co"
     ip = socket.gethostbyname(host)
     print(f"✅ Host {host} resuelto a IP: {ip}")
 except socket.gaierror:
