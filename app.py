@@ -333,6 +333,10 @@ def dashboard():
         session.clear()
         return redirect(url_for('login'))
 
+# ============================================
+# GESTIÓN DE VACANTES
+# ============================================
+
 @app.route('/gestionar_vacantes')
 def gestionar_vacantes():
     if not session.get('logeado'): 
@@ -428,6 +432,147 @@ def vacante_lista(id_publico):
     except Exception as e:
         return f"Error: {e}", 500
 
+@app.route('/editar_vacante/<id_publico>', methods=['GET', 'POST'])
+def editar_vacante(id_publico):
+    """Editar una vacante existente"""
+    if not session.get('logeado'): 
+        return redirect(url_for('login'))
+    
+    try:
+        result = supabase.table('vacantes').select('*').eq('id_vacante_publico', id_publico).execute()
+        
+        if not result.data:
+            return "Vacante no encontrada", 404
+        
+        v = result.data[0]
+        
+        # Verificar que pertenece a la empresa del usuario
+        emp_id_str = session.get('empresa_id')
+        if v['empresa_id'] != emp_id_str:
+            return "No autorizado", 403
+
+        if request.method == 'POST':
+            # Actualizar la vacante
+            cargo = request.form.get('cargo')
+            
+            ids = request.form.getlist('p_id[]')
+            textos = request.form.getlist('p_texto[]')
+            tipos = request.form.getlist('p_tipo[]')
+            pesos = request.form.getlist('p_peso[]')
+            reglas = request.form.getlist('p_regla[]')
+            kos = request.form.getlist('p_ko[]')
+
+            nuevas_preguntas = []
+            for i in range(len(textos)):
+                regla_obj = {}
+                
+                if tipos[i] == "si_no":
+                    regla_obj = {"ideal": reglas[i]}
+                elif tipos[i] == "multiple":
+                    regla_obj = {"ideal": reglas[i]}
+                else:  # abierta
+                    regla_obj = {"palabras_clave": reglas[i]}
+                
+                nuevas_preguntas.append({
+                    "id": ids[i] if i < len(ids) else f"q{i+1}",
+                    "texto": textos[i],
+                    "tipo": tipos[i],
+                    "peso": int(pesos[i]) if pesos[i] else 0,
+                    "knockout": str(i) in kos,
+                    "reglas": regla_obj
+                })
+            
+            # Actualizar en Supabase
+            supabase.table('vacantes').update({
+                "cargo": cargo,
+                "preguntas": nuevas_preguntas
+            }).eq('id_vacante_publico', id_publico).execute()
+            
+            logger.info(f"✅ Vacante actualizada: {id_publico}")
+            return redirect(url_for('gestionar_vacantes'))
+
+        # GET - Mostrar formulario de edición
+        return render_template('editar_vacante.html', vacante=v)
+        
+    except Exception as e:
+        logger.error(f"Error editando vacante: {e}")
+        return f"Error: {e}", 500
+
+@app.route('/marketplace')
+def marketplace():
+    if not session.get('logeado'): 
+        return redirect(url_for('login'))
+    return render_template('marketplace.html')
+
+@app.route('/clonar_plantilla/<plantilla_id>')
+def clonar_plantilla(plantilla_id):
+    """Clonar una plantilla del marketplace"""
+    if not session.get('logeado'): 
+        return redirect(url_for('login'))
+    
+    # Biblioteca de plantillas
+    biblioteca = {
+        'operativo_express': {
+            'cargo': 'Filtro Express (Operativo)',
+            'preguntas': [
+                {"id": "q1", "texto": "¿Vives en la ciudad de la vacante?", "tipo": "si_no", "peso": 10, "knockout": True, "reglas": {"ideal": "si"}},
+                {"id": "q2", "texto": "¿Tienes disponibilidad para viajar?", "tipo": "si_no", "peso": 5, "knockout": False, "reglas": {"ideal": "si"}},
+                {"id": "q3", "texto": "¿Tienes experiencia en el cargo?", "tipo": "si_no", "peso": 15, "knockout": True, "reglas": {"ideal": "si"}},
+                {"id": "q4", "texto": "¿Dispones del horario requerido?", "tipo": "si_no", "peso": 10, "knockout": True, "reglas": {"ideal": "si"}},
+                {"id": "q5", "texto": "¿Aceptas el salario ofrecido?", "tipo": "si_no", "peso": 10, "knockout": True, "reglas": {"ideal": "si"}},
+                {"id": "q6", "texto": "Describe brevemente tu última función", "tipo": "abierta", "peso": 0, "knockout": False, "reglas": {}},
+                {"id": "q7", "texto": "¿Tienes documentos al día?", "tipo": "si_no", "peso": 5, "knockout": False, "reglas": {"ideal": "si"}},
+                {"id": "q8", "texto": "¿Cuándo puedes iniciar?", "tipo": "abierta", "peso": 0, "knockout": False, "reglas": {}}
+            ]
+        },
+        'comercial_ventas': {
+            'cargo': 'Ventas Retail / Campo',
+            'preguntas': [
+                {"id": "q1", "texto": "¿Tienes experiencia previa en ventas?", "tipo": "si_no", "peso": 20, "knockout": True, "reglas": {"ideal": "si"}},
+                {"id": "q2", "texto": "¿Cuentas con vehículo propio?", "tipo": "si_no", "peso": 15, "knockout": False, "reglas": {"ideal": "si"}},
+                {"id": "q3", "texto": "Describe tu logro comercial más relevante", "tipo": "abierta", "peso": 0, "knockout": False, "reglas": {}},
+                {"id": "q4", "texto": "¿Disponibilidad para viajar?", "tipo": "si_no", "peso": 10, "knockout": False, "reglas": {"ideal": "si"}},
+                {"id": "q5", "texto": "¿Has cumplido cuotas de ventas?", "tipo": "si_no", "peso": 20, "knockout": True, "reglas": {"ideal": "si"}},
+                {"id": "q6", "texto": "¿Cuándo puedes iniciar?", "tipo": "abierta", "peso": 0, "knockout": False, "reglas": {}}
+            ]
+        },
+        'tecnico_campo': {
+            'cargo': 'Técnico de Campo',
+            'preguntas': [
+                {"id": "q1", "texto": "¿Tienes certificación técnica vigente?", "tipo": "si_no", "peso": 25, "knockout": True, "reglas": {"ideal": "si"}},
+                {"id": "q2", "texto": "¿Cuentas con herramientas propias?", "tipo": "si_no", "peso": 15, "knockout": False, "reglas": {"ideal": "si"}},
+                {"id": "q3", "texto": "¿Tienes licencia de conducción?", "tipo": "si_no", "peso": 20, "knockout": True, "reglas": {"ideal": "si"}},
+                {"id": "q4", "texto": "Describe tu experiencia técnica", "tipo": "abierta", "peso": 0, "knockout": False, "reglas": {}},
+                {"id": "q5", "texto": "¿Disponibilidad para trabajo en alturas?", "tipo": "si_no", "peso": 10, "knockout": False, "reglas": {"ideal": "si"}}
+            ]
+        }
+    }
+
+    datos = biblioteca.get(plantilla_id)
+    if not datos:
+        return "Plantilla no encontrada", 404
+
+    emp_id_str = session.get('empresa_id')
+    id_publico = f"JOB-{plantilla_id.upper()[:3]}-{int(time.time())}"
+
+    nueva_vacante = {
+        "id": str(uuid.uuid4()),
+        "cargo": datos['cargo'],
+        "id_vacante_publico": id_publico,
+        "empresa_id": emp_id_str,
+        "preguntas": datos['preguntas'],
+        "activa": True,
+        "created_at": datetime.utcnow().isoformat()
+    }
+    
+    try:
+        supabase.table('vacantes').insert(nueva_vacante).execute()
+        logger.info(f"✅ Plantilla clonada: {id_publico}")
+        return redirect(url_for('vacante_lista', id_publico=id_publico))
+    except Exception as e:
+        logger.error(f"Error clonando plantilla: {e}")
+        return f"Error: {e}", 500
+
 # ============================================
 # AUTH - LOGIN CON EMAIL/PASSWORD Y GOOGLE OAUTH
 # ============================================
@@ -475,14 +620,12 @@ def login():
                                  supabase_url=os.getenv('SUPABASE_URL'),
                                  supabase_key=os.getenv('SUPABASE_KEY'))
 
-    # GET request - mostrar formulario con credenciales de Supabase
     return render_template('login.html', 
                          error=None,
                          supabase_url=os.getenv('SUPABASE_URL'),
                          supabase_key=os.getenv('SUPABASE_KEY'))
 
 
-# NUEVA RUTA: Callback de Google OAuth
 @app.route('/auth/google/callback')
 def google_callback():
     """Maneja el callback de Google OAuth usando JavaScript"""
@@ -589,7 +732,6 @@ def google_callback():
         return redirect(url_for('login'))
 
 
-# NUEVA RUTA: Sincronizar usuario de Google con BD
 @app.route('/auth/google/sync', methods=['POST'])
 def google_sync():
     """Crea o actualiza el usuario en la base de datos después de autenticarse con Google"""
@@ -744,6 +886,33 @@ def registro():
 
     return render_template('registro.html')
 
+@app.route('/eliminar_candidato/<id>', methods=['POST'])
+def eliminar_candidato(id):
+    """Eliminar un candidato"""
+    if not session.get('logeado'): 
+        return jsonify({"success": False, "error": "No autorizado"}), 401
+    
+    emp_id_str = session.get('empresa_id')
+    
+    try:
+        candidato_result = supabase.table('entrevistas').select('*').eq('id', id).execute()
+        
+        if not candidato_result.data:
+            return jsonify({"success": False, "error": "Candidato no encontrado"}), 404
+        
+        candidato = candidato_result.data[0]
+        
+        if candidato['empresa_id'] != emp_id_str:
+            return jsonify({"success": False, "error": "No autorizado"}), 403
+        
+        supabase.table('entrevistas').delete().eq('id', id).execute()
+        logger.info(f"✅ Candidato eliminado: {id}")
+        return jsonify({"success": True})
+        
+    except Exception as e:
+        logger.error(f"Error eliminando candidato: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.route('/logout')
 def logout():
     session.clear()
@@ -797,4 +966,4 @@ def api_candidato(id):
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(host='0.0.0.0', port=port, debug=False)
