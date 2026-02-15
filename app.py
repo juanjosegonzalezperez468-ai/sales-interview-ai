@@ -5,7 +5,7 @@ import logging
 import uuid
 from datetime import datetime
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, render_template_string
 from supabase import create_client, Client
 
 # Configurar logging
@@ -123,7 +123,6 @@ def index():
         return "<h1>Link incompleto</h1>", 400
 
     try:
-        # Buscar vacante en Supabase
         result = supabase.table('vacantes').select('*').eq('id_vacante_publico', id_seleccionada).execute()
         
         if not result.data:
@@ -158,7 +157,6 @@ def procesar():
     cc = request.form.get('cc')
 
     try:
-        # Buscar vacante
         result = supabase.table('vacantes').select('*').eq('id_vacante_publico', id_publico).execute()
         
         if not result.data:
@@ -171,7 +169,6 @@ def procesar():
         
         logger.info(f"🎯 Procesando candidato: {nombre} para cargo: {v['cargo']}")
         
-        # CÁLCULO DE PESO TOTAL
         peso_total_posible = sum(
             float(p.get('peso', 0)) 
             for p in v['preguntas'] 
@@ -185,7 +182,6 @@ def procesar():
         motivo_descarte = ""
         detalle = []
 
-        # BUCLE DE CALIFICACIÓN
         for i in range(len(ids_q)):
             p_orig = next((p for p in v['preguntas'] if p['id'] == ids_q[i]), None)
             if not p_orig: 
@@ -224,7 +220,6 @@ def procesar():
                 "tipo": tipo
             })
         
-        # CALCULAR SCORE FINAL
         if peso_total_posible == 0:
             score_final = 0
         else:
@@ -234,7 +229,6 @@ def procesar():
         
         logger.info(f"💯 Score final: {score_final}%")
 
-        # GENERAR RESUMEN
         analisis_json = generar_resumen_profesional(
             cargo=v['cargo'],
             score_final=score_final,
@@ -243,7 +237,6 @@ def procesar():
             motivo_ko=motivo_descarte
         )
 
-        # DETERMINAR VEREDICTO
         if hubo_ko:
             veredicto = "DESCARTADO (KO)"
             tag = "🔴"
@@ -257,7 +250,6 @@ def procesar():
             veredicto = "NO APTO"
             tag = "🔴"
 
-        # GUARDAR EN SUPABASE
         nueva_entrevista = {
             "id": str(uuid.uuid4()),
             "vacante_id": v['id'],
@@ -295,25 +287,21 @@ def dashboard():
     emp_id_str = session.get('empresa_id')
     
     try:
-        # Obtener usuario
         usuario_result = supabase.table('usuarios_empresa').select('*').eq('id', user_id).execute()
         if not usuario_result.data:
             session.clear()
             return redirect(url_for('login'))
         usuario = usuario_result.data[0]
         
-        # Obtener empresa
         empresa_result = supabase.table('empresas').select('*').eq('id', emp_id_str).execute()
         if not empresa_result.data:
             session.clear()
             return redirect(url_for('login'))
         empresa = empresa_result.data[0]
         
-        # Obtener vacantes
         vacantes_result = supabase.table('vacantes').select('*').eq('empresa_id', emp_id_str).execute()
         vacantes = vacantes_result.data
         
-        # Obtener entrevistas
         entrevistas_result = supabase.table('entrevistas').select('*').eq('empresa_id', emp_id_str).order('fecha', desc=True).execute()
         resultados = entrevistas_result.data
         
@@ -441,7 +429,7 @@ def vacante_lista(id_publico):
         return f"Error: {e}", 500
 
 # ============================================
-# AUTH
+# AUTH - LOGIN CON EMAIL/PASSWORD Y GOOGLE OAUTH
 # ============================================
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -457,13 +445,11 @@ def login():
             })
             
             if res.user:
-                # Buscar usuario en la tabla
                 usuario_result = supabase.table('usuarios_empresa').select('*').eq('id', res.user.id).execute()
                 
                 if usuario_result.data:
                     u_db = usuario_result.data[0]
                     
-                    # Buscar empresa
                     empresa_result = supabase.table('empresas').select('*').eq('id', u_db['empresa_id']).execute()
                     nombre_empresa = empresa_result.data[0]['nombre_empresa'] if empresa_result.data else "Mi Empresa"
                     
@@ -477,119 +463,210 @@ def login():
                     logger.info(f"✅ Login: {email}")
                     return redirect(url_for('dashboard'))
                 else:
-                    return render_template('login.html', error="Usuario no vinculado.")
+                    return render_template('login.html', 
+                                         error="Usuario no vinculado.",
+                                         supabase_url=os.getenv('SUPABASE_URL'),
+                                         supabase_key=os.getenv('SUPABASE_KEY'))
                     
         except Exception as e: 
             logger.error(f"❌ Login error: {e}")
-            return render_template('login.html', error="Credenciales incorrectas.")
+            return render_template('login.html', 
+                                 error="Credenciales incorrectas.",
+                                 supabase_url=os.getenv('SUPABASE_URL'),
+                                 supabase_key=os.getenv('SUPABASE_KEY'))
 
-    return render_template('login.html', error=None)
+    # GET request - mostrar formulario con credenciales de Supabase
+    return render_template('login.html', 
+                         error=None,
+                         supabase_url=os.getenv('SUPABASE_URL'),
+                         supabase_key=os.getenv('SUPABASE_KEY'))
 
-@app.route('/login/google')
-def login_google():
-    """Inicia el flujo de Google OAuth"""
+
+# NUEVA RUTA: Callback de Google OAuth
+@app.route('/auth/google/callback')
+def google_callback():
+    """Maneja el callback de Google OAuth usando JavaScript"""
     try:
-        redirect_url = f"{request.url_root}auth/callback"
-        response = supabase.auth.sign_in_with_oauth({
-            "provider": "google",
-            "options": {
-                "redirect_to": redirect_url
-            }
-        })
-        return redirect(response.url)
-    except Exception as e:
-        logger.error(f"❌ Error Google OAuth: {e}")
-        return redirect(url_for('login'))
-
-@app.route('/auth/callback')
-def auth_callback():
-    """Maneja el callback de Google"""
-    try:
-        code = request.args.get('code')
-        
-        if code:
-            # Intercambiar código por sesión
-            session_data = supabase.auth.exchange_code_for_session({"auth_code": code})
+        callback_html = '''
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Autenticando...</title>
+            <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+            <style>
+                body {
+                    font-family: 'Inter', sans-serif;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    height: 100vh;
+                    margin: 0;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                }
+                .loader {
+                    text-align: center;
+                    color: white;
+                }
+                .spinner {
+                    border: 4px solid rgba(255,255,255,0.3);
+                    border-radius: 50%;
+                    border-top-color: white;
+                    width: 50px;
+                    height: 50px;
+                    animation: spin 1s linear infinite;
+                    margin: 0 auto 20px;
+                }
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="loader">
+                <div class="spinner"></div>
+                <h2>Iniciando sesión...</h2>
+                <p>Espera un momento</p>
+            </div>
             
-            if session_data and session_data.user:
-                user = session_data.user
-                logger.info(f"✅ Usuario Google autenticado: {user.email}")
+            <script>
+                const SUPABASE_URL = '{{ supabase_url }}';
+                const SUPABASE_KEY = '{{ supabase_key }}';
                 
-                # Buscar usuario en Supabase
-                usuario_result = supabase.table('usuarios_empresa').select('*').eq('id', user.id).execute()
+                const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
                 
-                # Si no existe, crear empresa y usuario
-                if not usuario_result.data:
-                    logger.info(f"🆕 Creando nuevo usuario: {user.email}")
-                    
-                    empresa_uuid = str(uuid.uuid4())
-                    
-                    # Crear empresa
-                    nueva_empresa = {
-                        "id": empresa_uuid,
-                        "nombre_empresa": user.email.split('@')[0].capitalize(),
-                        "pais": "Colombia",
-                        "industria": "Tecnología",
-                        "tamano": "1-10",
-                        "created_at": datetime.utcnow().isoformat()
+                async function handleCallback() {
+                    try {
+                        const { data: { session }, error } = await supabase.auth.getSession();
+                        
+                        if (error) throw error;
+                        
+                        if (session && session.user) {
+                            console.log('Usuario autenticado:', session.user.email);
+                            
+                            const response = await fetch('/auth/google/sync', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    user_id: session.user.id,
+                                    email: session.user.email,
+                                    full_name: session.user.user_metadata.full_name || session.user.email,
+                                    access_token: session.access_token
+                                })
+                            });
+                            
+                            const result = await response.json();
+                            
+                            if (result.success) {
+                                window.location.href = '/dashboard';
+                            } else {
+                                alert('Error al sincronizar usuario: ' + result.error);
+                                window.location.href = '/login';
+                            }
+                        } else {
+                            throw new Error('No se pudo obtener la sesión');
+                        }
+                    } catch (error) {
+                        console.error('Error en callback:', error);
+                        alert('Error al iniciar sesión: ' + error.message);
+                        window.location.href = '/login';
                     }
-                    supabase.table('empresas').insert(nueva_empresa).execute()
-                    
-                    # Crear usuario
-                    nuevo_usuario = {
-                        "id": user.id,
-                        "email": user.email,
-                        "nombre_completo": user.user_metadata.get('full_name', user.email),
-                        "empresa_id": empresa_uuid,
-                        "rol_en_empresa": 'admin'
-                    }
-                    supabase.table('usuarios_empresa').insert(nuevo_usuario).execute()
-                    
-                    # Crear vacante de ejemplo
-                    id_v_publico = f"JOB-{int(time.time())}"
-                    preguntas_base = [
-                        {"id": "q1", "texto": "¿Tienes experiencia previa en ventas?", "tipo": "si_no", "peso": 20, "knockout": True, "reglas": {"ideal": "si"}},
-                        {"id": "q2", "texto": "¿Cuentas con vehículo propio?", "tipo": "si_no", "peso": 15, "knockout": False, "reglas": {"ideal": "si"}},
-                        {"id": "q3", "texto": "¿Disponibilidad para viajar?", "tipo": "si_no", "peso": 10, "knockout": False, "reglas": {"ideal": "si"}},
-                        {"id": "q4", "texto": "Describe tu logro comercial", "tipo": "abierta", "peso": 0, "knockout": False, "reglas": {}},
-                        {"id": "q5", "texto": "¿Cuándo puedes iniciar?", "tipo": "abierta", "peso": 0, "knockout": False, "reglas": {}}
-                    ]
-                    primera_vacante = {
-                        "id": str(uuid.uuid4()),
-                        "cargo": "Asesor Comercial",
-                        "id_vacante_publico": id_v_publico,
-                        "empresa_id": empresa_uuid,
-                        "preguntas": preguntas_base,
-                        "activa": True,
-                        "created_at": datetime.utcnow().isoformat()
-                    }
-                    supabase.table('vacantes').insert(primera_vacante).execute()
-                    
-                    u_db = nuevo_usuario
-                else:
-                    u_db = usuario_result.data[0]
+                }
                 
-                # Buscar empresa
-                empresa_result = supabase.table('empresas').select('*').eq('id', u_db['empresa_id']).execute()
-                nombre_empresa = empresa_result.data[0]['nombre_empresa'] if empresa_result.data else "Mi Empresa"
-                
-                # Establecer sesión
-                session.update({
-                    'logeado': True,
-                    'user_id': user.id,
-                    'empresa_id': str(u_db['empresa_id']),
-                    'nombre_empresa': nombre_empresa
-                })
-                
-                logger.info(f"✅ Sesión Google establecida: {user.email}")
-                return redirect(url_for('dashboard'))
+                handleCallback();
+            </script>
+        </body>
+        </html>
+        '''
         
-        logger.error("❌ No se recibió código")
-        return redirect(url_for('login'))
+        return render_template_string(callback_html,
+                                    supabase_url=os.getenv('SUPABASE_URL'),
+                                    supabase_key=os.getenv('SUPABASE_KEY'))
         
     except Exception as e:
-        logger.error(f"❌ Error callback Google: {e}")
+        logger.error(f"❌ Error en callback: {e}")
         return redirect(url_for('login'))
+
+
+# NUEVA RUTA: Sincronizar usuario de Google con BD
+@app.route('/auth/google/sync', methods=['POST'])
+def google_sync():
+    """Crea o actualiza el usuario en la base de datos después de autenticarse con Google"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        email = data.get('email')
+        full_name = data.get('full_name')
+        
+        if not user_id or not email:
+            return jsonify({"success": False, "error": "Datos incompletos"}), 400
+        
+        usuario_result = supabase.table('usuarios_empresa').select('*').eq('id', user_id).execute()
+        
+        if not usuario_result.data:
+            logger.info(f"🆕 Creando nuevo usuario Google: {email}")
+            
+            empresa_uuid = str(uuid.uuid4())
+            nombre_base = email.split('@')[0].replace('.', ' ').title()
+            
+            nueva_empresa = {
+                "id": empresa_uuid,
+                "nombre_empresa": f"{nombre_base} Company",
+                "pais": "Colombia",
+                "industria": "Tecnología",
+                "tamano": "1-10",
+                "created_at": datetime.utcnow().isoformat()
+            }
+            supabase.table('empresas').insert(nueva_empresa).execute()
+            
+            nuevo_usuario = {
+                "id": user_id,
+                "email": email,
+                "nombre_completo": full_name,
+                "empresa_id": empresa_uuid,
+                "rol_en_empresa": 'admin'
+            }
+            supabase.table('usuarios_empresa').insert(nuevo_usuario).execute()
+            
+            id_v_publico = f"JOB-{int(time.time())}"
+            preguntas_base = [
+                {"id": "q1", "texto": "¿Tienes experiencia previa en ventas?", "tipo": "si_no", "peso": 20, "knockout": True, "reglas": {"ideal": "si"}},
+                {"id": "q2", "texto": "¿Cuentas con vehículo propio?", "tipo": "si_no", "peso": 15, "knockout": False, "reglas": {"ideal": "si"}},
+                {"id": "q3", "texto": "Describe tu logro comercial", "tipo": "abierta", "peso": 0, "knockout": False, "reglas": {}},
+            ]
+            primera_vacante = {
+                "id": str(uuid.uuid4()),
+                "cargo": "Asesor Comercial",
+                "id_vacante_publico": id_v_publico,
+                "empresa_id": empresa_uuid,
+                "preguntas": preguntas_base,
+                "activa": True,
+                "created_at": datetime.utcnow().isoformat()
+            }
+            supabase.table('vacantes').insert(primera_vacante).execute()
+            
+            u_db = {"empresa_id": empresa_uuid, "nombre_completo": full_name}
+        else:
+            u_db = usuario_result.data[0]
+        
+        empresa_result = supabase.table('empresas').select('*').eq('id', u_db['empresa_id']).execute()
+        nombre_empresa = empresa_result.data[0]['nombre_empresa'] if empresa_result.data else "Mi Empresa"
+        
+        session.update({
+            'logeado': True,
+            'user_id': user_id,
+            'empresa_id': str(u_db['empresa_id']),
+            'nombre_empresa': nombre_empresa
+        })
+        
+        logger.info(f"✅ Usuario Google sincronizado: {email}")
+        return jsonify({"success": True})
+        
+    except Exception as e:
+        logger.error(f"❌ Error sincronizando Google: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 
 @app.route('/registro', methods=['GET', 'POST'])
 def registro():
@@ -604,14 +681,12 @@ def registro():
         cargo_inicial = request.form.get('cargo_inicial')
 
         try:
-            # Registrar en Supabase Auth
             auth_res = supabase.auth.sign_up({"email": email, "password": password})
             
             if auth_res.user:
                 user_id = auth_res.user.id
                 empresa_uuid = str(uuid.uuid4())
                 
-                # Crear empresa
                 nueva_empresa = {
                     "id": empresa_uuid,
                     "nombre_empresa": nombre_empresa,
@@ -622,7 +697,6 @@ def registro():
                 }
                 supabase.table('empresas').insert(nueva_empresa).execute()
 
-                # Crear usuario
                 nuevo_usuario = {
                     "id": user_id,
                     "email": email,
@@ -632,7 +706,6 @@ def registro():
                 }
                 supabase.table('usuarios_empresa').insert(nuevo_usuario).execute()
 
-                # Crear primera vacante
                 cargo_display = cargo_inicial if cargo_inicial else "Asesor Comercial"
                 id_v_publico = f"JOB-{int(time.time())}"
                 
@@ -690,16 +763,13 @@ def api_candidato(id):
         
         candidato = candidato_result.data[0]
         
-        # Verificar empresa
         emp_id_str = session.get('empresa_id')
         if candidato['empresa_id'] != emp_id_str:
             return jsonify({"error": "No autorizado"}), 403
         
-        # Obtener vacante
         vacante_result = supabase.table('vacantes').select('*').eq('id', candidato['vacante_id']).execute()
         cargo = vacante_result.data[0]['cargo'] if vacante_result.data else "N/A"
         
-        # Parsear análisis
         try:
             analisis = json.loads(candidato['analisis_ia'])
         except:
