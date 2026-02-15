@@ -485,6 +485,112 @@ def login():
 
     return render_template('login.html', error=None)
 
+@app.route('/login/google')
+def login_google():
+    """Inicia el flujo de Google OAuth"""
+    try:
+        redirect_url = f"{request.url_root}auth/callback"
+        response = supabase.auth.sign_in_with_oauth({
+            "provider": "google",
+            "options": {
+                "redirect_to": redirect_url
+            }
+        })
+        return redirect(response.url)
+    except Exception as e:
+        logger.error(f"❌ Error Google OAuth: {e}")
+        return redirect(url_for('login'))
+
+@app.route('/auth/callback')
+def auth_callback():
+    """Maneja el callback de Google"""
+    try:
+        code = request.args.get('code')
+        
+        if code:
+            # Intercambiar código por sesión
+            session_data = supabase.auth.exchange_code_for_session({"auth_code": code})
+            
+            if session_data and session_data.user:
+                user = session_data.user
+                logger.info(f"✅ Usuario Google autenticado: {user.email}")
+                
+                # Buscar usuario en Supabase
+                usuario_result = supabase.table('usuarios_empresa').select('*').eq('id', user.id).execute()
+                
+                # Si no existe, crear empresa y usuario
+                if not usuario_result.data:
+                    logger.info(f"🆕 Creando nuevo usuario: {user.email}")
+                    
+                    empresa_uuid = str(uuid.uuid4())
+                    
+                    # Crear empresa
+                    nueva_empresa = {
+                        "id": empresa_uuid,
+                        "nombre_empresa": user.email.split('@')[0].capitalize(),
+                        "pais": "Colombia",
+                        "industria": "Tecnología",
+                        "tamano": "1-10",
+                        "created_at": datetime.utcnow().isoformat()
+                    }
+                    supabase.table('empresas').insert(nueva_empresa).execute()
+                    
+                    # Crear usuario
+                    nuevo_usuario = {
+                        "id": user.id,
+                        "email": user.email,
+                        "nombre_completo": user.user_metadata.get('full_name', user.email),
+                        "empresa_id": empresa_uuid,
+                        "rol_en_empresa": 'admin'
+                    }
+                    supabase.table('usuarios_empresa').insert(nuevo_usuario).execute()
+                    
+                    # Crear vacante de ejemplo
+                    id_v_publico = f"JOB-{int(time.time())}"
+                    preguntas_base = [
+                        {"id": "q1", "texto": "¿Tienes experiencia previa en ventas?", "tipo": "si_no", "peso": 20, "knockout": True, "reglas": {"ideal": "si"}},
+                        {"id": "q2", "texto": "¿Cuentas con vehículo propio?", "tipo": "si_no", "peso": 15, "knockout": False, "reglas": {"ideal": "si"}},
+                        {"id": "q3", "texto": "¿Disponibilidad para viajar?", "tipo": "si_no", "peso": 10, "knockout": False, "reglas": {"ideal": "si"}},
+                        {"id": "q4", "texto": "Describe tu logro comercial", "tipo": "abierta", "peso": 0, "knockout": False, "reglas": {}},
+                        {"id": "q5", "texto": "¿Cuándo puedes iniciar?", "tipo": "abierta", "peso": 0, "knockout": False, "reglas": {}}
+                    ]
+                    primera_vacante = {
+                        "id": str(uuid.uuid4()),
+                        "cargo": "Asesor Comercial",
+                        "id_vacante_publico": id_v_publico,
+                        "empresa_id": empresa_uuid,
+                        "preguntas": preguntas_base,
+                        "activa": True,
+                        "created_at": datetime.utcnow().isoformat()
+                    }
+                    supabase.table('vacantes').insert(primera_vacante).execute()
+                    
+                    u_db = nuevo_usuario
+                else:
+                    u_db = usuario_result.data[0]
+                
+                # Buscar empresa
+                empresa_result = supabase.table('empresas').select('*').eq('id', u_db['empresa_id']).execute()
+                nombre_empresa = empresa_result.data[0]['nombre_empresa'] if empresa_result.data else "Mi Empresa"
+                
+                # Establecer sesión
+                session.update({
+                    'logeado': True,
+                    'user_id': user.id,
+                    'empresa_id': str(u_db['empresa_id']),
+                    'nombre_empresa': nombre_empresa
+                })
+                
+                logger.info(f"✅ Sesión Google establecida: {user.email}")
+                return redirect(url_for('dashboard'))
+        
+        logger.error("❌ No se recibió código")
+        return redirect(url_for('login'))
+        
+    except Exception as e:
+        logger.error(f"❌ Error callback Google: {e}")
+        return redirect(url_for('login'))
+
 @app.route('/registro', methods=['GET', 'POST'])
 def registro():
     if request.method == 'POST':
