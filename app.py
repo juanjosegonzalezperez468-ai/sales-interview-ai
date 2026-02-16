@@ -282,28 +282,25 @@ def procesar():
 @app.route('/candidatos')
 def lista_candidatos():
     try:
-        # 1. Traemos los candidatos (donde están Carlos Mario, score_ai, etc.)
-        res_candidatos = supabase.table('entrevistas').select('*').execute()
-        candidatos = res_candidatos.data
+        # Paso 1: Traer datos crudos de entrevistas (solo lo que existe)
+        res = supabase.table('entrevistas').select('*').execute()
+        datos_entrevistas = res.data
         
-        # 2. Traemos la lista de vacantes para saber cómo se llama cada 'vacante_id'
-        res_vacantes = supabase.table('vacantes').select('id, nombre_vacante').execute()
+        # Paso 2: Traer nombres de vacantes por separado
+        res_v = supabase.table('vacantes').select('id, nombre_vacante').execute()
+        dict_vacantes = {v['id']: v['nombre_vacante'] for v in res_v.data}
         
-        # Creamos un "traductor" de ID a Nombre: {1: 'Asesor', 2: 'Dev'}
-        nombres_vacantes = {v['id']: v['nombre_vacante'] for v in res_vacantes.data}
-        
-        # 3. Cruzamos los datos en Python
-        for c in candidatos:
-            # Sacamos el ID de la vacante que tiene el candidato
-            id_v = c.get('vacante_id')
-            # Si el ID existe en nuestro traductor, ponemos el nombre, si no, 'Sin asignar'
-            c['nombre_puesto'] = nombres_vacantes.get(id_v, 'General')
+        # Paso 3: Unir manualmente sin errores de base de datos
+        for candidato in datos_entrevistas:
+            v_id = candidato.get('vacante_id')
+            candidato['nombre_puesto'] = dict_vacantes.get(v_id, 'General')
 
-        return render_template('candidatos.html', candidatos=candidatos)
-        
+        return render_template('candidatos.html', candidatos=datos_entrevistas)
+    
     except Exception as e:
-        print(f"Error técnico: {e}")
-        return f"Error al cargar datos: {e}", 500
+        # Esto nos dirá exactamente qué pasa si falla de nuevo
+        print(f"Error en ruta candidatos: {str(e)}")
+        return f"Error crítico: {str(e)}", 500
 
 # ============================================
 # DASHBOARD
