@@ -282,25 +282,26 @@ def procesar():
 @app.route('/candidatos')
 def lista_candidatos():
     try:
-        # Paso 1: Traer datos crudos de entrevistas (solo lo que existe)
+        # Traemos ABSOLUTAMENTE TODO de la tabla entrevistas
+        # Sin filtros, sin joins, sin nombres de vacantes.
         res = supabase.table('entrevistas').select('*').execute()
-        datos_entrevistas = res.data
         
-        # Paso 2: Traer nombres de vacantes por separado
-        res_v = supabase.table('vacantes').select('id, nombre_vacante').execute()
-        dict_vacantes = {v['id']: v['nombre_vacante'] for v in res_v.data}
+        # Si res.data está vacío, mandamos una lista vacía para que no explote
+        candidatos = res.data if res.data else []
         
-        # Paso 3: Unir manualmente sin errores de base de datos
-        for candidato in datos_entrevistas:
-            v_id = candidato.get('vacante_id')
-            candidato['nombre_puesto'] = dict_vacantes.get(v_id, 'General')
+        # DEBUG: Para que veas en los logs de Render qué columnas detecta Python
+        if candidatos:
+            print(f"Columnas detectadas: {candidatos[0].keys()}")
 
-        return render_template('candidatos.html', candidatos=datos_entrevistas)
+        # Forzamos que 'nombre_puesto' exista para el HTML, aunque sea genérico
+        for c in candidatos:
+            c['nombre_puesto'] = "Candidato Registrado"
+
+        return render_template('candidatos.html', candidatos=candidatos)
     
     except Exception as e:
-        # Esto nos dirá exactamente qué pasa si falla de nuevo
-        print(f"Error en ruta candidatos: {str(e)}")
-        return f"Error crítico: {str(e)}", 500
+        print(f"ERROR EN APP.PY: {str(e)}")
+        return f"Error de conexión: {str(e)}", 500
 
 # ============================================
 # DASHBOARD
