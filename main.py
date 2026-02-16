@@ -5,11 +5,21 @@ import storage.interview_repository as repo
 
 def run_interview_process():
     print("\n" + "═"*50)
-    print("      📊 NUEVA EVALUACIÓN ANALÍTICA V3.0")
+    print("      📊 NUEVA EVALUACIÓN ANALÍTICA V4.0") # Subimos a V4.0 por los nuevos campos
     print("═"*50)
     
+    # 1. CAPTURA DE DATOS BÁSICOS Y DE CONTACTO
     cc = input("CC del candidato: ")
     nombre = input("Nombre completo: ")
+    email = input("Correo electrónico: ")
+    telefono = input("Teléfono (Ej: 573001234567): ")
+    
+    print(f"\nAVISO DE PRIVACIDAD: ¿El candidato {nombre} autoriza el")
+    print("tratamiento de sus datos para contacto directo? (s/n)")
+    autoriza_input = input("> ").lower()
+    autoriza_texto = "SÍ" if autoriza_input == 's' else "NO"
+
+    # 2. CAPTURA DE LA ENTREVISTA
     print(f"\nPegue la entrevista de {nombre}:")
     texto_raw = input("> ")
 
@@ -17,15 +27,17 @@ def run_interview_process():
         print("\n❌ Error: El texto es demasiado corto.")
         return
 
-    # Procesa con el motor nuevo (Punto 3)
+    # Procesa con el motor de IA
     res = evaluar_candidato_motor(texto_raw)
 
-    # IMPRESIÓN COMPLETA EN PANTALLA
+    # 3. IMPRESIÓN COMPLETA EN PANTALLA (Incluimos los nuevos campos)
     print("\n" + "*" * 45)
     print("       📊 RESULTADO DEL ANÁLISIS")
     print("*" * 45)
     print(f" CANDIDATO: {nombre.upper()}")
     print(f" CC:        {cc}")
+    print(f" TELÉFONO:  {telefono}")
+    print(f" AUTORIZA:  {autoriza_texto}")
     print(f" FECHA:     {res.get('fecha_evaluacion')}")
     print(f" PUNTAJE:   {res['score']}/100")
     print(f" VEREDICTO: {res['veredicto']}")
@@ -35,17 +47,23 @@ def run_interview_process():
     print(f" 💡 RESUMEN:    {res.get('resumen_ia')}")
     print("*" * 45)
 
-    # GUARDA TODO EL PAQUETE
+    # 4. PREPARACIÓN DEL PAQUETE PARA SUPABASE
     datos_completos = {
         "cc": cc,
         "nombre": nombre,
-        "vacante_id": 1, # <--- Agrega esto para que no falle la relación
+        "email": email,           # 🆕 Campo nuevo
+        "telefono": telefono,     # 🆕 Campo nuevo
+        "autoriza": autoriza_texto, # 🆕 Campo nuevo
+        "vacante_id": 1, 
         "texto_original": texto_raw,
         **res 
     }
+
+    # 5. GUARDADO
     repo.save_interview(datos_completos)
     repo.export_to_txt(datos_completos)
-    print("\n✅ Registro guardado exitosamente.")
+    
+    print("\n✅ Registro y datos de contacto guardados exitosamente.")
     input("\nPresione ENTER para volver...")
 
 def show_history():

@@ -35,7 +35,8 @@
                 <thead>
                     <tr style="border-bottom: 2px solid var(--gray-200);">
                         <th style="padding: var(--spacing-md); color: var(--gray-700);">CANDIDATO</th>
-                        <th style="padding: var(--spacing-md); color: var(--gray-700);">VACANTE</th>
+                        <th style="padding: var(--spacing-md); color: var(--gray-700);">CONTACTO</th>
+                        <th style="padding: var(--spacing-md); color: var(--gray-700);">AUTORIZA</th>
                         <th style="padding: var(--spacing-md); color: var(--gray-700);">SCORE AI</th>
                         <th style="padding: var(--spacing-md); color: var(--gray-700);">ACCIONES</th>
                     </tr>
@@ -47,18 +48,36 @@
                             <div style="font-weight: 600; color: var(--gray-900);">{{ c.nombre_candidato }}</div>
                             <div style="font-size: 0.85rem; color: var(--gray-500);">ID: {{ c.identificacion }}</div>
                         </td>
-                        <td style="padding: var(--spacing-md); color: var(--gray-600);">
-                            {{ c.nombre_puesto if c.nombre_puesto else "General" }}
+                        
+                        <td style="padding: var(--spacing-md);">
+                            <div style="font-size: 0.9rem; color: var(--gray-700);">{{ c.telefono if c.telefono else 'N/A' }}</div>
+                            <div style="font-size: 0.8rem; color: var(--primary-blue);">{{ c.email if c.email else '' }}</div>
                         </td>
+
+                        <td style="padding: var(--spacing-md);">
+                            {% if c.autoriza_datos == 'SÍ' %}
+                                <span style="color: #065F46; background: #D1FAE5; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">SÍ</span>
+                            {% else %}
+                                <span style="color: #991B1B; background: #FEE2E2; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">NO</span>
+                            {% endif %}
+                        </td>
+                        
                         <td style="padding: var(--spacing-md);">
                             <span class="score-mini {% if c.score|int >= 70 %}high{% elif c.score|int >= 40 %}medium{% else %}low{% endif %}">
                                 {{ c.score if c.score is not none else 0 }}%
                             </span>
                         </td>
+
                         <td style="padding: var(--spacing-md);">
-                            <a href="https://wa.me/{{ c.identificacion }}" class="btn-primary" style="text-decoration: none; padding: 0.5rem 1rem; font-size: 0.8rem;">
-                                Contactar
-                            </a>
+                            {% if c.telefono %}
+                                <a href="https://wa.me/{{ c.telefono }}" target="_blank" class="btn-primary" style="text-decoration: none; padding: 0.6rem 1rem; font-size: 0.85rem; display: inline-block; width: auto;">
+                                    WhatsApp
+                                </a>
+                            {% else %}
+                                <button disabled style="background: var(--gray-300); color: white; border: none; padding: 0.6rem 1rem; border-radius: 0.75rem; cursor: not-allowed; font-size: 0.85rem;">
+                                    Sin Teléfono
+                                </button>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
