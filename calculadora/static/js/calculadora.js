@@ -14,6 +14,7 @@ const currentStepSpan = document.getElementById('current-step');
 
 // Inicializar
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('Formulario inicializado');
     updateUI();
     setupEventListeners();
 });
@@ -21,16 +22,25 @@ document.addEventListener('DOMContentLoaded', () => {
 // Event listeners
 function setupEventListeners() {
     // Navegación
-    btnNext.addEventListener('click', nextStep);
-    btnPrev.addEventListener('click', prevStep);
+    if (btnNext) {
+        btnNext.addEventListener('click', nextStep);
+        console.log('Evento click en btnNext agregado');
+    }
+    if (btnPrev) {
+        btnPrev.addEventListener('click', prevStep);
+    }
     
     // Submit
-    form.addEventListener('submit', handleSubmit);
+    if (form) {
+        form.addEventListener('submit', handleSubmit);
+    }
     
     // Auto-avanzar al seleccionar radio button
     const radioInputs = form.querySelectorAll('input[type="radio"]');
+    console.log(`Radio inputs encontrados: ${radioInputs.length}`);
     radioInputs.forEach(input => {
         input.addEventListener('change', () => {
+            console.log('Radio seleccionado:', input.name, input.value);
             // Pequeño delay para que se vea la selección
             setTimeout(() => {
                 if (currentStep < totalSteps) {
@@ -43,7 +53,12 @@ function setupEventListeners() {
 
 // Avanzar paso
 function nextStep() {
-    if (!validateStep(currentStep)) {
+    console.log('nextStep llamado. Step actual:', currentStep);
+    
+    const isValid = validateStep(currentStep);
+    console.log('Validación resultado:', isValid);
+    
+    if (!isValid) {
         showError('Por favor selecciona una opción antes de continuar');
         return;
     }
@@ -53,6 +68,7 @@ function nextStep() {
         currentStep++;
         showStep(currentStep);
         updateUI();
+        console.log('Avanzado a step:', currentStep);
     }
 }
 
@@ -63,6 +79,7 @@ function prevStep() {
         currentStep--;
         showStep(currentStep);
         updateUI();
+        console.log('Retrocedido a step:', currentStep);
     }
 }
 
@@ -73,6 +90,9 @@ function showStep(step) {
         stepCard.classList.remove('hidden');
         // Scroll suave al top
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        console.log('Mostrando step:', step);
+    } else {
+        console.error('Step card no encontrado:', step);
     }
 }
 
@@ -81,41 +101,50 @@ function hideStep(step) {
     const stepCard = document.querySelector(`[data-step="${step}"]`);
     if (stepCard) {
         stepCard.classList.add('hidden');
+        console.log('Ocultando step:', step);
     }
 }
 
 // Actualizar UI (botones, progress bar)
 function updateUI() {
     // Actualizar contador
-    currentStepSpan.textContent = currentStep;
+    if (currentStepSpan) {
+        currentStepSpan.textContent = currentStep;
+    }
     
     // Actualizar progress dots
     for (let i = 1; i <= totalSteps; i++) {
         const dot = document.getElementById(`progress-dot-${i}`);
-        if (i < currentStep) {
-            dot.classList.add('completed');
-            dot.classList.remove('active');
-        } else if (i === currentStep) {
-            dot.classList.add('active');
-            dot.classList.remove('completed');
-        } else {
-            dot.classList.remove('active', 'completed');
+        if (dot) {
+            if (i < currentStep) {
+                dot.classList.add('completed');
+                dot.classList.remove('active');
+            } else if (i === currentStep) {
+                dot.classList.add('active');
+                dot.classList.remove('completed');
+            } else {
+                dot.classList.remove('active', 'completed');
+            }
         }
     }
     
     // Mostrar/ocultar botones
-    if (currentStep === 1) {
-        btnPrev.classList.add('hidden');
-    } else {
-        btnPrev.classList.remove('hidden');
+    if (btnPrev) {
+        if (currentStep === 1) {
+            btnPrev.classList.add('hidden');
+        } else {
+            btnPrev.classList.remove('hidden');
+        }
     }
     
-    if (currentStep === totalSteps) {
-        btnNext.classList.add('hidden');
-        btnSubmit.classList.remove('hidden');
-    } else {
-        btnNext.classList.remove('hidden');
-        btnSubmit.classList.add('hidden');
+    if (btnNext && btnSubmit) {
+        if (currentStep === totalSteps) {
+            btnNext.classList.add('hidden');
+            btnSubmit.classList.remove('hidden');
+        } else {
+            btnNext.classList.remove('hidden');
+            btnSubmit.classList.add('hidden');
+        }
     }
 }
 
@@ -123,11 +152,17 @@ function updateUI() {
 function validateStep(step) {
     const stepCard = document.querySelector(`[data-step="${step}"]`);
     
+    if (!stepCard) {
+        console.error(`Step card ${step} not found`);
+        return false;
+    }
+    
     // Para pasos con radio buttons
     const radioInputs = stepCard.querySelectorAll('input[type="radio"]');
     if (radioInputs.length > 0) {
         const radioName = radioInputs[0].name;
         const checked = stepCard.querySelector(`input[name="${radioName}"]:checked`);
+        console.log(`Step ${step}: Radio name=${radioName}, checked=`, checked);
         return checked !== null;
     }
     
@@ -138,27 +173,27 @@ function validateStep(step) {
         const empresa = stepCard.querySelector('input[name="empresa"]');
         const cargo = stepCard.querySelector('input[name="cargo"]');
         
-        if (!nombre.value.trim()) {
+        if (!nombre || !nombre.value.trim()) {
             showError('Por favor ingresa tu nombre');
-            nombre.focus();
+            if (nombre) nombre.focus();
             return false;
         }
         
-        if (!email.value.trim() || !isValidEmail(email.value)) {
+        if (!email || !email.value.trim() || !isValidEmail(email.value)) {
             showError('Por favor ingresa un email válido');
-            email.focus();
+            if (email) email.focus();
             return false;
         }
         
-        if (!empresa.value.trim()) {
+        if (!empresa || !empresa.value.trim()) {
             showError('Por favor ingresa el nombre de tu empresa');
-            empresa.focus();
+            if (empresa) empresa.focus();
             return false;
         }
         
-        if (!cargo.value.trim()) {
+        if (!cargo || !cargo.value.trim()) {
             showError('Por favor ingresa tu cargo');
-            cargo.focus();
+            if (cargo) cargo.focus();
             return false;
         }
         
@@ -176,6 +211,7 @@ function isValidEmail(email) {
 
 // Mostrar error
 function showError(message) {
+    console.log('Error mostrado:', message);
     // Crear toast de error
     const toast = document.createElement('div');
     toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-slide-in';
@@ -190,6 +226,7 @@ function showError(message) {
 
 // Mostrar éxito
 function showSuccess(message) {
+    console.log('Éxito:', message);
     const toast = document.createElement('div');
     toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-slide-in';
     toast.textContent = message;
@@ -203,6 +240,7 @@ function showSuccess(message) {
 // Manejar envío del formulario
 async function handleSubmit(e) {
     e.preventDefault();
+    console.log('Formulario enviado');
     
     if (!validateStep(totalSteps)) {
         return;
@@ -215,9 +253,11 @@ async function handleSubmit(e) {
         data[key] = value;
     });
     
+    console.log('Datos del formulario:', data);
+    
     // Mostrar loading
-    btnSubmit.classList.add('hidden');
-    loading.classList.remove('hidden');
+    if (btnSubmit) btnSubmit.classList.add('hidden');
+    if (loading) loading.classList.remove('hidden');
     
     try {
         // Enviar a la API
@@ -230,6 +270,7 @@ async function handleSubmit(e) {
         });
         
         const result = await response.json();
+        console.log('Respuesta API:', result);
         
         if (result.success) {
             // Éxito - redirigir a resultados
@@ -240,14 +281,14 @@ async function handleSubmit(e) {
         } else {
             // Error
             showError(result.error || 'Hubo un error. Por favor intenta de nuevo.');
-            btnSubmit.classList.remove('hidden');
-            loading.classList.add('hidden');
+            if (btnSubmit) btnSubmit.classList.remove('hidden');
+            if (loading) loading.classList.add('hidden');
         }
     } catch (error) {
         console.error('Error:', error);
         showError('Error de conexión. Por favor intenta de nuevo.');
-        btnSubmit.classList.remove('hidden');
-        loading.classList.add('hidden');
+        if (btnSubmit) btnSubmit.classList.remove('hidden');
+        if (loading) loading.classList.add('hidden');
     }
 }
 
@@ -269,3 +310,5 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+console.log('calculadora.js cargado completamente');
