@@ -6,7 +6,6 @@
     <title>Tu Diagnóstico de Reclutamiento - Sales AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='calculadora/css/calculadora.css') }}">
     <meta name="description" content="Tu diagnóstico personalizado de costos ocultos de reclutamiento - Sales AI">
 </head>
 <body class="bg-gray-50">
@@ -32,19 +31,6 @@
     <section class="bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12 lg:py-16">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center max-w-4xl mx-auto">
-                <!-- Badge con lead score -->
-                {% if metricas.lead_score %}
-                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-4
-                    {% if metricas.lead_score >= 70 %}bg-red-100 text-red-700
-                    {% elif metricas.lead_score >= 40 %}bg-yellow-100 text-yellow-700
-                    {% else %}bg-blue-100 text-blue-700{% endif %}">
-                    {% if metricas.lead_score >= 70 %}🔥 Alta prioridad
-                    {% elif metricas.lead_score >= 40 %}⚡ Potencial medio
-                    {% else %}📊 Diagnóstico completado{% endif %}
-                    - Score: {{ metricas.lead_score }}/100
-                </div>
-                {% endif %}
-
                 <!-- Título -->
                 <h1 class="text-4xl lg:text-5xl font-extrabold text-gray-900 mb-4 leading-tight">
                     Tu Diagnóstico de
@@ -53,7 +39,7 @@
                     </span>
                 </h1>
                 
-                <p class="text-xl text-gray-600 mb-2">{{ lead.empresa }}</p>
+                <p class="text-xl text-gray-600 mb-2">{{ diagnostico.leads.empresa }}</p>
                 <p class="text-sm text-gray-500">Generado el {{ diagnostico.created_at[:10] }}</p>
             </div>
         </div>
@@ -71,7 +57,7 @@
                         <span class="text-3xl">💰</span>
                     </div>
                     <div class="text-3xl font-bold text-gray-900 mb-1">
-                        ${{ "{:,.0f}".format(metricas.costo_operativo_mensual) }}
+                        ${{ "{:,.0f}".format(diagnostico.costo_operativo_mensual) }}
                     </div>
                     <p class="text-sm text-gray-600">USD/mes en revisión manual</p>
                 </div>
@@ -83,7 +69,7 @@
                         <span class="text-3xl">⏱️</span>
                     </div>
                     <div class="text-3xl font-bold text-gray-900 mb-1">
-                        {{ metricas.horas_mensuales }} h
+                        {{ diagnostico.horas_mensuales|round|int }} h
                     </div>
                     <p class="text-sm text-gray-600">por mes en filtrado manual</p>
                 </div>
@@ -95,10 +81,10 @@
                         <span class="text-3xl">🎯</span>
                     </div>
                     <div class="text-3xl font-bold mb-1
-                        {% if metricas.eficiencia_total >= 75 %}text-green-600
-                        {% elif metricas.eficiencia_total >= 50 %}text-yellow-600
+                        {% if diagnostico.eficiencia_total >= 75 %}text-green-600
+                        {% elif diagnostico.eficiencia_total >= 50 %}text-yellow-600
                         {% else %}text-red-600{% endif %}">
-                        {{ metricas.eficiencia_total }}%
+                        {{ diagnostico.eficiencia_total|round|int }}%
                     </div>
                     <p class="text-sm text-gray-600">vs benchmark de industria</p>
                 </div>
@@ -110,7 +96,7 @@
                         <span class="text-3xl">🚨</span>
                     </div>
                     <div class="text-3xl font-bold text-red-600 mb-1">
-                        ${{ "{:,.0f}".format(metricas.costo_anual_errores) }}
+                        ${{ "{:,.0f}".format(diagnostico.costo_anual_errores) }}
                     </div>
                     <p class="text-sm text-gray-600">USD/año en malas contrataciones</p>
                 </div>
@@ -148,7 +134,7 @@
                             <div>
                                 <div class="flex justify-between text-sm mb-2 font-medium">
                                     <span class="text-gray-700">Tiempo de revisión</span>
-                                    <span class="text-gray-900">{{ metricas.horas_mensuales }} h/mes</span>
+                                    <span class="text-gray-900">{{ diagnostico.horas_mensuales|round|int }} h/mes</span>
                                 </div>
                                 <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
                                     <div class="h-full bg-red-500 rounded-full" style="width: 100%"></div>
@@ -158,7 +144,7 @@
                             <div>
                                 <div class="flex justify-between text-sm mb-2 font-medium">
                                     <span class="text-gray-700">Costo operativo</span>
-                                    <span class="text-gray-900">${{ "{:,.0f}".format(metricas.costo_operativo_mensual) }}/mes</span>
+                                    <span class="text-gray-900">${{ "{:,.0f}".format(diagnostico.costo_operativo_mensual) }}/mes</span>
                                 </div>
                                 <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
                                     <div class="h-full bg-red-500 rounded-full" style="width: 100%"></div>
@@ -168,17 +154,17 @@
                             <div>
                                 <div class="flex justify-between text-sm mb-2 font-medium">
                                     <span class="text-gray-700">Tasa de error</span>
-                                    <span class="text-gray-900">{{ metricas.inputs.tasa_error }}%</span>
+                                    <span class="text-gray-900">{{ (diagnostico.tasa_error_decimal * 100)|round|int }}%</span>
                                 </div>
                                 <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
-                                    <div class="h-full bg-red-500 rounded-full" style="width: {{ metricas.inputs.tasa_error }}%"></div>
+                                    <div class="h-full bg-red-500 rounded-full" style="width: {{ (diagnostico.tasa_error_decimal * 100)|round|int }}%"></div>
                                 </div>
                             </div>
 
                             <div>
                                 <div class="flex justify-between text-sm mb-2 font-medium">
                                     <span class="text-gray-700">Capacidad mensual</span>
-                                    <span class="text-gray-900">{{ metricas.total_cvs_mes }} CVs</span>
+                                    <span class="text-gray-900">{{ diagnostico.total_cvs_mes }} CVs</span>
                                 </div>
                                 <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
                                     <div class="h-full bg-red-500 rounded-full" style="width: 43%"></div>
@@ -200,7 +186,7 @@
                             <div>
                                 <div class="flex justify-between text-sm mb-2 font-medium">
                                     <span class="text-gray-700">Tiempo de revisión</span>
-                                    <span class="text-green-600">{{ metricas.horas_optimizadas }} h/mes (-70%)</span>
+                                    <span class="text-green-600">{{ diagnostico.horas_optimizadas|round|int }} h/mes (-70%)</span>
                                 </div>
                                 <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
                                     <div class="h-full bg-green-500 rounded-full transition-all duration-1000" style="width: 30%"></div>
@@ -210,7 +196,7 @@
                             <div>
                                 <div class="flex justify-between text-sm mb-2 font-medium">
                                     <span class="text-gray-700">Costo operativo</span>
-                                    <span class="text-green-600">${{ "{:,.0f}".format(metricas.costo_optimizado) }}/mes (-70%)</span>
+                                    <span class="text-green-600">${{ "{:,.0f}".format(diagnostico.costo_optimizado_mensual) }}/mes (-70%)</span>
                                 </div>
                                 <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
                                     <div class="h-full bg-green-500 rounded-full transition-all duration-1000" style="width: 30%"></div>
@@ -220,17 +206,17 @@
                             <div>
                                 <div class="flex justify-between text-sm mb-2 font-medium">
                                     <span class="text-gray-700">Tasa de error</span>
-                                    <span class="text-green-600">{{ metricas.tasa_error_optimizada }}% (-60%)</span>
+                                    <span class="text-green-600">{{ (diagnostico.tasa_error_optimizada * 100)|round|int }}% (-60%)</span>
                                 </div>
                                 <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
-                                    <div class="h-full bg-green-500 rounded-full transition-all duration-1000" style="width: {{ metricas.tasa_error_optimizada }}%"></div>
+                                    <div class="h-full bg-green-500 rounded-full transition-all duration-1000" style="width: {{ (diagnostico.tasa_error_optimizada * 100)|round|int }}%"></div>
                                 </div>
                             </div>
 
                             <div>
                                 <div class="flex justify-between text-sm mb-2 font-medium">
                                     <span class="text-gray-700">Capacidad mensual</span>
-                                    <span class="text-green-600">{{ metricas.capacidad_aumentada }} CVs (+233%)</span>
+                                    <span class="text-green-600">{{ diagnostico.capacidad_aumentada }} CVs (+233%)</span>
                                 </div>
                                 <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
                                     <div class="h-full bg-green-500 rounded-full transition-all duration-1000" style="width: 100%"></div>
@@ -246,12 +232,12 @@
                     <div class="grid md:grid-cols-2 gap-8 items-center">
                         <div>
                             <p class="text-sm text-gray-600 mb-2">💎 Ahorro potencial anual</p>
-                            <p class="text-5xl font-bold text-green-600 mb-2">${{ "{:,.0f}".format(metricas.roi_anual) }}</p>
+                            <p class="text-5xl font-bold text-green-600 mb-2">${{ "{:,.0f}".format(diagnostico.ahorro_anual) }}</p>
                             <p class="text-sm text-gray-600">USD anuales recuperados</p>
                         </div>
                         <div class="text-left md:text-right">
                             <p class="text-sm text-gray-600 mb-2">Ahorro mensual</p>
-                            <p class="text-4xl font-bold text-green-600 mb-2">${{ "{:,.0f}".format(metricas.roi_mensual) }}</p>
+                            <p class="text-4xl font-bold text-green-600 mb-2">${{ "{:,.0f}".format(diagnostico.ahorro_mensual) }}</p>
                             <p class="text-sm text-gray-600">USD/mes recuperados</p>
                         </div>
                     </div>
@@ -283,16 +269,16 @@
                             <span class="text-2xl">⏱️</span>
                             <div>
                                 <p class="font-semibold text-sm text-gray-700 mb-1">Tiempo por CV</p>
-                                <p class="text-sm text-gray-600">{{ metricas.mensaje_benchmark }}</p>
+                                <p class="text-sm text-gray-600">{{ mensajes.tiempo }}</p>
                             </div>
                         </div>
 
-                        {% if metricas.diferencia_error > 50 %}
+                        {% if diagnostico.diferencia_vs_benchmark_error > 50 %}
                         <div class="flex items-start gap-3 p-4 bg-red-50 rounded-lg">
                             <span class="text-2xl">🚨</span>
                             <div>
                                 <p class="font-semibold text-sm text-gray-700 mb-1">Tasa de error</p>
-                                <p class="text-sm text-gray-600">{{ metricas.diferencia_error|round|int }}% por encima del benchmark</p>
+                                <p class="text-sm text-gray-600">{{ diagnostico.diferencia_vs_benchmark_error|round|int }}% por encima del benchmark</p>
                             </div>
                         </div>
                         {% endif %}
@@ -309,14 +295,13 @@
                     </h3>
                     
                     <div class="p-6 bg-white rounded-xl border-2 border-red-200 mb-6">
-                        <p class="text-lg font-semibold text-red-900 mb-2">{{ metricas.cuello_botella }}</p>
+                        <p class="text-lg font-semibold text-red-900 mb-2">{{ diagnostico.cuello_botella }}</p>
                         <p class="text-sm text-red-700">Este es tu mayor problema según el diagnóstico.</p>
                     </div>
 
                     <h4 class="font-semibold text-gray-900 mb-4 text-lg">💡 Cómo Sales AI lo resuelve:</h4>
                     
                     <ul class="space-y-3">
-                        {% if metricas.cuello_tipo == 'tiempo' %}
                         <li class="flex items-start gap-2">
                             <svg class="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
@@ -329,46 +314,12 @@
                             </svg>
                             <span class="text-sm text-gray-700">Scoring instantáneo de cada candidato</span>
                         </li>
-                        {% elif metricas.cuello_tipo == 'personas' %}
-                        <li class="flex items-start gap-2">
-                            <svg class="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="text-sm text-gray-700">Centralización del proceso en una sola plataforma</span>
-                        </li>
                         <li class="flex items-start gap-2">
                             <svg class="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                             </svg>
                             <span class="text-sm text-gray-700">Decisiones basadas en datos objetivos</span>
                         </li>
-                        {% elif metricas.cuello_tipo == 'calidad' %}
-                        <li class="flex items-start gap-2">
-                            <svg class="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="text-sm text-gray-700">Evaluación objetiva elimina sesgos</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <svg class="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="text-sm text-gray-700">Scoring basado en requisitos críticos</span>
-                        </li>
-                        {% else %}
-                        <li class="flex items-start gap-2">
-                            <svg class="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="text-sm text-gray-700">Procesa 233% más candidatos con el mismo equipo</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <svg class="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="text-sm text-gray-700">Escalabilidad sin contratar más reclutadores</span>
-                        </li>
-                        {% endif %}
                     </ul>
                 </div>
 
@@ -401,7 +352,7 @@
                 <div class="p-6 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 hover:bg-white/20 transition">
                     <h3 class="text-xl font-bold mb-2">⚡ Empezar Gratis Ahora</h3>
                     <p class="text-sm text-blue-100 mb-4">Crea tu primera vacante y empieza a filtrar candidatos en minutos</p>
-                    <a href="/registro?email={{ lead.email }}&empresa={{ lead.empresa }}" class="block w-full bg-green-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-600 transition text-center">
+                    <a href="/registro?email={{ diagnostico.leads.email }}&empresa={{ diagnostico.leads.empresa }}" class="block w-full bg-green-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-600 transition text-center">
                         Crear mi cuenta →
                     </a>
                 </div>
@@ -492,7 +443,7 @@
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                    <input type="email" id="demo_email" value="{{ lead.email }}" required
+                    <input type="email" id="demo_email" value="{{ diagnostico.leads.email }}" required
                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
 
@@ -529,8 +480,12 @@
 
     <script>
         // Datos del diagnóstico
-        const metricas = {{ metricas|tojson }};
         const diagnostico_id = "{{ diagnostico.id }}";
+        const diagnostico_data = {
+            tiempo_cv: {{ diagnostico.tiempo_por_cv_min }},
+            tasa_error: {{ (diagnostico.tasa_error_decimal * 100)|round|int }},
+            personas: {{ diagnostico.personas_proceso_num }}
+        };
 
         // Gráfico de benchmark
         const ctx = document.getElementById('benchmarkChart').getContext('2d');
@@ -540,7 +495,7 @@
                 labels: ['Tiempo/CV (min)', 'Tasa Error (%)', 'Personas'],
                 datasets: [{
                     label: 'Tu proceso',
-                    data: [metricas.inputs.tiempo_cv, metricas.inputs.tasa_error, metricas.inputs.personas],
+                    data: [diagnostico_data.tiempo_cv, diagnostico_data.tasa_error, diagnostico_data.personas],
                     backgroundColor: 'rgba(239, 68, 68, 0.7)',
                     borderColor: 'rgb(239, 68, 68)',
                     borderWidth: 2
@@ -571,8 +526,8 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     diagnostico_id: diagnostico_id,
-                    accion: accion,
-                    metadata: metadata
+                    tipo_interaccion: accion,
+                    datos: metadata
                 })
             });
         }
@@ -580,7 +535,7 @@
         // Modal demo
         function mostrarFormularioDemo() {
             document.getElementById('modalDemo').classList.remove('hidden');
-            trackAccion('abrio_modal_demo');
+            trackAccion('click_agendar');
         }
 
         function cerrarModalDemo() {
@@ -610,13 +565,13 @@
 
         // Descargar PDF
         function descargarPDF() {
-            trackAccion('descarga_pdf');
+            trackAccion('descargar_pdf');
             window.print();
         }
 
         // Enviar por email
         function enviarPorEmail() {
-            const email = "{{ lead.email }}";
+            const email = "{{ diagnostico.leads.email }}";
             const subject = encodeURIComponent("Tu diagnóstico de reclutamiento - Sales AI");
             const body = encodeURIComponent(`Aquí está tu diagnóstico: ${window.location.href}`);
             window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
