@@ -195,34 +195,45 @@
 
     <script>
         // FILTRADO POR PESTAÑAS (CORREGIDO PARA VALORES NULOS)
-        function filtrarPorPestaña(estado, btn) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+        function filtrarPorPestaña(estadoRecibido, btn) {
+    // 1. Gestionar botones de pestañas
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
 
-            const rows = document.querySelectorAll('.candidato-row');
-            let visibles = 0;
+    const rows = document.querySelectorAll('.candidato-row');
+    let visibles = 0;
 
-            rows.forEach(row => {
-                let rowEstado = row.getAttribute('data-estado');
-                
-                // Si el atributo data-estado está vacío o es 'None', lo tratamos como 'Evaluado'
-                if (!rowEstado || rowEstado === 'None') rowEstado = 'Evaluado';
-
-                let mostrar = false;
-
-                if (estado === 'TODOS') mostrar = true;
-                else if (estado === 'FINALIZADOS') {
-                    if (rowEstado === 'Contratado' || rowEstado === 'Rechazado') mostrar = true;
-                } else {
-                    if (rowEstado === estado) mostrar = true;
-                }
-
-                row.style.display = mostrar ? "" : "none";
-                if (mostrar) visibles++;
-            });
-            document.getElementById('contadorCandidatos').innerText = visibles;
+    rows.forEach(row => {
+        // Obtenemos el estado y lo limpiamos de espacios
+        let rowEstado = row.getAttribute('data-estado') || 'Evaluado';
+        
+        // Normalizamos: Si es nulo, vacío o dice 'None', es 'Evaluado'
+        if (rowEstado === 'None' || rowEstado === '' || rowEstado === 'null') {
+            rowEstado = 'Evaluado';
         }
 
+        let mostrar = false;
+
+        if (estadoRecibido === 'TODOS') {
+            mostrar = true;
+        } else if (estadoRecibido === 'FINALIZADOS') {
+            if (rowEstado === 'Contratado' || rowEstado === 'Rechazado') mostrar = true;
+        } else if (estadoRecibido === 'Evaluado') {
+            // Lógica especial para la Pestaña 1:
+            // Muestra si el estado es 'Evaluado' O si el selector tiene seleccionado el primer índice
+            const select = row.querySelector('.crm-select');
+            if (rowEstado === 'Evaluado' || select.value === 'Evaluado') mostrar = true;
+        } else {
+            // Para 'Agendado Meet' y otros
+            if (rowEstado === estadoRecibido) mostrar = true;
+        }
+
+        row.style.display = mostrar ? "" : "none";
+        if (mostrar) visibles++;
+    });
+
+    document.getElementById('contadorCandidatos').innerText = visibles;
+}
         function aplicarFiltros() {
             const searchText = document.getElementById('searchInput').value.toLowerCase();
             const rows = document.querySelectorAll('.candidato-row');
