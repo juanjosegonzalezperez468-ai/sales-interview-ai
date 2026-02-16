@@ -102,7 +102,7 @@
 
         <div class="filters-bar" style="background: white; padding: 1.25rem; border-radius: 16px; margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: center; box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200);">
             <div style="flex: 1; position: relative;">
-                <input type="text" id="searchInput" onkeyup="aplicarFiltros()" placeholder="🔍 Buscar por nombre o identificación..." 
+                <input type="text" id="searchInput" onkeyup="aplicarFiltros()" placeholder="🔍 Buscar por nombre, identificación o vacante..." 
                        style="width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--gray-200); border-radius: 10px; font-size: 0.95rem;">
             </div>
             <div style="color: var(--gray-400); font-size: 0.85rem; font-weight: 500;">
@@ -114,7 +114,7 @@
             <table id="candidatosTable" style="width: 100%; border-collapse: collapse; text-align: left;">
                 <thead>
                     <tr style="background: var(--gray-50); border-bottom: 2px solid var(--gray-200);">
-                        <th style="padding: 1.25rem; color: var(--gray-700); font-weight: 600;">CANDIDATO</th>
+                        <th style="padding: 1.25rem; color: var(--gray-700); font-weight: 600;">CANDIDATO / VACANTE</th>
                         <th style="padding: 1.25rem; color: var(--gray-700); font-weight: 600;">SCORE IA</th>
                         <th style="padding: 1.25rem; color: var(--gray-700); font-weight: 600;">ESTADO PROCESO</th>
                         <th style="padding: 1.25rem; color: var(--gray-700); font-weight: 600;">ACCIONES</th>
@@ -127,6 +127,9 @@
                         style="border-bottom: 1px solid var(--gray-100); transition: 0.2s;">
                         <td style="padding: 1.25rem;">
                             <div class="nombre-candidato" style="font-weight: 600; color: var(--gray-900); font-size: 1rem;">{{ c.nombre_candidato }}</div>
+                            <div style="font-size: 0.8rem; color: #2563eb; font-weight: bold; margin-top: 2px;">
+                                📌 {{ c.vacante if c.vacante and c.vacante != 'None' else 'General' }}
+                            </div>
                             <div style="font-size: 0.8rem; color: var(--gray-500);">ID: {{ c.identificacion }}</div>
                         </td>
                         
@@ -194,57 +197,38 @@
     </div>
 
     <script>
-        // FILTRADO POR PESTAÑAS (CORREGIDO PARA VALORES NULOS)
         function filtrarPorPestaña(estadoRecibido, btn) {
-    // 1. Gestionar botones de pestañas
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-
-    const rows = document.querySelectorAll('.candidato-row');
-    let visibles = 0;
-
-    rows.forEach(row => {
-        // Obtenemos el estado y lo limpiamos de espacios
-        let rowEstado = row.getAttribute('data-estado') || 'Evaluado';
-        
-        // Normalizamos: Si es nulo, vacío o dice 'None', es 'Evaluado'
-        if (rowEstado === 'None' || rowEstado === '' || rowEstado === 'null') {
-            rowEstado = 'Evaluado';
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const rows = document.querySelectorAll('.candidato-row');
+            let visibles = 0;
+            rows.forEach(row => {
+                let rowEstado = row.getAttribute('data-estado') || 'Evaluado';
+                if (rowEstado === 'None' || rowEstado === '' || rowEstado === 'null') rowEstado = 'Evaluado';
+                let mostrar = false;
+                if (estadoRecibido === 'TODOS') mostrar = true;
+                else if (estadoRecibido === 'FINALIZADOS') {
+                    if (rowEstado === 'Contratado' || rowEstado === 'Rechazado') mostrar = true;
+                } else if (estadoRecibido === 'Evaluado') {
+                    const select = row.querySelector('.crm-select');
+                    if (rowEstado === 'Evaluado' || select.value === 'Evaluado') mostrar = true;
+                } else {
+                    if (rowEstado === estadoRecibido) mostrar = true;
+                }
+                row.style.display = mostrar ? "" : "none";
+                if (mostrar) visibles++;
+            });
+            document.getElementById('contadorCandidatos').innerText = visibles;
         }
 
-        let mostrar = false;
-
-        if (estadoRecibido === 'TODOS') {
-            mostrar = true;
-        } else if (estadoRecibido === 'FINALIZADOS') {
-            if (rowEstado === 'Contratado' || rowEstado === 'Rechazado') mostrar = true;
-        } else if (estadoRecibido === 'Evaluado') {
-            // Lógica especial para la Pestaña 1:
-            // Muestra si el estado es 'Evaluado' O si el selector tiene seleccionado el primer índice
-            const select = row.querySelector('.crm-select');
-            if (rowEstado === 'Evaluado' || select.value === 'Evaluado') mostrar = true;
-        } else {
-            // Para 'Agendado Meet' y otros
-            if (rowEstado === estadoRecibido) mostrar = true;
-        }
-
-        row.style.display = mostrar ? "" : "none";
-        if (mostrar) visibles++;
-    });
-
-    document.getElementById('contadorCandidatos').innerText = visibles;
-}
         function aplicarFiltros() {
             const searchText = document.getElementById('searchInput').value.toLowerCase();
             const rows = document.querySelectorAll('.candidato-row');
             let visibles = 0;
-
             rows.forEach(row => {
-                const nombre = row.querySelector('.nombre-candidato').innerText.toLowerCase();
-                // Solo buscamos entre los que ya están visibles por la pestaña activa
-                const isTabActive = row.getAttribute('style').indexOf('display: none') === -1;
-                
-                if (nombre.includes(searchText)) {
+                const contenido = row.innerText.toLowerCase(); // Busca en nombre, ID y Vacante
+                const isTabVisible = row.getAttribute('style') && row.getAttribute('style').indexOf('display: none') === -1;
+                if (contenido.includes(searchText)) {
                     row.style.display = "";
                     visibles++;
                 } else {
@@ -257,37 +241,23 @@
         function cambiarEstado(id, elemento) {
             const nuevoEstado = elemento.value;
             const row = elemento.closest('.candidato-row');
-            
-            // 1. Actualizamos el atributo de la fila para que el filtro lo reconozca
             row.setAttribute('data-estado', nuevoEstado);
-
-            // 2. Actualizamos los colores del selector (UI)
             elemento.classList.remove('status-evaluado', 'status-meet', 'status-contratado', 'status-rechazado');
             if (nuevoEstado === 'Agendado Meet') elemento.classList.add('status-meet');
             else if (nuevoEstado === 'Contratado') elemento.classList.add('status-contratado');
             else if (nuevoEstado === 'Rechazado') elemento.classList.add('status-rechazado');
             else elemento.classList.add('status-evaluado');
 
-            // 3. Enviamos el cambio a la base de datos (Backend)
             fetch('/actualizar_estado', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: id, estado: nuevoEstado })
             }).then(response => {
-                if (!response.ok) {
-                    alert("Error al guardar en base de datos.");
-                } else {
-                    // --- EL TRUCO ESTÁ AQUÍ ---
-                    // Buscamos cuál es la pestaña que está activa actualmente
+                if (response.ok) {
                     const pestañaActiva = document.querySelector('.tab-btn.active');
-                    
-                    // Si no estamos en la pestaña "Todos", volvemos a filtrar 
-                    // para que el candidato desaparezca de aquí y se mueva a su nueva pestaña
                     if (pestañaActiva && pestañaActiva.innerText !== 'Todos') {
-                        // Ejecutamos la función de filtrado con la pestaña actual
                         pestañaActiva.click(); 
                     }
-                    console.log("✅ Movido exitosamente");
                 }
             });
         }
@@ -299,18 +269,13 @@
             document.getElementById('modalAnalisis').innerText = analisis || "N/A";
             const scoreDiv = document.getElementById('modalScoreValue');
             scoreDiv.innerText = "Score IA: " + score + "%";
-            
             const s = parseInt(score);
             scoreDiv.style.background = s >= 75 ? "#d1fae5" : (s >= 50 ? "#fef3c7" : "#fee2e2");
             scoreDiv.style.color = s >= 75 ? "#065f46" : (s >= 50 ? "#92400e" : "#991b1b");
-
             document.getElementById('detalleModal').style.display = "block";
         }
 
         function cerrarModal() { document.getElementById('detalleModal').style.display = "none"; }
-        window.onclick = function(event) {
-            if (event.target == document.getElementById('detalleModal')) cerrarModal();
-        }
     </script>
 </body>
 </html>
