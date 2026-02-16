@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Costos Ocultos - Sales AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='calculadora/css/calculadora.css') }}">
+    <meta name="description" content="Descubre cuánto estás perdiendo en tu proceso de reclutamiento. Análisis gratuito en 3 minutos basado en datos reales.">
+</head>
+<body class="bg-gray-50">
+    <!-- HEADER -->
+    <header class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-sm font-bold">
+                        S
+                    </div>
+                    <span class="text-xl font-bold text-gray-900">Sales AI</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="/login" class="text-gray-600 hover:text-gray-900 text-sm font-medium">
+                        Iniciar sesión
+                    </a>
+                    <a href="/registro" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition">
+                        Empezar gratis
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- HERO SECTION -->
+    <section class="bg-gradient-to-br from-blue-50 via-white to-purple-50 py-20 lg:py-28">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-4xl mx-auto">
+                <!-- Segmentación explícita -->
+                <div class="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-medium mb-6">
+                    🎯 Para equipos que contratan 3+ personas al mes
+                </div>
+
+                <!-- Headline -->
+                <h1 class="text-4xl lg:text-6xl font-extrabold text-gray-900 mb-6 leading-tight">
+                    ¿Cuánto estás perdiendo REALMENTE en
+                    <span class="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                        contrataciones que no funcionan?
+                    </span>
+                </h1>
+
+                <!-- Subheadline -->
+                <p class="text-xl text-gray-600 mb-8 leading-relaxed">
+                    Descubre en 3 minutos tu costo oculto de reclutamiento
+                    <br class="hidden lg:block">
+                    (basado en análisis de <strong>+2,500 procesos reales</strong>)
+                </p>
+
+                <!-- CTA Principal -->
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+                    <a href="/calculadora/formulario" class="w-full sm:w-auto px-8 py-4 bg-blue-600 text-white rounded-xl text-lg font-semibold hover:bg-blue-700 transition shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
+                        Calcular mi costo oculto
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                        </svg>
+                    </a>
+                </div>
+
+                <!-- Trust elements -->
+                <div class="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-500">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span>Sin tarjeta de crédito</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span>Solo 3 minutos</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
+                            <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span>Reporte descargable</span>
+                    </div>
+                </div>
+
+                <!-- ICP adicional -->
+                <p class="mt-6 text-sm text-gray-500">
+                    💼 Ideal para: Startups en crecimiento, equipos RRHH, empresas con 20-500 empleados
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- TENSIÓN EMOCIONAL (NUEVO) -->
+    <section class="py-16 bg-white">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center text-gray-900 mb-12">
+                ¿Te suena familiar alguno de estos?
+            </h2>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Pain point 1 -->
+                <div class="p-6 bg-red-50 border-l-4 border-red-400 rounded-r-xl">
+                    <div class="flex items-start gap-4">
+                        <div class="text-3xl">😰</div>
+                        <div>
+                            <p class="text-gray-700 font-medium">
+                                "Perdí un candidato top porque tardé demasiado en decidir"
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pain point 2 -->
+                <div class="p-6 bg-yellow-50 border-l-4 border-yellow-400 rounded-r-xl">
+                    <div class="flex items-start gap-4">
+                        <div class="text-3xl">😓</div>
+                        <div>
+                            <p class="text-gray-700 font-medium">
+                                "No estoy seguro si elegí al candidato correcto"
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pain point 3 -->
+                <div class="p-6 bg-orange-50 border-l-4 border-orange-400 rounded-r-xl">
+                    <div class="flex items-start gap-4">
+                        <div class="text-3xl">😤</div>
+                        <div>
+                            <p class="text-gray-700 font-medium">
+                                "La competencia contrata más rápido que yo"
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pain point 4 -->
+                <div class="p-6 bg-purple-50 border-l-4 border-purple-400 rounded-r-xl">
+                    <div class="flex items-start gap-4">
+                        <div class="text-3xl">😔</div>
+                        <div>
+                            <p class="text-gray-700 font-medium">
+                                "Mi último contratado duró 2 meses y costó una fortuna"
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-10 text-center p-6 bg-gray-100 rounded-xl">
+                <p class="text-gray-700 text-lg">
+                    No estás solo. El <strong>74% de empresas</strong> admiten haber contratado mal en los últimos 12 meses.
+                </p>
+                <p class="text-gray-900 font-bold text-xl mt-3">
+                    La pregunta no es "si" estás perdiendo dinero.<br>
+                    La pregunta es: <span class="text-blue-600">¿CUÁNTO?</span>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CREDIBILIDAD CON DATOS -->
+    <section class="py-20 bg-gray-900 text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl lg:text-4xl font-bold mb-4">
+                    📊 El problema es más grande de lo que crees
+                </h2>
+                <p class="text-xl text-gray-300 max-w-3xl mx-auto">
+                    Las empresas B2B están perdiendo hasta <strong class="text-yellow-400">$89,000 USD anuales</strong>
+                    en procesos ineficientes de contratación
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Stat 1 -->
+                <div class="text-center p-6 bg-white/10 rounded-xl backdrop-blur">
+                    <div class="text-5xl font-bold text-blue-400 mb-2">$4,683</div>
+                    <div class="text-sm text-gray-300">Costo promedio por contratación</div>
+                    <div class="text-xs text-gray-400 mt-2">SHRM 2022</div>
+                </div>
+
+                <!-- Stat 2 -->
+                <div class="text-center p-6 bg-white/10 rounded-xl backdrop-blur">
+                    <div class="text-5xl font-bold text-purple-400 mb-2">42 días</div>
+                    <div class="text-sm text-gray-300">Tiempo promedio para llenar vacante</div>
+                    <div class="text-xs text-gray-400 mt-2">LinkedIn 2023</div>
+                </div>
+
+                <!-- Stat 3 -->
+                <div class="text-center p-6 bg-white/10 rounded-xl backdrop-blur">
+                    <div class="text-5xl font-bold text-red-400 mb-2">74%</div>
+                    <div class="text-sm text-gray-300">De empresas admiten haber contratado mal</div>
+                    <div class="text-xs text-gray-400 mt-2">CareerBuilder 2022</div>
+                </div>
+
+                <!-- Stat 4 -->
+                <div class="text-center p-6 bg-white/10 rounded-xl backdrop-blur">
+                    <div class="text-5xl font-bold text-yellow-400 mb-2">30%</div>
+                    <div class="text-sm text-gray-300">Del salario es el costo de cada error</div>
+                    <div class="text-xs text-gray-400 mt-2">Harvard Business Review</div>
+                </div>
+            </div>
+
+            <div class="mt-16 text-center">
+                <p class="text-xl text-gray-300 mb-6">
+                    ¿Cuánto de esto aplica a tu empresa?
+                </p>
+                <a href="/calculadora/formulario" class="inline-flex items-center gap-2 px-8 py-4 bg-white text-gray-900 rounded-xl text-lg font-semibold hover:bg-gray-100 transition">
+                    Calcular mi costo real
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- COSTOS INVISIBLES -->
+    <section class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+                    Tu proceso manual esconde 3 costos invisibles
+                </h2>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-8">
+                <!-- Costo 1 -->
+                <div class="p-8 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl">
+                    <div class="w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center text-white text-2xl mb-4">
+                        💰
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">
+                        Costo 1: Tiempo ejecutivo desperdiciado
+                    </h3>
+                    <p class="text-gray-700 mb-4">
+                        Revisar CVs manualmente consume <strong>23 horas/mes promedio</strong>. 
+                        Ese tiempo podría invertirse en estrategia.
+                    </p>
+                    <div class="text-sm text-blue-700 font-medium">
+                        ⏱️ 276 horas/año perdidas
+                    </div>
+                </div>
+
+                <!-- Costo 2 -->
+                <div class="p-8 bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl">
+                    <div class="w-14 h-14 bg-purple-600 rounded-xl flex items-center justify-center text-white text-2xl mb-4">
+                        💸
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">
+                        Costo 2: Oportunidad perdida
+                    </h3>
+                    <p class="text-gray-700 mb-4">
+                        Contratar lento = perder top talent ante la competencia. 
+                        Los mejores candidatos reciben <strong>3-5 ofertas simultáneas</strong>.
+                    </p>
+                    <div class="text-sm text-purple-700 font-medium">
+                        🏃 El 60% acepta la primera oferta
+                    </div>
+                </div>
+
+                <!-- Costo 3 -->
+                <div class="p-8 bg-gradient-to-br from-red-50 to-red-100 rounded-2xl">
+                    <div class="w-14 h-14 bg-red-600 rounded-xl flex items-center justify-center text-white text-2xl mb-4">
+                        🚨
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">
+                        Costo 3: Error humano en selección
+                    </h3>
+                    <p class="text-gray-700 mb-4">
+                        Sin scoring objetivo = <strong>74% de probabilidad de error</strong>. 
+                        Cada mala contratación cuesta 30% del salario anual.
+                    </p>
+                    <div class="text-sm text-red-700 font-medium">
+                        💔 $25,000+ USD perdidos por error
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- AUTORIDAD ESTRATÉGICA -->
+    <section class="py-16 bg-gray-50">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h3 class="text-2xl font-bold text-gray-900 mb-8">
+                📚 Metodología respaldada por investigación
+            </h3>
+            
+            <div class="grid md:grid-cols-2 gap-6 text-left">
+                <div class="flex items-start gap-3">
+                    <svg class="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    <div>
+                        <p class="font-medium text-gray-900">Harvard Business Review</p>
+                        <p class="text-sm text-gray-600">Costo de mala contratación</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start gap-3">
+                    <svg class="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    <div>
+                        <p class="font-medium text-gray-900">SHRM</p>
+                        <p class="text-sm text-gray-600">Tiempos y costos de contratación</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start gap-3">
+                    <svg class="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    <div>
+                        <p class="font-medium text-gray-900">LinkedIn Global Talent Trends</p>
+                        <p class="text-sm text-gray-600">Benchmarks de industria</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start gap-3">
+                    <svg class="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    <div>
+                        <p class="font-medium text-gray-900">Glassdoor Economic Research</p>
+                        <p class="text-sm text-gray-600">ROI de contratación</p>
+                    </div>
+                </div>
+            </div>
+
+            <p class="mt-8 text-gray-600">
+                ✓ Validado con análisis de +2,500 procesos reales de contratación
+            </p>
+        </div>
+    </section>
+
+    <!-- CTA FINAL -->
+    <section class="py-20 bg-gradient-to-br from-blue-600 to-purple-600 text-white">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl lg:text-5xl font-bold mb-6">
+                ¿Listo para descubrir tu costo real?
+            </h2>
+            <p class="text-xl text-blue-100 mb-10">
+                Solo 8 preguntas. 3 minutos. Resultados inmediatos.
+            </p>
+            
+            <a href="/calculadora/formulario" class="inline-flex items-center gap-2 px-10 py-5 bg-white text-blue-600 rounded-xl text-xl font-bold hover:bg-gray-100 transition shadow-2xl">
+                Calcular ahora (gratis)
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                </svg>
+            </a>
+
+            <p class="mt-6 text-sm text-blue-200">
+                No requiere tarjeta • Resultados al instante • 100% confidencial
+            </p>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="bg-gray-900 text-gray-400 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p>&copy; 2026 Sales AI. Todos los derechos reservados.</p>
+            <div class="mt-4 flex items-center justify-center gap-6 text-sm">
+                <a href="#" class="hover:text-white">Privacidad</a>
+                <a href="#" class="hover:text-white">Términos</a>
+                <a href="#" class="hover:text-white">Contacto</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

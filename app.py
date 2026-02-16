@@ -7,6 +7,8 @@ from datetime import datetime
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, render_template_string
 from supabase import create_client, Client
+from calculadora.routes import calculadora_bp
+from supabase import create_client, Client
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -20,6 +22,10 @@ app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = 86400
+# Registrar módulo de calculadora
+app.register_blueprint(calculadora_bp, url_prefix='/calculadora')
+logger.info("✅ Módulo de calculadora registrado en /calculadora")
+
 
 # Cliente Supabase
 supabase: Client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_KEY'))

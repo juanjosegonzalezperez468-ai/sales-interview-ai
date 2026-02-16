@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calcula tu Costo Oculto - Sales AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .progress-step {
+            transition: all 0.3s ease;
+        }
+        .progress-step.active {
+            background-color: #2563eb;
+        }
+        .progress-step.completed {
+            background-color: #10b981;
+        }
+        .question-card {
+            animation: slideIn 0.4s ease-out;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- HEADER -->
+    <header class="bg-white border-b border-gray-200">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-sm font-bold">
+                        S
+                    </div>
+                    <span class="text-xl font-bold text-gray-900">Sales AI</span>
+                </div>
+                <a href="/calculadora/" class="text-gray-600 hover:text-gray-900 text-sm">
+                    ← Volver
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Progress Bar -->
+        <div class="mb-12">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl font-bold text-gray-900">
+                    Calcula tu costo oculto
+                </h2>
+                <span class="text-sm text-gray-600">
+                    <span id="current-step">1</span> de 8
+                </span>
+            </div>
+            
+            <!-- Progress dots -->
+            <div class="flex items-center gap-2">
+                <div id="progress-dot-1" class="progress-step w-full h-2 bg-gray-200 rounded-full active"></div>
+                <div id="progress-dot-2" class="progress-step w-full h-2 bg-gray-200 rounded-full"></div>
+                <div id="progress-dot-3" class="progress-step w-full h-2 bg-gray-200 rounded-full"></div>
+                <div id="progress-dot-4" class="progress-step w-full h-2 bg-gray-200 rounded-full"></div>
+                <div id="progress-dot-5" class="progress-step w-full h-2 bg-gray-200 rounded-full"></div>
+                <div id="progress-dot-6" class="progress-step w-full h-2 bg-gray-200 rounded-full"></div>
+                <div id="progress-dot-7" class="progress-step w-full h-2 bg-gray-200 rounded-full"></div>
+                <div id="progress-dot-8" class="progress-step w-full h-2 bg-gray-200 rounded-full"></div>
+            </div>
+        </div>
+
+        <!-- Formulario Multi-Step -->
+        <form id="calculadora-form" class="space-y-8">
+            
+            <!-- PREGUNTA 1: Vacantes activas -->
+            <div class="question-card bg-white rounded-2xl shadow-lg p-8" data-step="1">
+                <div class="mb-6">
+                    <label class="block text-xl font-bold text-gray-900 mb-2">
+                        ¿Cuántas vacantes activas manejas al mismo tiempo?
+                    </label>
+                    <p class="text-gray-600">Promedio mensual</p>
+                </div>
+                
+                <div class="space-y-3">
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="vacantes_activas" value="1-3" class="w-5 h-5 text-blue-600" required>
+                        <span class="ml-3 text-gray-900 font-medium">1-3 vacantes</span>
+                    </label>
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="vacantes_activas" value="4-10" class="w-5 h-5 text-blue-600">
+                        <span class="ml-3 text-gray-900 font-medium">4-10 vacantes</span>
+                    </label>
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="vacantes_activas" value="11-25" class="w-5 h-5 text-blue-600">
+                        <span class="ml-3 text-gray-900 font-medium">11-25 vacantes</span>
+                    </label>
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="vacantes_activas" value="26-50" class="w-5 h-5 text-blue-600">
+                        <span class="ml-3 text-gray-900 font-medium">26-50 vacantes</span>
+                    </label>
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="vacantes_activas" value="+50" class="w-5 h-5 text-blue-600">
+                        <span class="ml-3 text-gray-900 font-medium">Más de 50 vacantes</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- PREGUNTA 2: Candidatos por vacante -->
+            <div class="question-card bg-white rounded-2xl shadow-lg p-8 hidden" data-step="2">
+                <div class="mb-6">
+                    <label class="block text-xl font-bold text-gray-900 mb-2">
+                        ¿Cuántos candidatos recibes por vacante (promedio)?
+                    </label>
+                    <p class="text-gray-600">Piensa en una vacante típica</p>
+                </div>
+                
+                <div class="space-y-3">
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="candidatos_por_vacante" value="1-20" class="w-5 h-5 text-blue-600" required>
+                        <span class="ml-3 text-gray-900 font-medium">1-20 candidatos</span>
+                    </label>
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="candidatos_por_vacante" value="21-50" class="w-5 h-5 text-blue-600">
+                        <span class="ml-3 text-gray-900 font-medium">21-50 candidatos</span>
+                    </label>
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="candidatos_por_vacante" value="51-100" class="w-5 h-5 text-blue-600">
+                        <span class="ml-3 text-gray-900 font-medium">51-100 candidatos</span>
+                    </label>
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="candidatos_por_vacante" value="101-200" class="w-5 h-5 text-blue-600">
+                        <span class="ml-3 text-gray-900 font-medium">101-200 candidatos</span>
+                    </label>
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="candidatos_por_vacante" value="+200" class="w-5 h-5 text-blue-600">
+                        <span class="ml-3 text-gray-900 font-medium">Más de 200 candidatos</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- PREGUNTA 3: Principal dolor (MOVIDO ANTES) -->
+            <div class="question-card bg-white rounded-2xl shadow-lg p-8 hidden" data-step="3">
+                <div class="mb-6">
+                    <label class="block text-xl font-bold text-gray-900 mb-2">
+                        ¿Cuál es tu mayor dolor en contratación?
+                    </label>
+                    <p class="text-gray-600">Selecciona el que más te afecta</p>
+                </div>
+                
+                <div class="space-y-3">
+                    <label class="flex items-start p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="principal_dolor" value="Demasiados CVs sin filtrar" class="w-5 h-5 text-blue-600 mt-0.5" required>
+                        <div class="ml-3">
+                            <span class="text-gray-900 font-medium">Demasiados CVs sin filtrar</span>
+                            <p class="text-sm text-gray-500 mt-1">Recibo cientos de CVs y no sé por dónde empezar</p>
+                        </div>
+                    </label>
+                    <label class="flex items-start p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="principal_dolor" value="Toma mucho tiempo" class="w-5 h-5 text-blue-600 mt-0.5">
+                        <div class="ml-3">
+                            <span class="text-gray-900 font-medium">Toma mucho tiempo</span>
+                            <p class="text-sm text-gray-500 mt-1">Paso horas revisando CVs manualmente</p>
+                        </div>
+                    </label>
+                    <label class="flex items-start p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="principal_dolor" value="No sé si estoy eligiendo bien" class="w-5 h-5 text-blue-600 mt-0.5">
+                        <div class="ml-3">
+                            <span class="text-gray-900 font-medium">No sé si estoy eligiendo bien</span>
+                            <p class="text-sm text-gray-500 mt-1">No tengo criterios objetivos para decidir</p>
+                        </div>
+                    </label>
+                    <label class="flex items-start p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="principal_dolor" value="Se me escapan buenos candidatos" class="w-5 h-5 text-blue-600 mt-0.5">
+                        <div class="ml-3">
+                            <span class="text-gray-900 font-medium">Se me escapan buenos candidatos</span>
+                            <p class="text-sm text-gray-500 mt-1">Pierdo talento ante la competencia por ser lento</p>
+                        </div>
+                    </label>
+                    <label class="flex items-start p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="principal_dolor" value="Todo lo anterior" class="w-5 h-5 text-blue-600 mt-0.5">
+                        <div class="ml-3">
+                            <span class="text-gray-900 font-medium">Todo lo anterior</span>
+                            <p class="text-sm text-gray-500 mt-1">Sufro varios de estos problemas</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- PREGUNTA 4: Frecuencia de error -->
+            <div class="question-card bg-white rounded-2xl shadow-lg p-8 hidden" data-step="4">
+                <div class="mb-6">
+                    <label class="block text-xl font-bold text-gray-900 mb-2">
+                        ¿Con qué frecuencia una contratación "no funciona"?
+                    </label>
+                    <p class="text-gray-600">Piensa en el último año</p>
+                </div>
+                
+                <div class="space-y-3">
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="frecuencia_error" value="Casi nunca" class="w-5 h-5 text-blue-600" required>
+                        <span class="ml-3 text-gray-900 font-medium">Casi nunca (menos del 5%)</span>
+                    </label>
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="frecuencia_error" value="1 de cada 10" class="w-5 h-5 text-blue-600">
+                        <span class="ml-3 text-gray-900 font-medium">1 de cada 10 (10%)</span>
+                    </label>
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="frecuencia_error" value="3 de cada 10" class="w-5 h-5 text-blue-600">
+                        <span class="ml-3 text-gray-900 font-medium">3 de cada 10 (30%)</span>
+                    </label>
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="frecuencia_error" value="5 de cada 10" class="w-5 h-5 text-blue-600">
+                        <span class="ml-3 text-gray-900 font-medium">5 de cada 10 (50%)</span>
+                    </label>
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="frecuencia_error" value="Más de la mitad" class="w-5 h-5 text-blue-600">
+                        <span class="ml-3 text-gray-900 font-medium">Más de la mitad (+50%)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- PREGUNTA 5: Tiempo por CV -->
+            <div class="question-card bg-white rounded-2xl shadow-lg p-8 hidden" data-step="5">
+                <div class="mb-6">
+                    <label class="block text-xl font-bold text-gray-900 mb-2">
+                        ¿Cuánto tiempo dedicas a revisar CADA CV?
+                    </label>
+                    <p class="text-gray-600">Tiempo promedio de lectura y evaluación</p>
+                </div>
+                
+                <div class="space-y-3">
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="tiempo_por_cv" value="1-3 min" class="w-5 h-5 text-blue-600" required>
+                        <span class="ml-3 text-gray-900 font-medium">1-3 minutos</span>
+                    </label>
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="tiempo_por_cv" value="4-7 min" class="w-5 h-5 text-blue-600">
+                        <span class="ml-3 text-gray-900 font-medium">4-7 minutos</span>
+                    </label>
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="tiempo_por_cv" value="8-15 min" class="w-5 h-5 text-blue-600">
+                        <span class="ml-3 text-gray-900 font-medium">8-15 minutos</span>
+                    </label>
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="tiempo_por_cv" value="+15 min" class="w-5 h-5 text-blue-600">
+                        <span class="ml-3 text-gray-900 font-medium">Más de 15 minutos</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- PREGUNTA 6: Personas involucradas -->
+            <div class="question-card bg-white rounded-2xl shadow-lg p-8 hidden" data-step="6">
+                <div class="mb-6">
+                    <label class="block text-xl font-bold text-gray-900 mb-2">
+                        ¿Cuántas personas participan en el proceso de selección?
+                    </label>
+                    <p class="text-gray-600">Incluye revisión de CVs, entrevistas, decisión final</p>
+                </div>
+                
+                <div class="space-y-3">
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="personas_proceso" value="Solo yo" class="w-5 h-5 text-blue-600" required>
+                        <span class="ml-3 text-gray-900 font-medium">Solo yo</span>
+                    </label>
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="personas_proceso" value="2-3" class="w-5 h-5 text-blue-600">
+                        <span class="ml-3 text-gray-900 font-medium">2-3 personas</span>
+                    </label>
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="personas_proceso" value="4-6" class="w-5 h-5 text-blue-600">
+                        <span class="ml-3 text-gray-900 font-medium">4-6 personas</span>
+                    </label>
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="personas_proceso" value="+7" class="w-5 h-5 text-blue-600">
+                        <span class="ml-3 text-gray-900 font-medium">Más de 7 personas</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- PREGUNTA 7: Datos de contacto (ANTES del salario) -->
+            <div class="question-card bg-white rounded-2xl shadow-lg p-8 hidden" data-step="7">
+                <div class="mb-6">
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">
+                        Información básica
+                    </h3>
+                    <p class="text-gray-600">Para enviarte tu reporte personalizado</p>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nombre completo *</label>
+                        <input 
+                            type="text" 
+                            name="nombre" 
+                            required 
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition"
+                            placeholder="María González"
+                        >
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email corporativo *</label>
+                        <input 
+                            type="email" 
+                            name="email" 
+                            required 
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition"
+                            placeholder="maria@empresa.com"
+                        >
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Empresa *</label>
+                        <input 
+                            type="text" 
+                            name="empresa" 
+                            required 
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition"
+                            placeholder="Tech Startup SAS"
+                        >
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tu cargo *</label>
+                        <input 
+                            type="text" 
+                            name="cargo" 
+                            required 
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition"
+                            placeholder="HR Manager"
+                        >
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono (opcional)</label>
+                        <input 
+                            type="tel" 
+                            name="telefono" 
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition"
+                            placeholder="+57 300 123 4567"
+                        >
+                    </div>
+                </div>
+            </div>
+
+            <!-- PREGUNTA 8: Salario (AL FINAL con disclaimer) -->
+            <div class="question-card bg-white rounded-2xl shadow-lg p-8 hidden" data-step="8">
+                <div class="mb-6">
+                    <label class="block text-xl font-bold text-gray-900 mb-2">
+                        ¿Cuál es el salario mensual promedio de quienes revisan CVs?
+                    </label>
+                    <p class="text-gray-600 mb-4">Necesario solo para calcular costo hora/empleado</p>
+                    
+                    <!-- Disclaimer de confidencialidad -->
+                    <div class="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <svg class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                        </svg>
+                        <p class="text-sm text-blue-800">
+                            📊 <strong>Estimación confidencial</strong> — No compartimos esta información
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="space-y-3">
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="rango_salarial" value="$2-5k/mes" class="w-5 h-5 text-blue-600" required>
+                        <span class="ml-3 text-gray-900 font-medium">$2,000 - $5,000 / mes</span>
+                    </label>
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="rango_salarial" value="$6-10k" class="w-5 h-5 text-blue-600">
+                        <span class="ml-3 text-gray-900 font-medium">$6,000 - $10,000 / mes</span>
+                    </label>
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="rango_salarial" value="$11-20k" class="w-5 h-5 text-blue-600">
+                        <span class="ml-3 text-gray-900 font-medium">$11,000 - $20,000 / mes</span>
+                    </label>
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
+                        <input type="radio" name="rango_salarial" value="+$20k" class="w-5 h-5 text-blue-600">
+                        <span class="ml-3 text-gray-900 font-medium">Más de $20,000 / mes</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Navegación -->
+            <div class="flex items-center justify-between pt-6">
+                <button 
+                    type="button" 
+                    id="btn-prev" 
+                    class="px-6 py-3 text-gray-600 hover:text-gray-900 font-medium transition hidden"
+                >
+                    ← Anterior
+                </button>
+                
+                <button 
+                    type="button" 
+                    id="btn-next" 
+                    class="ml-auto px-8 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition flex items-center gap-2"
+                >
+                    Siguiente
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                    </svg>
+                </button>
+                
+                <button 
+                    type="submit" 
+                    id="btn-submit" 
+                    class="ml-auto px-8 py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition hidden flex items-center gap-2"
+                >
+                    Ver mi diagnóstico
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Loading state -->
+            <div id="loading" class="hidden text-center py-4">
+                <div class="inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <p class="mt-2 text-gray-600">Calculando tu diagnóstico...</p>
+            </div>
+        </form>
+    </div>
+
+    <script src="{{ url_for('static', filename='calculadora/js/calculadora.js') }}"></script>
+</body>
+</html>
