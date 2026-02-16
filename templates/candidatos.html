@@ -6,6 +6,63 @@
     <title>Candidatos | Sales AI</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* --- ESTILOS ADICIONALES PARA FILTROS Y MODAL --- */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0; top: 0; 
+            width: 100%; height: 100%; 
+            background: rgba(15, 23, 42, 0.6); /* Overlay más moderno */
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            background: white; 
+            margin: 5% auto; 
+            padding: 2.5rem; 
+            width: 70%; 
+            max-width: 900px; 
+            border-radius: 20px; 
+            position: relative; 
+            max-height: 85vh; 
+            overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .close-btn {
+            position: absolute; right: 25px; top: 15px; 
+            font-size: 32px; font-weight: bold; color: var(--gray-400); 
+            cursor: pointer; transition: 0.2s;
+        }
+        .close-btn:hover { color: var(--gray-900); }
+
+        /* Estados visuales del Score */
+        .score-high { color: #065f46; background: #d1fae5; border: 1px solid #a7f3d0; }
+        .score-medium { color: #92400e; background: #fef3c7; border: 1px solid #fde68a; }
+        .score-low { color: #991b1b; background: #fee2e2; border: 1px solid #fecaca; }
+
+        /* Badge de Veredicto */
+        .veredicto-badge {
+            font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 99px; text-transform: uppercase;
+        }
+
+        .filters-bar input, .filters-bar select {
+            transition: all 0.2s;
+            outline: none;
+        }
+        .filters-bar input:focus, .filters-bar select:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+    </style>
 </head>
 <body style="background-color: var(--gray-50);">
 
@@ -24,59 +81,73 @@
     <header class="page-hero">
         <div class="container">
             <h1>🎯 Centro de Candidatos</h1>
-            <p>Gestiona y analiza los resultados de las evaluaciones por IA en tiempo real.</p>
+            <p>Filtra, analiza y contacta a los mejores perfiles evaluados por IA.</p>
         </div>
     </header>
 
     <main class="container" style="margin-top: var(--spacing-xl); margin-bottom: var(--spacing-2xl);">
         
-        <div class="problem-card" style="width: 100%; overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse; text-align: left;">
+        <div class="filters-bar" style="background: white; padding: 1.25rem; border-radius: 16px; margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: center; box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200);">
+            <div style="flex: 1; position: relative;">
+                <input type="text" id="searchInput" onkeyup="aplicarFiltros()" placeholder="🔍 Buscar por nombre o identificación..." 
+                       style="width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--gray-200); border-radius: 10px; font-size: 0.95rem;">
+            </div>
+            <select id="filterVeredicto" onchange="aplicarFiltros()" style="padding: 0.75rem 1rem; border: 1px solid var(--gray-200); border-radius: 10px; background: white; font-size: 0.95rem; cursor: pointer; min-width: 180px;">
+                <option value="TODOS">Todos los Veredictos</option>
+                <option value="APTO">Solo Aptos</option>
+                <option value="REVISIÓN">En Revisión</option>
+                <option value="NO APTO">No Aptos</option>
+            </select>
+            <div style="color: var(--gray-400); font-size: 0.85rem; font-weight: 500;">
+                <span id="contadorCandidatos">{{ candidatos|length }}</span> candidatos encontrados
+            </div>
+        </div>
+
+        <div class="problem-card" style="width: 100%; overflow-x: auto; border-radius: 16px; border: 1px solid var(--gray-200);">
+            <table id="candidatosTable" style="width: 100%; border-collapse: collapse; text-align: left;">
                 <thead>
-                    <tr style="border-bottom: 2px solid var(--gray-200);">
-                        <th style="padding: var(--spacing-md); color: var(--gray-700);">CANDIDATO</th>
-                        <th style="padding: var(--spacing-md); color: var(--gray-700);">CONTACTO</th>
-                        <th style="padding: var(--spacing-md); color: var(--gray-700);">AUTORIZA</th>
-                        <th style="padding: var(--spacing-md); color: var(--gray-700);">SCORE AI</th>
-                        <th style="padding: var(--spacing-md); color: var(--gray-700);">ACCIONES</th>
+                    <tr style="background: var(--gray-50); border-bottom: 2px solid var(--gray-200);">
+                        <th style="padding: 1.25rem; color: var(--gray-700); font-weight: 600;">CANDIDATO</th>
+                        <th style="padding: 1.25rem; color: var(--gray-700); font-weight: 600;">CONTACTO</th>
+                        <th style="padding: 1.25rem; color: var(--gray-700); font-weight: 600;">SCORE / VEREDICTO</th>
+                        <th style="padding: 1.25rem; color: var(--gray-700); font-weight: 600;">ACCIONES</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for c in candidatos %}
-                    <tr style="border-bottom: 1px solid var(--gray-100); transition: background 0.2s;" onmouseover="this.style.backgroundColor='#f9fafb'" onmouseout="this.style.backgroundColor='transparent'">
-                        <td style="padding: var(--spacing-md);">
-                            <div style="font-weight: 600; color: var(--gray-900);">{{ c.nombre_candidato }}</div>
-                            <div style="font-size: 0.85rem; color: var(--gray-500);">ID: {{ c.identificacion }}</div>
+                    <tr class="candidato-row" style="border-bottom: 1px solid var(--gray-100); transition: 0.2s;">
+                        <td style="padding: 1.25rem;">
+                            <div class="nombre-candidato" style="font-weight: 600; color: var(--gray-900); font-size: 1rem;">{{ c.nombre_candidato }}</div>
+                            <div style="font-size: 0.8rem; color: var(--gray-500); margin-top: 2px;">ID: {{ c.identificacion }}</div>
                         </td>
                         
-                        <td style="padding: var(--spacing-md);">
-                            <div style="font-size: 0.9rem; color: var(--gray-700);">{{ c.telefono if c.telefono else 'N/A' }}</div>
+                        <td style="padding: 1.25rem;">
+                            <div style="font-size: 0.9rem; color: var(--gray-700); font-weight: 500;">{{ c.telefono if c.telefono else 'Sin Teléfono' }}</div>
                             <div style="font-size: 0.8rem; color: var(--primary-blue);">{{ c.email if c.email else '' }}</div>
                         </td>
 
-                        <td style="padding: var(--spacing-md);">
-                            {% if c.autoriza_datos == 'SÍ' %}
-                                <span style="color: #065F46; background: #D1FAE5; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">SÍ</span>
-                            {% else %}
-                                <span style="color: #991B1B; background: #FEE2E2; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">NO</span>
-                            {% endif %}
-                        </td>
-                        
-                        <td style="padding: var(--spacing-md);">
-                            <span class="score-mini {% if c.score|int >= 70 %}high{% elif c.score|int >= 40 %}medium{% else %}low{% endif %}">
-                                {{ c.score if c.score is not none else 0 }}%
-                            </span>
+                        <td style="padding: 1.25rem;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span class="score-mini {% if c.score|int >= 75 %}score-high{% elif c.score|int >= 50 %}score-medium{% else %}score-low{% endif %}" style="padding: 4px 10px; border-radius: 8px; font-weight: 700;">
+                                    {{ c.score if c.score is not none else 0 }}%
+                                </span>
+                                <span class="veredicto-badge" style="color: var(--gray-600); background: var(--gray-100);">
+                                    {{ c.veredicto }}
+                                </span>
+                            </div>
                         </td>
 
-                        <td style="padding: var(--spacing-md);">
+                        <td style="padding: 1.25rem; display: flex; gap: 0.5rem;">
+                            <button onclick="verDetalle('{{ c.nombre_candidato }}', '{{ c.fortalezas }}', '{{ c.debilidades }}', '{{ c.analisis_ia }}', '{{ c.score }}', '{{ c.veredicto }}')" 
+                                    class="btn-secondary" style="padding: 0.5rem 0.8rem; font-size: 0.8rem; display: flex; align-items: center; gap: 5px;">
+                                👁️ Detalle
+                            </button>
+
                             {% if c.telefono %}
-                                <a href="https://wa.me/{{ c.telefono }}" target="_blank" class="btn-primary" style="text-decoration: none; padding: 0.6rem 1rem; font-size: 0.85rem; display: inline-block; width: auto;">
+                                <a href="https://wa.me/{{ c.telefono }}?text=Hola%20{{ c.nombre_candidato }},%20te%20contactamos%20de%20Sales%20AI..." target="_blank" 
+                                   class="btn-primary" style="text-decoration: none; padding: 0.5rem 0.8rem; font-size: 0.8rem;">
                                     WhatsApp
                                 </a>
-                            {% else %}
-                                <button disabled style="background: var(--gray-300); color: white; border: none; padding: 0.6rem 1rem; border-radius: 0.75rem; cursor: not-allowed; font-size: 0.85rem;">
-                                    Sin Teléfono
-                                </button>
                             {% endif %}
                         </td>
                     </tr>
@@ -85,12 +156,47 @@
             </table>
             
             {% if not candidatos %}
-            <div style="padding: var(--spacing-2xl); text-align: center; color: var(--gray-500);">
-                <p>No hay candidatos evaluados todavía.</p>
+            <div id="noDataMessage" style="padding: var(--spacing-2xl); text-align: center; color: var(--gray-500);">
+                <p>No se encontraron candidatos evaluados.</p>
             </div>
             {% endif %}
         </div>
     </main>
+
+    <div id="detalleModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="cerrarModal()">&times;</span>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <div>
+                    <h2 id="modalNombre" style="margin: 0; color: var(--gray-900); font-size: 1.8rem;">Nombre</h2>
+                    <p id="modalResumen" style="margin: 5px 0 0; color: var(--gray-500); font-weight: 500;">Análisis detallado de la entrevista</p>
+                </div>
+                <div id="modalScoreBadge" style="padding: 1rem 1.5rem; border-radius: 12px; text-align: center;">
+                    <div style="font-size: 0.7rem; text-transform: uppercase; font-weight: 800; opacity: 0.8;">Score IA</div>
+                    <div id="modalScoreValue" style="font-size: 1.5rem; font-weight: 900;">0%</div>
+                </div>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid var(--gray-200); margin-bottom: 2rem;">
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                <div style="background: #f0fdf4; padding: 1.5rem; border-radius: 12px; border: 1px solid #dcfce7;">
+                    <h4 style="margin-top: 0; color: #166534; display: flex; align-items: center; gap: 8px;">✅ Fortalezas</h4>
+                    <p id="modalFortalezas" style="color: #166534; line-height: 1.6; font-size: 0.95rem;"></p>
+                </div>
+                <div style="background: #fef2f2; padding: 1.5rem; border-radius: 12px; border: 1px solid #fee2e2;">
+                    <h4 style="margin-top: 0; color: #991b1b; display: flex; align-items: center; gap: 8px;">❌ Debilidades</h4>
+                    <p id="modalDebilidades" style="color: #991b1b; line-height: 1.6; font-size: 0.95rem;"></p>
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem; padding: 1.5rem; background: var(--gray-50); border-radius: 12px; border: 1px solid var(--gray-200);">
+                <h4 style="margin-top: 0; color: var(--gray-700);">💡 Análisis Profundo (IA)</h4>
+                <p id="modalAnalisis" style="color: var(--gray-600); line-height: 1.7; font-size: 1rem; font-style: italic;"></p>
+            </div>
+        </div>
+    </div>
 
     <footer class="footer">
         <div class="container footer-bottom">
@@ -98,5 +204,65 @@
         </div>
     </footer>
 
+    <script>
+        // FUNCIÓN FILTROS
+        function aplicarFiltros() {
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+            const veredictoFilter = document.getElementById('filterVeredicto').value.toUpperCase();
+            const rows = document.querySelectorAll('.candidato-row');
+            let visibles = 0;
+
+            rows.forEach(row => {
+                const nombre = row.querySelector('.nombre-candidato').innerText.toLowerCase();
+                const veredicto = row.querySelector('.veredicto-badge').innerText.toUpperCase();
+                
+                const matchesSearch = nombre.includes(searchText);
+                const matchesVeredicto = (veredictoFilter === 'TODOS' || veredicto.includes(veredictoFilter));
+
+                if (matchesSearch && matchesVeredicto) {
+                    row.style.display = "";
+                    visibles++;
+                } else {
+                    row.style.display = "none";
+                }
+            });
+
+            document.getElementById('contadorCandidatos').innerText = visibles;
+        }
+
+        // FUNCIÓN MODAL
+        function verDetalle(nombre, fortalezas, debilidades, analisis, score, veredicto) {
+            document.getElementById('modalNombre').innerText = nombre;
+            document.getElementById('modalFortalezas').innerText = fortalezas || "No registradas";
+            document.getElementById('modalDebilidades').innerText = debilidades || "No registradas";
+            document.getElementById('modalAnalisis').innerText = analisis || "Análisis no disponible";
+            document.getElementById('modalScoreValue').innerText = score + "%";
+            
+            // Ajustar color del badge del score en el modal
+            const badge = document.getElementById('modalScoreBadge');
+            const scoreInt = parseInt(score);
+            if (scoreInt >= 75) {
+                badge.style.background = "#d1fae5"; badge.style.color = "#065f46";
+            } else if (scoreInt >= 50) {
+                badge.style.background = "#fef3c7"; badge.style.color = "#92400e";
+            } else {
+                badge.style.background = "#fee2e2"; badge.style.color = "#991b1b";
+            }
+
+            document.getElementById('detalleModal').style.display = "block";
+        }
+
+        function cerrarModal() {
+            document.getElementById('detalleModal').style.display = "none";
+        }
+
+        // Cerrar modal al hacer click fuera de él
+        window.onclick = function(event) {
+            const modal = document.getElementById('detalleModal');
+            if (event.target == modal) {
+                cerrarModal();
+            }
+        }
+    </script>
 </body>
 </html>
