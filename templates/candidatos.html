@@ -51,8 +51,8 @@
                             {{ c.nombre_puesto if c.nombre_puesto else "General" }}
                         </td>
                         <td style="padding: var(--spacing-md);">
-                            <span class="score-mini {% if c.score_ai|int >= 70 %}high{% elif c.score_ai|int >= 40 %}medium{% else %}low{% endif %}">
-                                {{ c.score_ai }}%
+                            <span class="score-mini {% if c.score|int >= 70 %}high{% elif c.score|int >= 40 %}medium{% else %}low{% endif %}">
+                                {{ c.score if c.score is not none else 0 }}%
                             </span>
                         </td>
                         <td style="padding: var(--spacing-md);">

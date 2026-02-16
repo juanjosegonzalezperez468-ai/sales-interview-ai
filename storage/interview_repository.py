@@ -39,13 +39,14 @@ def load_interviews():
         return []
 
 def save_interview(data):
-    """Guarda la entrevista en Supabase y ya no en el JSON local"""
+    """Guarda la entrevista en Supabase con los nombres de columna correctos"""
     try:
+        # Mantenemos toda tu estructura, solo ajustamos los nombres de las llaves
         payload = {
             "nombre_candidato": data.get('nombre'),
             "identificacion": str(data.get('cc')),
-            "vacante_id": data.get('vacante_id'), # Asegúrate de que llegue este ID
-            "score_ai": data.get('score'),
+            "vacante_id": data.get('vacante_id'),
+            "score": data.get('score'),      # <--- CAMBIADO: Antes tenías score_ai
             "veredicto": data.get('veredicto'),
             "fortalezas": data.get('fortalezas'),
             "debilidades": data.get('debilidades'),
@@ -53,10 +54,14 @@ def save_interview(data):
             "fecha": data.get('fecha_evaluacion')
         }
         
+        # Insertamos en la tabla
         res = supabase.table('entrevistas').insert(payload).execute()
+        
+        # Mantenemos tu log de éxito
         print("✅ Guardado exitoso en Supabase")
         return res
     except Exception as e:
+        # Mantenemos tu manejo de errores
         print(f"❌ Error guardando en Supabase: {e}")
         return None
 
