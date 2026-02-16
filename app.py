@@ -278,6 +278,18 @@ def procesar():
     except Exception as e:
         logger.error(f"❌ Error: {e}")
         return f"Error: {e}", 500
+    
+@app.route('/candidatos')
+def lista_candidatos():
+    # Traemos los datos de la tabla 'entrevistas' (que ahora actúa como candidatos)
+    # También traemos el nombre de la vacante relacionada
+    try:
+        res = supabase.table('entrevistas').select('*, vacantes(nombre_vacante)').execute()
+        candidatos = res.data
+        return render_template('candidatos.html', candidatos=candidatos)
+    except Exception as e:
+        print(f"Error: {e}")
+        return "Hubo un error al cargar los candidatos", 500
 
 # ============================================
 # DASHBOARD

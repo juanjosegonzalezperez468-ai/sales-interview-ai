@@ -1,0 +1,73 @@
+{% extends "layout.html" %} {% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">🎯 Centro de Decisión de Candidatos</h1>
+            <p class="text-muted">Gestiona el contacto y revisa el Score AI de tus postulantes.</p>
+        </div>
+        <div>
+            <span class="badge bg-primary px-3 py-2">Total Postulados: {{ candidatos|length }}</span>
+        </div>
+    </div>
+
+    <div class="card shadow border-0">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Candidato</th>
+                            <th>Vacante Aplicada</th>
+                            <th>Score AI</th>
+                            <th>Veredicto</th>
+                            <th class="text-center">Acciones de Contacto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in candidatos %}
+                        <tr>
+                            <td>
+                                <strong>{{ c.nombre_candidato }}</strong><br>
+                                <small class="text-muted">ID: {{ c.identificacion }}</small>
+                            </td>
+                            <td>
+                                <span class="text-info">{{ c.vacantes.nombre_vacante if c.vacantes else 'General' }}</span>
+                            </td>
+                            <td>
+                                {% if c.score_ai >= 85 %}
+                                    <span class="badge bg-success" style="width: 60px;">{{ c.score_ai }}%</span>
+                                {% elif c.score_ai >= 60 %}
+                                    <span class="badge bg-warning text-dark" style="width: 60px;">{{ c.score_ai }}%</span>
+                                {% else %}
+                                    <span class="badge bg-danger" style="width: 60px;">{{ c.score_ai }}%</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <em class="small text-secondary">{{ c.veredicto or 'Pendiente de análisis' }}</em>
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group shadow-sm">
+                                    <a href="https://wa.me/{{ c.identificacion }}?text=Hola%20{{ c.nombre_candidato }},%20vimos%20tu%20perfil%20en%20SalesAI..." 
+                                       target="_blank" class="btn btn-sm btn-success">
+                                        <i class="fab fa-whatsapp"></i> WhatsApp
+                                    </a>
+                                    <a href="#" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-user-check"></i> Detalle
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                No se encontraron registros en la tabla de entrevistas todavía.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
