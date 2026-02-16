@@ -282,22 +282,28 @@ def procesar():
 @app.route('/candidatos')
 def lista_candidatos():
     try:
-        # Consulta limpia a la tabla entrevistas
-        res = supabase.table('entrevistas').select('*').execute()
-        candidatos = res.data
+        # 1. Traemos los candidatos (donde están Carlos Mario, score_ai, etc.)
+        res_candidatos = supabase.table('entrevistas').select('*').execute()
+        candidatos = res_candidatos.data
         
-        # Consultamos las vacantes para obtener los nombres manualmente
-        res_v = supabase.table('vacantes').select('id, nombre_vacante').execute()
-        vacantes_map = {v['id']: v['nombre_vacante'] for v in res_v.data}
+        # 2. Traemos la lista de vacantes para saber cómo se llama cada 'vacante_id'
+        res_vacantes = supabase.table('vacantes').select('id, nombre_vacante').execute()
         
-        # Asignamos el nombre de la vacante a cada candidato
+        # Creamos un "traductor" de ID a Nombre: {1: 'Asesor', 2: 'Dev'}
+        nombres_vacantes = {v['id']: v['nombre_vacante'] for v in res_vacantes.data}
+        
+        # 3. Cruzamos los datos en Python
         for c in candidatos:
-            c['nombre_puesto'] = vacantes_map.get(c.get('vacante_id'), 'Sin asignar')
+            # Sacamos el ID de la vacante que tiene el candidato
+            id_v = c.get('vacante_id')
+            # Si el ID existe en nuestro traductor, ponemos el nombre, si no, 'Sin asignar'
+            c['nombre_puesto'] = nombres_vacantes.get(id_v, 'General')
 
         return render_template('candidatos.html', candidatos=candidatos)
+        
     except Exception as e:
-        print(f"Error en candidatos: {e}")
-        return f"Error en el servidor: {str(e)}", 500
+        print(f"Error técnico: {e}")
+        return f"Error al cargar datos: {e}", 500
 
 # ============================================
 # DASHBOARD

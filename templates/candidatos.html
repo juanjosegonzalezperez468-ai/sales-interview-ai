@@ -31,8 +31,7 @@
                                 <small class="text-muted">ID: {{ c.identificacion }}</small>
                             </td>
                             <td>
-                                <span class="text-info">{{ c.vacantes.nombre_vacante if c.vacantes else 'General' }}</span>
-                            </td>
+                                <span class="text-info">{{ c.nombre_puesto }}</span>                            </td>
                             <td>
                                 {% if c.score_ai >= 85 %}
                                     <span class="badge bg-success" style="width: 60px;">{{ c.score_ai }}%</span>
