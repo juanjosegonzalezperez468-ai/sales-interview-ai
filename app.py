@@ -282,21 +282,21 @@ def procesar():
 @app.route('/candidatos')
 def lista_candidatos():
     try:
-        # Probamos una consulta limpia
+        # Consulta limpia a la tabla entrevistas
         res = supabase.table('entrevistas').select('*').execute()
         candidatos = res.data
         
-        # Obtenemos las vacantes por separado para evitar errores de relación complejos
-        res_vacantes = supabase.table('vacantes').select('id, nombre_vacante').execute()
-        vacantes_dict = {v['id']: v['nombre_vacante'] for v in res_vacantes.data}
+        # Consultamos las vacantes para obtener los nombres manualmente
+        res_v = supabase.table('vacantes').select('id, nombre_vacante').execute()
+        vacantes_map = {v['id']: v['nombre_vacante'] for v in res_v.data}
         
-        # Combinamos manualmente los datos
+        # Asignamos el nombre de la vacante a cada candidato
         for c in candidatos:
-            c['nombre_puesto'] = vacantes_dict.get(c.get('vacante_id'), 'General')
+            c['nombre_puesto'] = vacantes_map.get(c.get('vacante_id'), 'Sin asignar')
 
         return render_template('candidatos.html', candidatos=candidatos)
     except Exception as e:
-        print(f"Error detallado: {e}")
+        print(f"Error en candidatos: {e}")
         return f"Error en el servidor: {str(e)}", 500
 
 # ============================================
