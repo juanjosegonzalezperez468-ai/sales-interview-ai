@@ -302,6 +302,27 @@ def lista_candidatos():
     except Exception as e:
         print(f"ERROR EN APP.PY: {str(e)}")
         return f"Error de conexión: {str(e)}", 500
+    
+ # --- RUTA PARA ACTUALIZAR ESTADO DESDE EL CRM ---
+@app.route('/actualizar_estado', methods=['POST'])
+def actualizar_estado():
+    try:
+        data = request.json
+        candidato_id = data.get('id')
+        nuevo_estado = data.get('estado')
+
+        if not candidato_id or not nuevo_estado:
+            return jsonify({"status": "error", "message": "Datos incompletos"}), 400
+
+        # Actualización en la tabla 'entrevistas' de Supabase
+        supabase.table('entrevistas').update({'estado': nuevo_estado}).eq('id', candidato_id).execute()
+
+        print(f"✅ Candidato {candidato_id} actualizado a: {nuevo_estado}")
+        return jsonify({"status": "success"}), 200
+
+    except Exception as e:
+        print(f"❌ Error en actualización: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500   
 
 # ============================================
 # DASHBOARD
