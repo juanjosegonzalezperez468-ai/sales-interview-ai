@@ -39,6 +39,7 @@ def run_interview_process():
     datos_completos = {
         "cc": cc,
         "nombre": nombre,
+        "vacante_id": 1, # <--- Agrega esto para que no falle la relación
         "texto_original": texto_raw,
         **res 
     }
