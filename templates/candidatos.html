@@ -65,7 +65,6 @@
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .close-btn { position: absolute; right: 25px; top: 15px; font-size: 32px; font-weight: bold; color: var(--gray-400); cursor: pointer; }
 
-        /* Puntos de color para el score */
         .score-high { color: #065f46; background: #d1fae5; border: 1px solid #a7f3d0; }
         .score-medium { color: #92400e; background: #fef3c7; border: 1px solid #fde68a; }
         .score-low { color: #991b1b; background: #fee2e2; border: 1px solid #fecaca; }
@@ -123,7 +122,9 @@
                 </thead>
                 <tbody id="tablaBody">
                     {% for c in candidatos %}
-                    <tr class="candidato-row" data-estado="{{ c.estado if c.estado else 'Evaluado' }}" style="border-bottom: 1px solid var(--gray-100); transition: 0.2s;">
+                    <tr class="candidato-row" 
+                        data-estado="{{ c.estado if c.estado and c.estado != 'None' else 'Evaluado' }}" 
+                        style="border-bottom: 1px solid var(--gray-100); transition: 0.2s;">
                         <td style="padding: 1.25rem;">
                             <div class="nombre-candidato" style="font-weight: 600; color: var(--gray-900); font-size: 1rem;">{{ c.nombre_candidato }}</div>
                             <div style="font-size: 0.8rem; color: var(--gray-500);">ID: {{ c.identificacion }}</div>
@@ -142,7 +143,7 @@
                                     {% elif c.estado == 'Contratado' %}status-contratado
                                     {% elif c.estado == 'Rechazado' %}status-rechazado
                                     {% else %}status-evaluado{% endif %}">
-                                <option value="Evaluado" {% if c.estado == 'Evaluado' or not c.estado %}selected{% endif %}>🆕 Evaluado por IA</option>
+                                <option value="Evaluado" {% if c.estado == 'Evaluado' or not c.estado or c.estado == 'None' %}selected{% endif %}>🆕 Evaluado por IA</option>
                                 <option value="Agendado Meet" {% if c.estado == 'Agendado Meet' %}selected{% endif %}>📅 Agendado Meet</option>
                                 <option value="Contratado" {% if c.estado == 'Contratado' %}selected{% endif %}>✅ Contratado</option>
                                 <option value="Rechazado" {% if c.estado == 'Rechazado' %}selected{% endif %}>❌ Rechazado</option>
@@ -151,7 +152,7 @@
 
                         <td style="padding: 1.25rem; display: flex; gap: 0.5rem;">
                             <button onclick="verDetalle('{{ c.nombre_candidato }}', '{{ c.fortalezas }}', '{{ c.debilidades }}', '{{ c.analisis_ia }}', '{{ c.score }}')" 
-                                    class="btn-secondary" style="padding: 0.5rem 0.8rem; font-size: 0.8rem; display: flex; align-items: center; gap: 5px;">
+                                    class="btn-secondary" style="padding: 0.5rem 0.8rem; font-size: 0.8rem;">
                                 👁️ Detalle
                             </button>
 
@@ -193,7 +194,7 @@
     </div>
 
     <script>
-        // FILTRADO POR PESTAÑAS
+        // FILTRADO POR PESTAÑAS (CORREGIDO PARA VALORES NULOS)
         function filtrarPorPestaña(estado, btn) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
@@ -202,7 +203,11 @@
             let visibles = 0;
 
             rows.forEach(row => {
-                const rowEstado = row.getAttribute('data-estado');
+                let rowEstado = row.getAttribute('data-estado');
+                
+                // Si el atributo data-estado está vacío o es 'None', lo tratamos como 'Evaluado'
+                if (!rowEstado || rowEstado === 'None') rowEstado = 'Evaluado';
+
                 let mostrar = false;
 
                 if (estado === 'TODOS') mostrar = true;
@@ -218,7 +223,6 @@
             document.getElementById('contadorCandidatos').innerText = visibles;
         }
 
-        // BUSCADOR DE TEXTO
         function aplicarFiltros() {
             const searchText = document.getElementById('searchInput').value.toLowerCase();
             const rows = document.querySelectorAll('.candidato-row');
@@ -226,6 +230,9 @@
 
             rows.forEach(row => {
                 const nombre = row.querySelector('.nombre-candidato').innerText.toLowerCase();
+                // Solo buscamos entre los que ya están visibles por la pestaña activa
+                const isTabActive = row.getAttribute('style').indexOf('display: none') === -1;
+                
                 if (nombre.includes(searchText)) {
                     row.style.display = "";
                     visibles++;
@@ -236,13 +243,11 @@
             document.getElementById('contadorCandidatos').innerText = visibles;
         }
 
-        // CAMBIAR ESTADO (FETCH AL BACKEND)
         function cambiarEstado(id, elemento) {
             const nuevoEstado = elemento.value;
             const row = elemento.closest('.candidato-row');
             row.setAttribute('data-estado', nuevoEstado);
 
-            // Actualizar clases de color
             elemento.classList.remove('status-evaluado', 'status-meet', 'status-contratado', 'status-rechazado');
             if (nuevoEstado === 'Agendado Meet') elemento.classList.add('status-meet');
             else if (nuevoEstado === 'Contratado') elemento.classList.add('status-contratado');
@@ -258,7 +263,6 @@
             });
         }
 
-        // MODAL DETALLE
         function verDetalle(nombre, fortalezas, debilidades, analisis, score) {
             document.getElementById('modalNombre').innerText = nombre;
             document.getElementById('modalFortalezas').innerText = fortalezas || "N/A";
