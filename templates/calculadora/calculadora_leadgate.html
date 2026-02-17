@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tu Diagnóstico Está Listo - Sales AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'DM Sans', sans-serif; }
+        h1, h2, h3, .heading { font-family: 'Sora', sans-serif; }
+
+        /* ---- FONDO CON MESH GRADIENTE ---- */
+        body {
+            background: #0a0f1e;
+            min-height: 100vh;
+        }
+
+        .mesh-bg {
+            position: fixed; inset: 0; z-index: 0; overflow: hidden;
+        }
+        .mesh-bg::before {
+            content: '';
+            position: absolute;
+            width: 700px; height: 700px;
+            background: radial-gradient(circle, rgba(37,99,235,0.18) 0%, transparent 70%);
+            top: -200px; left: -150px;
+            animation: float1 12s ease-in-out infinite;
+        }
+        .mesh-bg::after {
+            content: '';
+            position: absolute;
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(124,58,237,0.14) 0%, transparent 70%);
+            bottom: -100px; right: -100px;
+            animation: float2 15s ease-in-out infinite;
+        }
+        @keyframes float1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,30px)} }
+        @keyframes float2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,-40px)} }
+
+        /* ---- CONTADOR ANIMADO ---- */
+        .counter { display: inline-block; }
+
+        /* ---- CARD PRINCIPAL ---- */
+        .gate-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+        }
+
+        /* ---- NÚMERO GRANDE ANIMADO ---- */
+        @keyframes countUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-count { animation: countUp 0.8s ease-out forwards; }
+
+        /* ---- INPUTS ---- */
+        .input-field {
+            width: 100%;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 12px;
+            padding: 14px 18px;
+            color: white;
+            font-size: 15px;
+            transition: all 0.2s;
+            outline: none;
+        }
+        .input-field::placeholder { color: rgba(255,255,255,0.35); }
+        .input-field:focus {
+            border-color: rgba(99,102,241,0.7);
+            background: rgba(255,255,255,0.09);
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+        }
+
+        /* ---- PLANES ---- */
+        .plan-card {
+            background: rgba(255,255,255,0.05);
+            border: 1.5px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 28px 24px;
+            cursor: pointer;
+            transition: all 0.25s;
+            position: relative;
+        }
+        .plan-card:hover {
+            border-color: rgba(99,102,241,0.5);
+            background: rgba(99,102,241,0.08);
+            transform: translateY(-3px);
+        }
+        .plan-card.selected {
+            border-color: #6366f1;
+            background: rgba(99,102,241,0.12);
+            box-shadow: 0 0 0 1px rgba(99,102,241,0.3), 0 8px 32px rgba(99,102,241,0.2);
+        }
+        .plan-card.featured {
+            border-color: rgba(99,102,241,0.6);
+            background: rgba(99,102,241,0.1);
+        }
+        .badge-popular {
+            position: absolute;
+            top: -14px; left: 50%; transform: translateX(-50%);
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 16px;
+            border-radius: 20px;
+            white-space: nowrap;
+            font-family: 'Sora', sans-serif;
+            letter-spacing: 0.05em;
+        }
+
+        /* ---- BARRA DE URGENCIA ---- */
+        .urgency-bar {
+            background: linear-gradient(90deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05));
+            border: 1px solid rgba(239,68,68,0.25);
+            border-radius: 12px;
+        }
+
+        /* ---- BOTÓN PRINCIPAL ---- */
+        .btn-cta {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            border: none;
+            border-radius: 14px;
+            padding: 18px 32px;
+            color: white;
+            font-family: 'Sora', sans-serif;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.25s;
+            box-shadow: 0 8px 32px rgba(99,102,241,0.35);
+        }
+        .btn-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(99,102,241,0.5);
+        }
+        .btn-cta:active { transform: translateY(0); }
+
+        /* ---- SEGURIDAD ---- */
+        .trust-item {
+            display: flex; align-items: center; gap: 8px;
+            color: rgba(255,255,255,0.45);
+            font-size: 12px;
+        }
+
+        /* ---- RESULTADO BLOQUEADO ---- */
+        .blurred-preview {
+            filter: blur(6px);
+            user-select: none;
+            pointer-events: none;
+        }
+        .lock-overlay {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(to bottom, transparent 0%, rgba(10,15,30,0.8) 60%);
+            border-radius: 20px;
+        }
+
+        /* ---- STEP VIEWS ---- */
+        #step-gate { display: block; }
+        #step-plans { display: none; }
+        #step-success { display: none; }
+
+        /* ---- PROGRESS BAR ---- */
+        .progress-fill {
+            height: 3px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            border-radius: 3px;
+            transition: width 0.6s ease;
+        }
+
+        /* ---- SCROLL SUAVE ---- */
+        html { scroll-behavior: smooth; }
+    </style>
+</head>
+<body>
+    <div class="mesh-bg"></div>
+
+    <!-- HEADER -->
+    <header style="position:relative;z-index:10;border-bottom:1px solid rgba(255,255,255,0.07);">
+        <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div style="width:32px;height:32px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                    <span style="color:white;font-size:14px;font-weight:800;font-family:Sora,sans-serif;">S</span>
+                </div>
+                <span style="color:white;font-weight:700;font-size:18px;font-family:Sora,sans-serif;">Sales AI</span>
+            </div>
+            <!-- PROGRESS BAR -->
+            <div style="display:flex;align-items:center;gap:12px;">
+                <span style="color:rgba(255,255,255,0.4);font-size:12px;" id="progress-label">Paso 1 de 2</span>
+                <div style="width:120px;height:3px;background:rgba(255,255,255,0.1);border-radius:3px;">
+                    <div class="progress-fill" id="progress-bar" style="width:50%"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===================== STEP 1: LEAD GATE ===================== -->
+    <div id="step-gate" style="position:relative;z-index:10;">
+        <div class="max-w-5xl mx-auto px-6 py-12">
+
+            <!-- RESULTADO BLOQUEADO (PREVIEW) -->
+            <div style="position:relative;margin-bottom:40px;">
+                <div class="gate-card p-8 blurred-preview" style="pointer-events:none;">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4" style="opacity:0.6">
+                        <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:16px;padding:20px;text-align:center;">
+                            <div style="font-size:32px;font-weight:800;color:#ef4444;font-family:Sora,sans-serif;">$28,400</div>
+                            <div style="color:rgba(255,255,255,0.5);font-size:12px;margin-top:4px;">Costo oculto/año</div>
+                        </div>
+                        <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:16px;padding:20px;text-align:center;">
+                            <div style="font-size:32px;font-weight:800;color:#f59e0b;font-family:Sora,sans-serif;">47h</div>
+                            <div style="color:rgba(255,255,255,0.5);font-size:12px;margin-top:4px;">Horas/mes perdidas</div>
+                        </div>
+                        <div style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2);border-radius:16px;padding:20px;text-align:center;">
+                            <div style="font-size:32px;font-weight:800;color:#818cf8;font-family:Sora,sans-serif;">34%</div>
+                            <div style="color:rgba(255,255,255,0.5);font-size:12px;margin-top:4px;">Tasa de error</div>
+                        </div>
+                        <div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);border-radius:16px;padding:20px;text-align:center;">
+                            <div style="font-size:32px;font-weight:800;color:#10b981;font-family:Sora,sans-serif;">$19,880</div>
+                            <div style="color:rgba(255,255,255,0.5);font-size:12px;margin-top:4px;">Ahorro potencial</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- OVERLAY CANDADO -->
+                <div class="lock-overlay">
+                    <div style="text-align:center;padding:32px;">
+                        <div style="width:56px;height:56px;background:rgba(99,102,241,0.2);border:1px solid rgba(99,102,241,0.4);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+                            <svg width="24" height="24" fill="none" stroke="rgba(129,140,248,1)" stroke-width="2" viewBox="0 0 24 24">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0110 0v4"></path>
+                            </svg>
+                        </div>
+                        <p style="color:white;font-weight:700;font-size:20px;font-family:Sora,sans-serif;margin-bottom:8px;">Tu diagnóstico está listo</p>
+                        <p style="color:rgba(255,255,255,0.5);font-size:14px;max-width:280px;">Ingresa tus datos para desbloquear el reporte completo con tu ahorro estimado</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FORMULARIO DE CAPTURA -->
+            <div class="gate-card p-8 md:p-10 max-w-2xl mx-auto">
+
+                <!-- URGENCIA -->
+                <div class="urgency-bar px-5 py-3 mb-8 flex items-center gap-3">
+                    <span style="font-size:18px;">⏱️</span>
+                    <span style="color:rgba(255,255,255,0.7);font-size:14px;">
+                        Tu diagnóstico expira en <strong style="color:#f87171;" id="countdown">14:59</strong> — Los datos se pierden al cerrar
+                    </span>
+                </div>
+
+                <h1 class="heading" style="color:white;font-size:26px;font-weight:800;margin-bottom:8px;line-height:1.3;">
+                    ¿Cuánto está costando realmente<br>
+                    <span style="background:linear-gradient(90deg,#818cf8,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">tu proceso de contratación?</span>
+                </h1>
+                <p style="color:rgba(255,255,255,0.5);font-size:15px;margin-bottom:32px;">
+                    Ingresa tus datos y desbloquea el reporte completo con ahorro personalizado.
+                </p>
+
+                <!-- FORMULARIO -->
+                <form id="lead-gate-form">
+                    <div class="grid md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label style="color:rgba(255,255,255,0.6);font-size:13px;display:block;margin-bottom:8px;">Nombre completo *</label>
+                            <input type="text" name="nombre" placeholder="Ana Martínez" required class="input-field">
+                        </div>
+                        <div>
+                            <label style="color:rgba(255,255,255,0.6);font-size:13px;display:block;margin-bottom:8px;">Cargo *</label>
+                            <input type="text" name="cargo" placeholder="Directora de RRHH" required class="input-field">
+                        </div>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label style="color:rgba(255,255,255,0.6);font-size:13px;display:block;margin-bottom:8px;">Empresa *</label>
+                            <input type="text" name="empresa" placeholder="Ventas & Co." required class="input-field">
+                        </div>
+                        <div>
+                            <label style="color:rgba(255,255,255,0.6);font-size:13px;display:block;margin-bottom:8px;">Email corporativo *</label>
+                            <input type="email" name="email" placeholder="ana@empresa.com" required class="input-field">
+                        </div>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <label style="color:rgba(255,255,255,0.6);font-size:13px;display:block;margin-bottom:8px;">WhatsApp *</label>
+                            <input type="tel" name="telefono" placeholder="+57 300 123 4567" required class="input-field">
+                        </div>
+                        <div>
+                            <label style="color:rgba(255,255,255,0.6);font-size:13px;display:block;margin-bottom:8px;">Número de empleados *</label>
+                            <select name="empleados" required class="input-field" style="cursor:pointer;">
+                                <option value="" disabled selected style="background:#0a0f1e;">Selecciona...</option>
+                                <option value="10-25" style="background:#0a0f1e;">10-25 empleados</option>
+                                <option value="26-50" style="background:#0a0f1e;">26-50 empleados</option>
+                                <option value="51-100" style="background:#0a0f1e;">51-100 empleados</option>
+                                <option value="101-200" style="background:#0a0f1e;">101-200 empleados</option>
+                                <option value="+200" style="background:#0a0f1e;">Más de 200</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- BOTÓN -->
+                    <button type="submit" class="btn-cta mb-5">
+                        🔓 Desbloquear mi diagnóstico completo
+                    </button>
+
+                    <!-- TRUST SIGNALS -->
+                    <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+                        <div class="trust-item">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                            Sin spam
+                        </div>
+                        <div class="trust-item">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                            Datos confidenciales
+                        </div>
+                        <div class="trust-item">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                            100% gratuito
+                        </div>
+                        <div class="trust-item">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12l2 2 4-4"/></svg>
+                            Sin tarjeta de crédito
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ===================== STEP 2: PLANES + RESULTADOS ===================== -->
+    <div id="step-plans" style="position:relative;z-index:10;">
+        <div class="max-w-5xl mx-auto px-6 py-12">
+
+            <!-- RESULTADOS DESBLOQUEADOS -->
+            <div style="text-align:center;margin-bottom:48px;">
+                <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);border-radius:30px;padding:8px 20px;margin-bottom:20px;">
+                    <span style="color:#10b981;font-size:13px;font-weight:600;">✓ Diagnóstico desbloqueado</span>
+                </div>
+                <h2 class="heading" style="color:white;font-size:36px;font-weight:800;margin-bottom:12px;line-height:1.2;">
+                    Hola <span id="nombre-display" style="color:#818cf8;">—</span>,<br>
+                    esto está costándole a <span id="empresa-display" style="background:linear-gradient(90deg,#818cf8,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">tu empresa</span>
+                </h2>
+                <p style="color:rgba(255,255,255,0.5);font-size:16px;">Basado en tus respuestas, estos son tus números reales</p>
+            </div>
+
+            <!-- MÉTRICAS -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+                <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:20px;padding:24px;text-align:center;">
+                    <div class="animate-count" style="font-size:34px;font-weight:800;color:#f87171;font-family:Sora,sans-serif;" id="metric-costo">$0</div>
+                    <div style="color:rgba(255,255,255,0.45);font-size:12px;margin-top:6px;line-height:1.4;">Costo oculto<br>por año</div>
+                </div>
+                <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:20px;padding:24px;text-align:center;">
+                    <div class="animate-count" style="font-size:34px;font-weight:800;color:#fbbf24;font-family:Sora,sans-serif;" id="metric-horas">0h</div>
+                    <div style="color:rgba(255,255,255,0.45);font-size:12px;margin-top:6px;line-height:1.4;">Horas perdidas<br>por mes</div>
+                </div>
+                <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:20px;padding:24px;text-align:center;">
+                    <div class="animate-count" style="font-size:34px;font-weight:800;color:#f87171;font-family:Sora,sans-serif;" id="metric-nivel">—</div>
+                    <div style="color:rgba(255,255,255,0.45);font-size:12px;margin-top:6px;line-height:1.4;">Nivel de<br>ineficiencia</div>
+                </div>
+                <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:20px;padding:24px;text-align:center;">
+                    <div class="animate-count" style="font-size:34px;font-weight:800;color:#34d399;font-family:Sora,sans-serif;" id="metric-ahorro">$0</div>
+                    <div style="color:rgba(255,255,255,0.45);font-size:12px;margin-top:6px;line-height:1.4;">Ahorro potencial<br>con Sales AI</div>
+                </div>
+            </div>
+
+            <!-- MENSAJE DE NIVEL -->
+            <div id="nivel-mensaje" class="gate-card p-6 mb-12" style="border-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.05);">
+                <div style="display:flex;align-items:flex-start;gap:16px;">
+                    <span style="font-size:28px;" id="nivel-icon">🔴</span>
+                    <div>
+                        <p style="color:white;font-weight:700;font-size:18px;font-family:Sora,sans-serif;margin-bottom:6px;" id="nivel-titulo">Riesgo financiero crítico</p>
+                        <p style="color:rgba(255,255,255,0.55);font-size:14px;line-height:1.6;" id="nivel-descripcion">Tu proceso actual está generando pérdidas significativas. Cada semana que pasa sin optimizar es dinero que sale de tu empresa directamente.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEPARADOR PLANES -->
+            <div style="text-align:center;margin-bottom:40px;">
+                <p style="color:rgba(255,255,255,0.4);font-size:13px;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;">plan recomendado para ti</p>
+                <h2 class="heading" style="color:white;font-size:30px;font-weight:800;margin-bottom:8px;">
+                    Activa Sales AI. Empieza a recuperar<br>tu dinero esta semana.
+                </h2>
+                <p style="color:rgba(255,255,255,0.45);font-size:15px;">7 días gratis. Cancela cuando quieras. Sin permanencia.</p>
+            </div>
+
+            <!-- TRES PLANES CON ANCLA -->
+            <div class="grid md:grid-cols-3 gap-6 mb-10">
+
+                <!-- PLAN STARTER -->
+                <div class="plan-card" onclick="selectPlan('starter', this)">
+                    <h3 class="heading" style="color:rgba(255,255,255,0.6);font-size:13px;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;">Starter</h3>
+                    <div style="margin-bottom:4px;">
+                        <span style="font-size:36px;font-weight:800;color:white;font-family:Sora,sans-serif;">$79</span>
+                        <span style="color:rgba(255,255,255,0.4);font-size:14px;">/mes</span>
+                    </div>
+                    <p style="color:rgba(255,255,255,0.35);font-size:13px;margin-bottom:20px;">después del trial gratis</p>
+
+                    <ul style="space-y:8px;list-style:none;padding:0;">
+                        <li style="display:flex;gap:10px;color:rgba(255,255,255,0.7);font-size:14px;margin-bottom:10px;">
+                            <span style="color:#6366f1;">✓</span> 3 vacantes activas
+                        </li>
+                        <li style="display:flex;gap:10px;color:rgba(255,255,255,0.7);font-size:14px;margin-bottom:10px;">
+                            <span style="color:#6366f1;">✓</span> 150 candidatos/mes
+                        </li>
+                        <li style="display:flex;gap:10px;color:rgba(255,255,255,0.7);font-size:14px;margin-bottom:10px;">
+                            <span style="color:#6366f1;">✓</span> Scoring automático
+                        </li>
+                        <li style="display:flex;gap:10px;color:rgba(255,255,255,0.35);font-size:14px;margin-bottom:10px;text-decoration:line-through;">
+                            <span>—</span> Análisis avanzado
+                        </li>
+                        <li style="display:flex;gap:10px;color:rgba(255,255,255,0.35);font-size:14px;text-decoration:line-through;">
+                            <span>—</span> Soporte prioritario
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- PLAN PRO (RECOMENDADO / ANCLA POSITIVA) -->
+                <div class="plan-card featured selected" onclick="selectPlan('pro', this)">
+                    <div class="badge-popular">⭐ RECOMENDADO PARA TI</div>
+                    <h3 class="heading" style="color:#818cf8;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;">Pro</h3>
+                    <div style="margin-bottom:4px;">
+                        <span style="font-size:36px;font-weight:800;color:white;font-family:Sora,sans-serif;">$99</span>
+                        <span style="color:rgba(255,255,255,0.4);font-size:14px;">/mes</span>
+                    </div>
+                    <p style="color:rgba(255,255,255,0.35);font-size:13px;margin-bottom:20px;">después del trial gratis</p>
+
+                    <ul style="list-style:none;padding:0;">
+                        <li style="display:flex;gap:10px;color:white;font-size:14px;margin-bottom:10px;font-weight:500;">
+                            <span style="color:#818cf8;">✓</span> 10 vacantes activas
+                        </li>
+                        <li style="display:flex;gap:10px;color:white;font-size:14px;margin-bottom:10px;font-weight:500;">
+                            <span style="color:#818cf8;">✓</span> Candidatos ilimitados
+                        </li>
+                        <li style="display:flex;gap:10px;color:white;font-size:14px;margin-bottom:10px;font-weight:500;">
+                            <span style="color:#818cf8;">✓</span> Scoring + IA avanzada
+                        </li>
+                        <li style="display:flex;gap:10px;color:white;font-size:14px;margin-bottom:10px;font-weight:500;">
+                            <span style="color:#818cf8;">✓</span> Dashboard de análisis
+                        </li>
+                        <li style="display:flex;gap:10px;color:white;font-size:14px;font-weight:500;">
+                            <span style="color:#818cf8;">✓</span> Soporte prioritario
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- PLAN ENTERPRISE (ANCLA ALTA) -->
+                <div class="plan-card" onclick="selectPlan('enterprise', this)">
+                    <h3 class="heading" style="color:rgba(255,255,255,0.6);font-size:13px;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;">Enterprise</h3>
+                    <div style="margin-bottom:4px;">
+                        <span style="font-size:36px;font-weight:800;color:white;font-family:Sora,sans-serif;">$149</span>
+                        <span style="color:rgba(255,255,255,0.4);font-size:14px;">/mes</span>
+                    </div>
+                    <p style="color:rgba(255,255,255,0.35);font-size:13px;margin-bottom:20px;">después del trial gratis</p>
+
+                    <ul style="list-style:none;padding:0;">
+                        <li style="display:flex;gap:10px;color:rgba(255,255,255,0.7);font-size:14px;margin-bottom:10px;">
+                            <span style="color:#6366f1;">✓</span> Vacantes ilimitadas
+                        </li>
+                        <li style="display:flex;gap:10px;color:rgba(255,255,255,0.7);font-size:14px;margin-bottom:10px;">
+                            <span style="color:#6366f1;">✓</span> Multi-empresa / equipo
+                        </li>
+                        <li style="display:flex;gap:10px;color:rgba(255,255,255,0.7);font-size:14px;margin-bottom:10px;">
+                            <span style="color:#6366f1;">✓</span> API + integraciones
+                        </li>
+                        <li style="display:flex;gap:10px;color:rgba(255,255,255,0.7);font-size:14px;margin-bottom:10px;">
+                            <span style="color:#6366f1;">✓</span> Onboarding dedicado
+                        </li>
+                        <li style="display:flex;gap:10px;color:rgba(255,255,255,0.7);font-size:14px;">
+                            <span style="color:#6366f1;">✓</span> SLA garantizado
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+
+            <!-- CTA FINAL -->
+            <div class="max-w-xl mx-auto text-center">
+
+                <!-- ROI MICRO-COPY -->
+                <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:16px;padding:20px;margin-bottom:28px;">
+                    <p style="color:#34d399;font-size:15px;font-weight:600;font-family:Sora,sans-serif;">
+                        💡 El plan Pro se paga solo en <span id="payback-days">—</span> días de uso
+                    </p>
+                    <p style="color:rgba(255,255,255,0.45);font-size:13px;margin-top:4px;">
+                        Basado en tu ahorro estimado de <span id="ahorro-mensual-display">$—</span>/mes
+                    </p>
+                </div>
+
+                <button class="btn-cta" onclick="activarTrial()" style="font-size:18px;padding:20px 32px;">
+                    Activar 7 días gratis — Sin tarjeta
+                    <span style="display:block;font-size:13px;font-weight:400;opacity:0.7;margin-top:4px;">
+                        Después solo <span id="plan-precio-display">$99</span>/mes · Cancela cuando quieras
+                    </span>
+                </button>
+
+                <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-5">
+                    <div class="trust-item">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                        Pago seguro con Stripe
+                    </div>
+                    <div class="trust-item">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                        Sin compromisos
+                    </div>
+                    <div class="trust-item">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                        Activo en 5 minutos
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- ===================== STEP 3: SUCCESS ===================== -->
+    <div id="step-success" style="position:relative;z-index:10;">
+        <div class="max-w-2xl mx-auto px-6 py-20 text-center">
+            <div style="width:80px;height:80px;background:rgba(16,185,129,0.15);border:2px solid rgba(16,185,129,0.4);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 28px;">
+                <svg width="36" height="36" fill="none" stroke="#10b981" stroke-width="2.5" viewBox="0 0 24 24">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+            </div>
+            <h2 class="heading" style="color:white;font-size:34px;font-weight:800;margin-bottom:12px;">¡Diagnóstico desbloqueado!</h2>
+            <p style="color:rgba(255,255,255,0.5);font-size:16px;margin-bottom:32px;">
+                Revisa tu email para el acceso completo. Mientras tanto, ve tu reporte abajo.
+            </p>
+            <a href="/calculadora/resultados" style="display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;font-weight:700;font-size:16px;padding:16px 32px;border-radius:14px;text-decoration:none;font-family:Sora,sans-serif;">
+                Ver mi reporte completo →
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // =============================================
+        // ESTADO GLOBAL
+        // =============================================
+        let leadData = {};
+        let selectedPlan = 'pro';
+
+        // DATOS REALES desde Jinja2 (inyectados por routes.py)
+        // El diagnóstico_id viene de la URL /calculadora/gate/<id>
+        const diagnostico_id = "{{ diagnostico_id }}";
+
+        // Preview ciega: usamos estimaciones del promedio para el blur
+        // Los datos reales se cargan después del gate
+        const diagnosticoData = {
+            costo_operativo_mensual: 2850,
+            costo_anual_errores: 18400,
+            horas_mensuales: 47,
+            eficiencia_total: 32,
+            ahorro_mensual: 1995,
+            ahorro_anual: 23940,
+            roi_mensual: 2100
+        };
+
+        // =============================================
+        // COUNTDOWN TIMER
+        // =============================================
+        let timeLeft = 14 * 60 + 59;
+        const countdownEl = document.getElementById('countdown');
+        const timer = setInterval(() => {
+            timeLeft--;
+            if (timeLeft <= 0) { clearInterval(timer); countdownEl.textContent = '00:00'; return; }
+            const m = Math.floor(timeLeft / 60);
+            const s = timeLeft % 60;
+            countdownEl.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        }, 1000);
+
+        // =============================================
+        // FORMULARIO LEAD GATE
+        // =============================================
+        document.getElementById('lead-gate-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const fd = new FormData(this);
+            leadData = Object.fromEntries(fd.entries());
+            leadData.diagnostico_id = diagnostico_id;
+
+            // Deshabilitar botón mientras procesa
+            const btn = this.querySelector('button[type="submit"]');
+            btn.textContent = '⏳ Desbloqueando...';
+            btn.disabled = true;
+
+            try {
+                // Enviar al backend real
+                const response = await fetch('/calculadora/api/lead-gate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(leadData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Transición al paso 2 (sin recargar página)
+                    document.getElementById('step-gate').style.display = 'none';
+                    document.getElementById('step-plans').style.display = 'block';
+                    document.getElementById('progress-label').textContent = 'Paso 2 de 2';
+                    document.getElementById('progress-bar').style.width = '100%';
+
+                    // Personalizar con datos reales
+                    document.getElementById('nombre-display').textContent = leadData.nombre.split(' ')[0];
+                    document.getElementById('empresa-display').textContent = leadData.empresa;
+
+                    // Guardar redirect_url para el CTA final
+                    window._resultadosUrl = result.redirect_url;
+
+                    // Animar métricas y calcular nivel
+                    animarMetricas();
+                    calcularNivel();
+                    calcularPayback();
+
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                    btn.textContent = '🔓 Desbloquear mi diagnóstico completo';
+                    btn.disabled = false;
+                    alert('Error: ' + (result.error || 'Intenta de nuevo'));
+                }
+            } catch (err) {
+                console.error(err);
+                btn.textContent = '🔓 Desbloquear mi diagnóstico completo';
+                btn.disabled = false;
+                alert('Error de conexión. Intenta de nuevo.');
+            }
+        });
+
+        // =============================================
+        // ANIMACIÓN DE MÉTRICAS
+        // =============================================
+        function animarMetricas() {
+            const costoAnual = (diagnosticoData.costo_operativo_mensual * 12) + diagnosticoData.costo_anual_errores;
+            const ahorro = diagnosticoData.ahorro_anual;
+            const horas = diagnosticoData.horas_mensuales;
+            const eficiencia = diagnosticoData.eficiencia_total;
+
+            animarNumero('metric-costo', 0, costoAnual, 1200, '$', '');
+            animarNumero('metric-horas', 0, horas, 900, '', 'h');
+            animarNumero('metric-ahorro', 0, ahorro, 1400, '$', '');
+
+            // Nivel de ineficiencia
+            setTimeout(() => {
+                const el = document.getElementById('metric-nivel');
+                if (eficiencia < 40) el.textContent = 'CRÍTICO';
+                else if (eficiencia < 65) el.textContent = 'ALTO';
+                else el.textContent = 'MEDIO';
+            }, 600);
+        }
+
+        function animarNumero(id, inicio, fin, duracion, prefijo, sufijo) {
+            const el = document.getElementById(id);
+            const startTime = performance.now();
+            function tick(now) {
+                const progress = Math.min((now - startTime) / duracion, 1);
+                const ease = 1 - Math.pow(1 - progress, 3);
+                const valor = Math.round(inicio + (fin - inicio) * ease);
+                el.textContent = prefijo + valor.toLocaleString('es') + sufijo;
+                if (progress < 1) requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+        }
+
+        // =============================================
+        // NIVEL DE INEFICIENCIA
+        // =============================================
+        function calcularNivel() {
+            const eficiencia = diagnosticoData.eficiencia_total;
+            const card = document.getElementById('nivel-mensaje');
+            const icon = document.getElementById('nivel-icon');
+            const titulo = document.getElementById('nivel-titulo');
+            const desc = document.getElementById('nivel-descripcion');
+
+            if (eficiencia < 40) {
+                card.style.borderColor = 'rgba(239,68,68,0.3)';
+                card.style.background = 'rgba(239,68,68,0.05)';
+                icon.textContent = '🔴';
+                titulo.textContent = 'Riesgo financiero crítico';
+                desc.textContent = `Tu proceso actual tiene una eficiencia del ${eficiencia}% vs el estándar de la industria. Cada mes sin optimizar representa pérdidas directas que podrías estar evitando.`;
+            } else if (eficiencia < 65) {
+                card.style.borderColor = 'rgba(245,158,11,0.3)';
+                card.style.background = 'rgba(245,158,11,0.05)';
+                icon.textContent = '🟡';
+                titulo.textContent = 'Alto costo oculto detectado';
+                desc.textContent = `Tu eficiencia es del ${eficiencia}%. Hay margen de mejora importante. Las empresas con tu perfil recuperan en promedio $${Math.round(diagnosticoData.ahorro_mensual).toLocaleString()} al mes al automatizar su proceso.`;
+            } else {
+                card.style.borderColor = 'rgba(99,102,241,0.3)';
+                card.style.background = 'rgba(99,102,241,0.05)';
+                icon.textContent = '🔵';
+                titulo.textContent = 'Ineficiencia leve — Optimizable';
+                desc.textContent = `Tu proceso es relativamente eficiente (${eficiencia}%), pero aún hay oportunidades de mejora que podrían traducirse en ahorro real.`;
+            }
+        }
+
+        // =============================================
+        // PAYBACK
+        // =============================================
+        function calcularPayback() {
+            const ahorroMensual = diagnosticoData.ahorro_mensual;
+            const precioPlan = 99;
+            const dias = Math.ceil((precioPlan / ahorroMensual) * 30);
+            document.getElementById('payback-days').textContent = dias;
+            document.getElementById('ahorro-mensual-display').textContent = '$' + Math.round(ahorroMensual).toLocaleString();
+        }
+
+        // =============================================
+        // SELECCIÓN DE PLAN
+        // =============================================
+        function selectPlan(plan, el) {
+            selectedPlan = plan;
+            document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            const precios = { starter: '$79', pro: '$99', enterprise: '$149' };
+            document.getElementById('plan-precio-display').textContent = precios[plan];
+        }
+
+        // =============================================
+        // ACTIVAR TRIAL
+        // =============================================
+        function activarTrial() {
+            // Tracking
+            fetch('/calculadora/api/tracking', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    diagnostico_id: diagnostico_id,
+                    tipo_interaccion: 'click_activar_trial',
+                    datos: { plan: selectedPlan }
+                })
+            });
+
+            // TODO Fase 2: redirigir a Stripe Checkout
+            // window.location.href = `/checkout?plan=${selectedPlan}&diagnostico=${diagnostico_id}&email=${leadData.email}`;
+
+            // Por ahora: ir a resultados completos
+            window.location.href = window._resultadosUrl || `/calculadora/resultados/${diagnostico_id}`;
+        }
+    </script>
+</body>
+</html>

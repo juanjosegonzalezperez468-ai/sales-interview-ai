@@ -2,21 +2,23 @@
 calculadora/routes.py
 Rutas (Blueprint) para la calculadora de costos
 
-Este archivo se integra con tu app.py existente como un Blueprint.
+Versión actualizada con:
+- Lead Gate integrado (paso previo a resultados)
+- Nombres de tablas corregidos (calculadora_leads, calculadora_diagnosticos)
+- API para demo y lead gate
+- Flujo completo: formulario → lead gate → resultados → planes
 """
 
-from flask import Blueprint, render_template, request, jsonify, session
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for
 from datetime import datetime
 import logging
 import os
 
-# Importar Supabase (usará la misma configuración que tu app principal)
 from supabase import create_client, Client
-
-# Importar la lógica de cálculos
 from calculadora.logic import calcular_metricas, generar_mensaje_benchmark
+from calculadora.api_calculadora import registrar_demo, registrar_interaccion
 
-# Crear Blueprint
+# ── Blueprint ──────────────────────────────────────────────────────────────────
 calculadora_bp = Blueprint(
     'calculadora',
     __name__,
@@ -25,258 +27,387 @@ calculadora_bp = Blueprint(
     url_prefix='/calculadora'
 )
 
-# Logger
 logger = logging.getLogger(__name__)
 
-# Cliente Supabase (se inicializa con las mismas credenciales de tu app)
 supabase: Client = create_client(
     os.getenv('SUPABASE_URL'),
     os.getenv('SUPABASE_KEY')
 )
 
 
-# ============================================
-# RUTAS PÚBLICAS (Landing + Formulario)
-# ============================================
+# ==============================================================================
+# PÁGINAS PÚBLICAS
+# ==============================================================================
 
 @calculadora_bp.route('/')
 @calculadora_bp.route('/landing')
 def landing():
-    """
-    Landing page de la calculadora
-    URL: /calculadora/ o /calculadora/landing
-    """
     return render_template('calculadora/calculadora_landing.html')
 
 
 @calculadora_bp.route('/formulario')
 def formulario():
-    """
-    Formulario de 8 preguntas
-    URL: /calculadora/formulario
-    """
-    # TODO: Crear este template
     return render_template('calculadora/calculadora_formulario.html')
+
+
+@calculadora_bp.route('/gate/<diagnostico_id>')
+def lead_gate(diagnostico_id):
+    """
+    Lead Gate: pantalla previa a los resultados.
+    El usuario completó la encuesta → ve resultados borrosos → da sus datos → accede.
+
+    URL: /calculadora/gate/<diagnostico_id>
+    """
+    try:
+        # Verificar que el diagnóstico existe
+        result = supabase.table('calculadora_diagnosticos') \
+            .select('id, desbloqueado') \
+            .eq('id', diagnostico_id) \
+            .execute()
+
+        if not result.data:
+            return redirect(url_for('calculadora.formulario'))
+
+        # Si ya desbloqueó antes, ir directo a resultados
+        if result.data[0].get('desbloqueado'):
+            return redirect(url_for('calculadora.resultados', diagnostico_id=diagnostico_id))
+
+        return render_template(
+            'calculadora/calculadora_lead_gate.html',
+            diagnostico_id=diagnostico_id
+        )
+
+    except Exception as e:
+        logger.error(f"Error en lead_gate: {e}")
+        return redirect(url_for('calculadora.formulario'))
 
 
 @calculadora_bp.route('/resultados/<diagnostico_id>')
 def resultados(diagnostico_id):
     """
-    Página de resultados
-    URL: /calculadora/resultados/<id>
+    Resultados completos. Solo accesible si el lead ya dejó sus datos (desbloqueado=True).
+    Si intenta entrar directo sin datos → redirige al gate.
+
+    URL: /calculadora/resultados/<diagnostico_id>
     """
     try:
-        # Obtener diagnóstico de Supabase
-        diagnostico = supabase.table('diagnosticos').select('*, leads(*)').eq('id', diagnostico_id).execute()
-        
-        if not diagnostico.data:
+        result = supabase.table('calculadora_diagnosticos') \
+            .select('*, calculadora_leads(*)') \
+            .eq('id', diagnostico_id) \
+            .execute()
+
+        if not result.data:
             return "Diagnóstico no encontrado", 404
-        
-        data = diagnostico.data[0]
-        
+
+        data = result.data[0]
+
+        # Seguridad: si no desbloqueó, mandarlo al gate
+        if not data.get('desbloqueado'):
+            return redirect(url_for('calculadora.lead_gate', diagnostico_id=diagnostico_id))
+
         # Marcar como visto
-        supabase.table('diagnosticos').update({'visto_resultados': True}).eq('id', diagnostico_id).execute()
-        
-        # Generar mensajes de benchmark
-        mensajes_benchmark = generar_mensaje_benchmark(
-            data['diferencia_vs_benchmark_tiempo'],
-            data['diferencia_vs_benchmark_error']
+        supabase.table('calculadora_diagnosticos') \
+            .update({'visto_resultados': True}) \
+            .eq('id', diagnostico_id) \
+            .execute()
+
+        mensajes = generar_mensaje_benchmark(
+            data.get('diferencia_vs_benchmark_tiempo', 0),
+            data.get('diferencia_vs_benchmark_error', 0)
         )
-        
-        # TODO: Crear este template
+
         return render_template(
             'calculadora/calculadora_resultados.html',
             diagnostico=data,
-            mensajes=mensajes_benchmark
+            mensajes=mensajes
         )
-        
+
     except Exception as e:
-        logger.error(f"Error en resultados: {str(e)}")
-        return f"Error: {str(e)}", 500
+        logger.error(f"Error en resultados: {e}")
+        return f"Error: {e}", 500
 
 
-# ============================================
-# API ENDPOINTS (para AJAX)
-# ============================================
+# ==============================================================================
+# API ENDPOINTS
+# ==============================================================================
 
 @calculadora_bp.route('/api/submit', methods=['POST'])
 def api_submit():
     """
-    API: Procesar formulario y guardar en Supabase
+    Procesa el formulario de 8 preguntas.
+    Crea lead + diagnóstico en Supabase.
+    Responde con redirect_url al Lead Gate (NO a resultados directamente).
+
     POST /calculadora/api/submit
-    
-    Body JSON:
-    {
-        "nombre": "...",
-        "email": "...",
-        "empresa": "...",
-        "cargo": "...",
-        "vacantes_activas": "4-10",
-        "candidatos_por_vacante": "21-50",
-        "principal_dolor": "...",
-        "frecuencia_error": "3 de cada 10",
-        "tiempo_por_cv": "8-15 min",
-        "personas_proceso": "2-3",
-        "rango_salarial": "$6-10k"
-    }
+    Body: { nombre, email, empresa, cargo, vacantes_activas,
+            candidatos_por_vacante, principal_dolor, frecuencia_error,
+            tiempo_por_cv, personas_proceso, rango_salarial }
     """
     try:
         data = request.get_json()
-        
-        # Validar campos requeridos
+        if not data:
+            return jsonify({'success': False, 'error': 'Body vacío'}), 400
+
+        # ── Validar campos ──────────────────────────────────────────────────
         campos_requeridos = [
             'nombre', 'email', 'empresa', 'cargo',
             'vacantes_activas', 'candidatos_por_vacante',
             'principal_dolor', 'frecuencia_error',
             'tiempo_por_cv', 'personas_proceso', 'rango_salarial'
         ]
-        
         for campo in campos_requeridos:
-            if campo not in data or not data[campo]:
-                return jsonify({
-                    'success': False,
-                    'error': f'Campo requerido faltante: {campo}'
-                }), 400
-        
-        # 1. CREAR O ACTUALIZAR LEAD
-        lead_data = {
+            if not data.get(campo):
+                return jsonify({'success': False, 'error': f'Campo requerido: {campo}'}), 400
+
+        # ── 1. Crear o actualizar lead (SIN datos de contacto todavía) ──────
+        # Nota: el lead se crea con datos mínimos. Los datos completos
+        # (teléfono, empleados) llegan en el /api/lead-gate más adelante.
+        lead_payload = {
             'nombre': data['nombre'],
             'email': data['email'],
             'empresa': data['empresa'],
             'cargo': data['cargo'],
-            'telefono': data.get('telefono'),
             'origen_lead': 'calculadora',
             'utm_source': data.get('utm_source'),
-            'utm_campaign': data.get('utm_campaign')
+            'utm_campaign': data.get('utm_campaign'),
         }
-        
-        # Verificar si el lead ya existe
-        existing_lead = supabase.table('leads').select('*').eq('email', data['email']).execute()
-        
-        if existing_lead.data:
-            lead_id = existing_lead.data[0]['id']
-            supabase.table('leads').update(lead_data).eq('id', lead_id).execute()
+
+        existing = supabase.table('calculadora_leads') \
+            .select('id') \
+            .eq('email', data['email']) \
+            .execute()
+
+        if existing.data:
+            lead_id = existing.data[0]['id']
+            supabase.table('calculadora_leads') \
+                .update(lead_payload) \
+                .eq('id', lead_id) \
+                .execute()
         else:
-            lead_result = supabase.table('leads').insert(lead_data).execute()
-            lead_id = lead_result.data[0]['id']
-        
-        logger.info(f"Lead procesado: {data['email']}")
-        
-        # 2. CALCULAR MÉTRICAS
+            ins = supabase.table('calculadora_leads').insert(lead_payload).execute()
+            lead_id = ins.data[0]['id']
+
+        logger.info(f"Lead procesado: {data['email']} → {lead_id}")
+
+        # ── 2. Calcular métricas ────────────────────────────────────────────
         metricas = calcular_metricas({
-            'vacantes_activas': data['vacantes_activas'],
+            'vacantes_activas':       data['vacantes_activas'],
             'candidatos_por_vacante': data['candidatos_por_vacante'],
-            'tiempo_por_cv': data['tiempo_por_cv'],
-            'personas_proceso': data['personas_proceso'],
-            'rango_salarial': data['rango_salarial'],
-            'frecuencia_error': data['frecuencia_error']
+            'tiempo_por_cv':          data['tiempo_por_cv'],
+            'personas_proceso':       data['personas_proceso'],
+            'rango_salarial':         data['rango_salarial'],
+            'frecuencia_error':       data['frecuencia_error'],
         })
-        
-        # 3. GUARDAR DIAGNÓSTICO
-        diagnostico_data = {
-            'lead_id': lead_id,
-            'vacantes_activas': data['vacantes_activas'],
-            'candidatos_por_vacante': data['candidatos_por_vacante'],
-            'principal_dolor': data['principal_dolor'],
-            'frecuencia_error': data['frecuencia_error'],
-            'tiempo_por_cv': data['tiempo_por_cv'],
-            'personas_proceso': data['personas_proceso'],
-            'rango_salarial': data['rango_salarial'],
+
+        # ── 3. Crear diagnóstico ────────────────────────────────────────────
+        diagnostico_payload = {
+            'lead_id':                  lead_id,
+            'vacantes_activas':         data['vacantes_activas'],
+            'candidatos_por_vacante':   data['candidatos_por_vacante'],
+            'principal_dolor':          data['principal_dolor'],
+            'frecuencia_error':         data['frecuencia_error'],
+            'tiempo_por_cv':            data['tiempo_por_cv'],
+            'personas_proceso':         data['personas_proceso'],
+            'rango_salarial':           data['rango_salarial'],
+            'desbloqueado':             False,   # ← bloqueado hasta el gate
+            'ip_address':               request.remote_addr,
+            'user_agent':               request.headers.get('User-Agent'),
             **metricas,
-            'ip_address': request.remote_addr,
-            'user_agent': request.headers.get('User-Agent')
         }
-        
-        diagnostico_result = supabase.table('diagnosticos').insert(diagnostico_data).execute()
-        diagnostico_id = diagnostico_result.data[0]['id']
-        
+
+        diag = supabase.table('calculadora_diagnosticos') \
+            .insert(diagnostico_payload) \
+            .execute()
+        diagnostico_id = diag.data[0]['id']
+
         logger.info(f"Diagnóstico creado: {diagnostico_id}")
-        
-        # 4. REGISTRAR INTERACCIÓN
-        supabase.table('interacciones').insert({
-            'lead_id': lead_id,
-            'diagnostico_id': diagnostico_id,
-            'tipo_interaccion': 'formulario_completado',
-            'datos': {
+
+        # ── 4. Registrar interacción ────────────────────────────────────────
+        supabase.table('calculadora_interacciones').insert({
+            'lead_id':          lead_id,
+            'diagnostico_id':   diagnostico_id,
+            'accion':           'formulario_completado',
+            'metadata': {
                 'costo_mensual': metricas['costo_operativo_mensual'],
-                'ahorro_anual': metricas['ahorro_anual']
+                'ahorro_anual':  metricas['ahorro_anual'],
             }
         }).execute()
-        
-        # 5. GENERAR MENSAJES DE BENCHMARK
-        mensajes_benchmark = generar_mensaje_benchmark(
-            metricas['diferencia_vs_benchmark_tiempo'],
-            metricas['diferencia_vs_benchmark_error']
-        )
-        
+
+        # ── Respuesta → redirigir al GATE, no a resultados ─────────────────
         return jsonify({
-            'success': True,
+            'success':      True,
             'diagnostico_id': diagnostico_id,
-            'redirect_url': f'/calculadora/resultados/{diagnostico_id}'
+            'redirect_url': f'/calculadora/gate/{diagnostico_id}'   # ← GATE primero
         }), 201
-        
+
     except Exception as e:
-        logger.error(f"Error en api_submit: {str(e)}")
+        logger.error(f"Error en api_submit: {e}")
+        return jsonify({'success': False, 'error': 'Error interno'}), 500
+
+
+@calculadora_bp.route('/api/lead-gate', methods=['POST'])
+def api_lead_gate():
+    """
+    Recibe los datos del Lead Gate y desbloquea los resultados.
+
+    POST /calculadora/api/lead-gate
+    Body: {
+        diagnostico_id, nombre, cargo, empresa, email,
+        telefono, empleados
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'Body vacío'}), 400
+
+        diagnostico_id = data.get('diagnostico_id')
+        if not diagnostico_id:
+            return jsonify({'success': False, 'error': 'diagnostico_id requerido'}), 400
+
+        # ── 1. Obtener diagnóstico ──────────────────────────────────────────
+        diag = supabase.table('calculadora_diagnosticos') \
+            .select('lead_id') \
+            .eq('id', diagnostico_id) \
+            .execute()
+
+        if not diag.data:
+            return jsonify({'success': False, 'error': 'Diagnóstico no encontrado'}), 404
+
+        lead_id = diag.data[0]['lead_id']
+
+        # ── 2. Actualizar lead con datos completos ──────────────────────────
+        supabase.table('calculadora_leads').update({
+            'nombre':    data.get('nombre'),
+            'cargo':     data.get('cargo'),
+            'empresa':   data.get('empresa'),
+            'email':     data.get('email'),
+            'telefono':  data.get('telefono'),
+            'empleados': data.get('empleados'),
+        }).eq('id', lead_id).execute()
+
+        # ── 3. Desbloquear diagnóstico ──────────────────────────────────────
+        supabase.table('calculadora_diagnosticos').update({
+            'desbloqueado':      True,
+            'desbloqueado_at':   datetime.now().isoformat(),
+        }).eq('id', diagnostico_id).execute()
+
+        # ── 4. Registrar interacción ────────────────────────────────────────
+        supabase.table('calculadora_interacciones').insert({
+            'lead_id':        lead_id,
+            'diagnostico_id': diagnostico_id,
+            'accion':         'lead_gate_completado',
+            'metadata': {
+                'empleados': data.get('empleados'),
+                'tiene_telefono': bool(data.get('telefono')),
+            }
+        }).execute()
+
+        logger.info(f"Lead Gate completado: {data.get('email')} → {diagnostico_id}")
+
         return jsonify({
-            'success': False,
-            'error': 'Error procesando el formulario'
-        }), 500
+            'success':      True,
+            'redirect_url': f'/calculadora/resultados/{diagnostico_id}'
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error en api_lead_gate: {e}")
+        return jsonify({'success': False, 'error': 'Error interno'}), 500
 
 
 @calculadora_bp.route('/api/tracking', methods=['POST'])
 def api_tracking():
     """
-    API: Registrar interacciones del usuario
+    Registra interacciones del usuario en el dashboard de resultados.
+
     POST /calculadora/api/tracking
-    
-    Body JSON:
-    {
-        "diagnostico_id": "uuid",
-        "tipo_interaccion": "descargar_pdf",
-        "datos": {...}
-    }
+    Body: { diagnostico_id, tipo_interaccion, datos }
     """
     try:
         data = request.get_json()
-        
-        # Obtener lead_id del diagnóstico
-        diagnostico = supabase.table('diagnosticos').select('lead_id').eq('id', data['diagnostico_id']).execute()
-        
-        if not diagnostico.data:
-            return jsonify({'success': False, 'error': 'Diagnóstico no encontrado'}), 404
-        
-        lead_id = diagnostico.data[0]['lead_id']
-        
-        # Registrar interacción
-        supabase.table('interacciones').insert({
-            'lead_id': lead_id,
+        if not data or not data.get('diagnostico_id'):
+            return jsonify({'success': False}), 400
+
+        diag = supabase.table('calculadora_diagnosticos') \
+            .select('lead_id') \
+            .eq('id', data['diagnostico_id']) \
+            .execute()
+
+        if not diag.data:
+            return jsonify({'success': False, 'error': 'No encontrado'}), 404
+
+        lead_id = diag.data[0]['lead_id']
+
+        supabase.table('calculadora_interacciones').insert({
+            'lead_id':        lead_id,
             'diagnostico_id': data['diagnostico_id'],
-            'tipo_interaccion': data['tipo_interaccion'],
-            'datos': data.get('datos')
+            'accion':         data.get('tipo_interaccion') or data.get('accion'),
+            'metadata':       data.get('datos') or data.get('metadata'),
         }).execute()
-        
-        # Actualizar flags en diagnóstico
-        if data['tipo_interaccion'] == 'descargar_pdf':
-            supabase.table('diagnosticos').update({'descargado_pdf': True}).eq('id', data['diagnostico_id']).execute()
-        elif data['tipo_interaccion'] == 'click_agendar':
-            supabase.table('diagnosticos').update({'agendada_demo': True}).eq('id', data['diagnostico_id']).execute()
-        
+
+        # Actualizar flags relevantes
+        flags = {}
+        accion = data.get('tipo_interaccion') or data.get('accion', '')
+        if accion == 'descargar_pdf':
+            flags['descargado_pdf'] = True
+        elif accion in ('click_agendar', 'abrio_modal_demo'):
+            flags['vio_cta_demo'] = True
+        elif accion == 'agenda_demo':
+            flags['agendada_demo'] = True
+        elif accion == 'click_registro':
+            flags['click_registro'] = True
+        elif accion == 'click_activar_trial':
+            flags['click_trial'] = True
+
+        if flags:
+            supabase.table('calculadora_diagnosticos') \
+                .update(flags) \
+                .eq('id', data['diagnostico_id']) \
+                .execute()
+
         return jsonify({'success': True}), 200
-        
+
     except Exception as e:
-        logger.error(f"Error en api_tracking: {str(e)}")
+        logger.error(f"Error en api_tracking: {e}")
         return jsonify({'success': False}), 500
 
 
-# ============================================
+@calculadora_bp.route('/api/demo', methods=['POST'])
+def api_demo():
+    """
+    Registra una solicitud de demo desde la página de resultados.
+
+    POST /calculadora/api/demo
+    Body: { diagnostico_id, email, telefono, preferencia_horario }
+    """
+    try:
+        data = request.get_json()
+        if not data or not data.get('diagnostico_id'):
+            return jsonify({'success': False, 'error': 'diagnostico_id requerido'}), 400
+
+        resultado = registrar_demo(
+            diagnostico_id=data['diagnostico_id'],
+            email=data.get('email'),
+            telefono=data.get('telefono'),
+            preferencia_horario=data.get('preferencia_horario'),
+        )
+
+        status = 200 if resultado['success'] else 500
+        return jsonify(resultado), status
+
+    except Exception as e:
+        logger.error(f"Error en api_demo: {e}")
+        return jsonify({'success': False, 'error': 'Error interno'}), 500
+
+
+# ==============================================================================
 # HEALTH CHECK
-# ============================================
+# ==============================================================================
 
 @calculadora_bp.route('/health')
 def health():
-    """Health check para la calculadora"""
     return jsonify({
-        'status': 'healthy',
-        'service': 'calculadora',
+        'status':    'healthy',
+        'service':   'calculadora',
         'timestamp': datetime.now().isoformat()
     }), 200
