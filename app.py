@@ -7,14 +7,22 @@ from datetime import datetime
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, render_template_string
 from supabase import create_client, Client
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ✅ IMPORTS DE BLUEPRINTS (sin registrar aún)
+# ═══════════════════════════════════════════════════════════════════════════
 from calculadora.routes import calculadora_bp
-from supabase import create_client, Client
+from calculadora.epayco_checkout import epayco_bp
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 load_dotenv()
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ✅ CREAR LA APP (AHORA SÍ)
+# ═══════════════════════════════════════════════════════════════════════════
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'una-clave-muy-secreta')
 
@@ -22,10 +30,14 @@ app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = 86400
-# Registrar módulo de calculadora
-app.register_blueprint(calculadora_bp, url_prefix='/calculadora')
-logger.info("✅ Módulo de calculadora registrado en /calculadora")
 
+# ═══════════════════════════════════════════════════════════════════════════
+# ✅ REGISTRAR BLUEPRINTS (DESPUÉS de crear app)
+# ═══════════════════════════════════════════════════════════════════════════
+app.register_blueprint(calculadora_bp, url_prefix='/calculadora')
+app.register_blueprint(epayco_bp, url_prefix='/epayco')
+logger.info("✅ Módulo de calculadora registrado en /calculadora")
+logger.info("✅ Módulo de ePayco registrado en /epayco")
 
 # Cliente Supabase
 supabase: Client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_KEY'))
@@ -288,18 +300,12 @@ def procesar():
 @app.route('/candidatos')
 def lista_candidatos():
     try:
-        # Traemos ABSOLUTAMENTE TODO de la tabla entrevistas
-        # Sin filtros, sin joins, sin nombres de vacantes.
         res = supabase.table('entrevistas').select('*').execute()
-        
-        # Si res.data está vacío, mandamos una lista vacía para que no explote
         candidatos = res.data if res.data else []
         
-        # DEBUG: Para que veas en los logs de Render qué columnas detecta Python
         if candidatos:
             print(f"Columnas detectadas: {candidatos[0].keys()}")
 
-        # Forzamos que 'nombre_puesto' exista para el HTML, aunque sea genérico
         for c in candidatos:
             c['nombre_puesto'] = "Candidato Registrado"
 
@@ -309,7 +315,6 @@ def lista_candidatos():
         print(f"ERROR EN APP.PY: {str(e)}")
         return f"Error de conexión: {str(e)}", 500
     
- # --- RUTA PARA ACTUALIZAR ESTADO DESDE EL CRM ---
 @app.route('/actualizar_estado', methods=['POST'])
 def actualizar_estado():
     try:
@@ -320,7 +325,6 @@ def actualizar_estado():
         if not candidato_id or not nuevo_estado:
             return jsonify({"status": "error", "message": "Datos incompletos"}), 400
 
-        # Actualización en la tabla 'entrevistas' de Supabase
         supabase.table('entrevistas').update({'estado': nuevo_estado}).eq('id', candidato_id).execute()
 
         print(f"✅ Candidato {candidato_id} actualizado a: {nuevo_estado}")
@@ -502,13 +506,11 @@ def editar_vacante(id_publico):
         
         v = result.data[0]
         
-        # Verificar que pertenece a la empresa del usuario
         emp_id_str = session.get('empresa_id')
         if v['empresa_id'] != emp_id_str:
             return "No autorizado", 403
 
         if request.method == 'POST':
-            # Actualizar la vacante
             cargo = request.form.get('cargo')
             
             ids = request.form.getlist('p_id[]')
@@ -526,7 +528,7 @@ def editar_vacante(id_publico):
                     regla_obj = {"ideal": reglas[i]}
                 elif tipos[i] == "multiple":
                     regla_obj = {"ideal": reglas[i]}
-                else:  # abierta
+                else:
                     regla_obj = {"palabras_clave": reglas[i]}
                 
                 nuevas_preguntas.append({
@@ -538,7 +540,6 @@ def editar_vacante(id_publico):
                     "reglas": regla_obj
                 })
             
-            # Actualizar en Supabase
             supabase.table('vacantes').update({
                 "cargo": cargo,
                 "preguntas": nuevas_preguntas
@@ -547,7 +548,6 @@ def editar_vacante(id_publico):
             logger.info(f"✅ Vacante actualizada: {id_publico}")
             return redirect(url_for('gestionar_vacantes'))
 
-        # GET - Mostrar formulario de edición
         return render_template('editar_vacante.html', vacante=v)
         
     except Exception as e:
@@ -566,7 +566,6 @@ def clonar_plantilla(plantilla_id):
     if not session.get('logeado'): 
         return redirect(url_for('login'))
     
-    # Biblioteca de plantillas
     biblioteca = {
         'operativo_express': {
             'cargo': 'Filtro Express (Operativo)',

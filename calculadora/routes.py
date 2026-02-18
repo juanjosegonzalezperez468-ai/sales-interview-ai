@@ -1,14 +1,3 @@
-"""
-calculadora/routes.py
-Rutas (Blueprint) para la calculadora de costos
-
-Versión actualizada con:
-- Lead Gate integrado (paso previo a resultados)
-- Nombres de tablas corregidos (calculadora_leads, calculadora_diagnosticos)
-- API para demo y lead gate
-- Flujo completo: formulario → lead gate → resultados → planes
-"""
-
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for
 from datetime import datetime
 import logging
@@ -17,6 +6,7 @@ import os
 from supabase import create_client, Client
 from calculadora.logic import calcular_metricas, generar_mensaje_benchmark
 from calculadora.api_calculadora import registrar_demo, registrar_interaccion
+from calculadora.epayco_checkout import crear_checkout_epayco, PLANES, epayco_bp
 
 # ── Blueprint ──────────────────────────────────────────────────────────────────
 calculadora_bp = Blueprint(
@@ -125,6 +115,30 @@ def resultados(diagnostico_id):
     except Exception as e:
         logger.error(f"Error en resultados: {e}")
         return f"Error: {e}", 500
+
+
+@calculadora_bp.route('/pago-exitoso')
+def pago_exitoso():
+    """
+    ✨ NUEVO: Página de éxito después del pago con ePayco.
+    ePayco redirige aquí (url_response).
+
+    URL: /calculadora/pago-exitoso?diagnostico_id=xxx&ref=xxx
+    """
+    diagnostico_id = request.args.get('diagnostico_id')
+    ref_payco      = request.args.get('ref')
+    cancelado      = request.args.get('cancel')
+
+    # Si el usuario canceló, redirigir a resultados
+    if cancelado:
+        return redirect(f"/calculadora/resultados/{diagnostico_id}?cancel=1")
+
+    # Renderizar página de éxito
+    return render_template(
+        'pago_exitoso.html',
+        diagnostico_id=diagnostico_id,
+        ref_payco=ref_payco,
+    )
 
 
 # ==============================================================================
@@ -398,6 +412,107 @@ def api_demo():
     except Exception as e:
         logger.error(f"Error en api_demo: {e}")
         return jsonify({'success': False, 'error': 'Error interno'}), 500
+
+
+# ==============================================================================
+# ✨ NUEVAS RUTAS EPAYCO — CHECKOUT Y PAGOS
+# ==============================================================================
+
+@calculadora_bp.route('/api/checkout', methods=['POST'])
+def api_checkout():
+    """
+    ✨ NUEVO: Genera la configuración del checkout de ePayco.
+
+    POST /calculadora/api/checkout
+    Body: {
+        "plan": "pro",
+        "diagnostico_id": "uuid-del-diagnostico",
+        "email": "cliente@empresa.com",
+        "nombre": "Ana Martínez López"
+    }
+
+    Response: {
+        "success": true,
+        "checkout_data": { ... },  ← pasar esto al ePayco checkout.js
+        "ref_payco": "SALESAI-PRO-abc123-1234567890"
+    }
+    """
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({'success': False, 'error': 'Body vacío'}), 400
+
+        # Validar campos requeridos
+        plan           = data.get('plan', 'pro')
+        diagnostico_id = data.get('diagnostico_id')
+        email          = data.get('email')
+        nombre         = data.get('nombre')
+
+        if not all([plan, diagnostico_id, email, nombre]):
+            return jsonify({
+                'success': False,
+                'error': 'Campos requeridos: plan, diagnostico_id, email, nombre'
+            }), 400
+
+        # Llamar a la función de ePayco
+        resultado = crear_checkout_epayco(
+            plan=plan,
+            email=email,
+            diagnostico_id=diagnostico_id,
+            nombre=nombre
+        )
+
+        if resultado['success']:
+            # Registrar intención de pago (analytics)
+            try:
+                supabase.table('calculadora_interacciones').insert({
+                    'diagnostico_id': diagnostico_id,
+                    'accion':         'inicio_checkout',
+                    'metadata':       {
+                        'plan':     plan,
+                        'pasarela': 'epayco'
+                    }
+                }).execute()
+            except Exception as e:
+                logger.warning(f"No se pudo registrar interacción: {e}")
+
+            return jsonify({
+                'success':       True,
+                'checkout_data': resultado['checkout_data'],
+                'ref_payco':     resultado['ref_payco'],
+            }), 200
+        else:
+            return jsonify(resultado), 500
+
+    except Exception as e:
+        logger.error(f"Error en api_checkout: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'Error interno del servidor'
+        }), 500
+
+
+@calculadora_bp.route('/api/planes', methods=['GET'])
+def api_planes():
+    """
+    ✨ NUEVO: Devuelve los planes disponibles para mostrar en el frontend.
+
+    GET /calculadora/api/planes
+
+    Response: {
+        "success": true,
+        "planes": {
+            "starter": { "nombre": "...", "precio_usd": 79, ... },
+            "pro": { ... },
+            "enterprise": { ... }
+        }
+    }
+    """
+    return jsonify({
+        'success': True,
+        'planes': PLANES
+    }), 200
 
 
 # ==============================================================================

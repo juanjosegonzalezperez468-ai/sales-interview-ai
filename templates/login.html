@@ -333,12 +333,15 @@
     </div>
 
     <script>
-        // IMPORTANTE: Reemplaza estas variables con tus credenciales reales de Supabase
+        // ✅ SOLO UNA INICIALIZACIÓN DE SUPABASE
         const SUPABASE_URL = '{{ supabase_url }}';
         const SUPABASE_ANON_KEY = '{{ supabase_key }}';
         
-        // Inicializar cliente de Supabase
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        console.log('Supabase URL:', SUPABASE_URL); // Debug
+        console.log('Supabase Key:', SUPABASE_ANON_KEY ? 'Configurada ✅' : 'NO configurada ❌'); // Debug
+        
+        // Inicializar cliente de Supabase UNA SOLA VEZ
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         // Manejar Google Login
         document.getElementById('google-login-btn').addEventListener('click', async () => {
@@ -352,7 +355,7 @@
             spinner.classList.remove('hidden');
             
             try {
-                const { data, error } = await supabase.auth.signInWithOAuth({
+                const { data, error } = await supabaseClient.auth.signInWithOAuth({
                     provider: 'google',
                     options: {
                         redirectTo: window.location.origin + '/auth/google/callback'
