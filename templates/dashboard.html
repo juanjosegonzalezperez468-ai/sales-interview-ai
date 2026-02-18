@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Sales AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         /* Sidebar con efecto galaxia */
@@ -56,6 +58,13 @@
             background: #cbd5e1;
             border-radius: 3px;
         }
+
+        /* Estilos para la gráfica */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -91,6 +100,13 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                     </svg>
                     <span>Candidatos</span>
+                </a>
+
+                <a href="/calculadora/" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    </svg>
+                    <span>Calculadora ROI</span>
                 </a>
 
                 <a href="/marketplace" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition">
@@ -329,7 +345,7 @@
 
     <!-- Modal de análisis detallado -->
     <div id="modal-analisis" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl animate-slide-in">
+        <div class="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl animate-slide-in">
             <!-- Header del modal -->
             <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 flex items-center justify-between text-white">
                 <div class="flex items-center gap-4">
@@ -352,7 +368,7 @@
             <div class="px-8 py-6 bg-gray-50 border-b border-gray-200">
                 <div class="grid grid-cols-4 gap-6">
                     <div class="text-center">
-                        <p class="text-sm text-gray-600 mb-2">Score IA</p>
+                        <p class="text-sm text-gray-600 mb-2">Score Global</p>
                         <div class="relative inline-block">
                             <svg class="w-24 h-24 transform -rotate-90">
                                 <circle cx="48" cy="48" r="40" stroke="#e5e7eb" stroke-width="8" fill="none"/>
@@ -384,6 +400,19 @@
 
             <!-- Contenido scrolleable -->
             <div class="overflow-y-auto max-h-[60vh] custom-scrollbar">
+                <!-- NUEVA SECCIÓN: Gráfica de Radar -->
+                <div class="px-8 py-6 bg-gradient-to-br from-blue-50 to-purple-50 border-b border-gray-200">
+                    <div class="flex items-center gap-2 mb-4">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        <h3 class="text-lg font-bold text-gray-900">Análisis por Categorías</h3>
+                    </div>
+                    <div class="chart-container bg-white rounded-xl p-4 shadow-sm">
+                        <canvas id="graficaCandidato"></canvas>
+                    </div>
+                </div>
+
                 <!-- Resumen ejecutivo -->
                 <div class="px-8 py-6 border-b border-gray-200">
                     <div class="flex items-center gap-2 mb-3">
@@ -473,6 +502,92 @@
     </div>
 
     <script>
+        // Variable global para la gráfica
+        let graficaActual = null;
+
+        // Función para extraer métricas del análisis_ia
+        function extraerMetricas(analisisIA) {
+            // Busca el patrón T:20.0% E:30.0% B:40.0% A:10.0%
+            const regex = /T:([\d.]+)%\s*E:([\d.]+)%\s*B:([\d.]+)%\s*A:([\d.]+)%/;
+            const match = analisisIA.match(regex);
+
+            if (match) {
+                return {
+                    tecnica: parseFloat(match[1]),
+                    experiencia: parseFloat(match[2]),
+                    blandas: parseFloat(match[3]),
+                    ajuste: parseFloat(match[4])
+                };
+            }
+            // Valores por defecto si no hay datos
+            return { tecnica: 0, experiencia: 0, blandas: 0, ajuste: 0 };
+        }
+
+        // Función para dibujar la gráfica
+        function dibujarGrafica(analisisIA) {
+            const datos = extraerMetricas(analisisIA);
+            const ctx = document.getElementById('graficaCandidato').getContext('2d');
+            
+            // Destruir gráfica anterior si existe
+            if (graficaActual) {
+                graficaActual.destroy();
+            }
+            
+            graficaActual = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Habilidades Técnicas', 'Experiencia', 'Habilidades Blandas', 'Ajuste Cultural'],
+                    datasets: [{
+                        label: 'Puntaje del Candidato',
+                        data: [datos.tecnica, datos.experiencia, datos.blandas, datos.ajuste],
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(59, 130, 246, 1)',
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                stepSize: 20,
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            },
+                            pointLabels: {
+                                font: {
+                                    size: 12,
+                                    weight: 'bold'
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + context.parsed.r.toFixed(1) + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
         // Función para abrir el modal y cargar datos
         function verAnalisis(candidatoId) {
             // Mostrar modal inmediatamente
@@ -494,16 +609,16 @@
                     
                     // Score con animación circular
                     const score = data.score;
-                    const circumference = 251.2; // 2 * π * 40
+                    const circumference = 251.2;
                     const offset = circumference - (score / 100) * circumference;
                     document.getElementById('modal-score-text').textContent = score + '%';
                     document.getElementById('modal-score-circle').style.strokeDashoffset = offset;
                     
                     // Color del círculo según score
                     const circulo = document.getElementById('modal-score-circle');
-                    if (score >= 75) circulo.style.stroke = '#10b981'; // Verde
-                    else if (score >= 40) circulo.style.stroke = '#f59e0b'; // Amarillo
-                    else circulo.style.stroke = '#ef4444'; // Rojo
+                    if (score >= 75) circulo.style.stroke = '#10b981';
+                    else if (score >= 40) circulo.style.stroke = '#f59e0b';
+                    else circulo.style.stroke = '#ef4444';
                     
                     // Veredicto con color
                     document.getElementById('modal-tag').textContent = data.tag;
@@ -517,6 +632,11 @@
                         badge.classList.add('bg-yellow-100', 'text-yellow-800');
                     } else {
                         badge.classList.add('bg-red-100', 'text-red-800');
+                    }
+                    
+                    // NUEVA: Dibujar gráfica de categorías
+                    if (data.analisis_ia) {
+                        dibujarGrafica(data.analisis_ia);
                     }
                     
                     // Análisis
@@ -598,6 +718,11 @@
 
         function cerrarModal() {
             document.getElementById('modal-analisis').classList.add('hidden');
+            // Destruir gráfica al cerrar
+            if (graficaActual) {
+                graficaActual.destroy();
+                graficaActual = null;
+            }
         }
 
         function eliminarCandidato(candidatoId) {

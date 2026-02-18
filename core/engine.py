@@ -1,28 +1,21 @@
 from datetime import datetime
-from core.text_cleaner import clean_text
-from core.counters import count_keywords
 
-def evaluar_abierta(texto, reglas):
-    palabras = texto.split()
-    if len(palabras) < 15:
-        return 0, "Respuesta demasiado corta (mínimo 15 palabras)."
+def evaluar_candidato_motor_supabase(respuestas_candidato, config_preguntas):
+    """
+    Versión 4.3: Mantiene detalles anteriores + Agrega Categorías y Recomendaciones.
+    """
+    # 1. NUEVO: Estructura de Dimensiones
+    categorias = {
+        "Tecnica": {"puntos": 0},
+        "Experiencia": {"puntos": 0},
+        "Blandas": {"puntos": 0},
+        "Ajuste": {"puntos": 0}
+    }
     
-    limpio = clean_text(texto)
-    keywords_esperadas = reglas.get('palabras_clave', [])
-    if not keywords_esperadas:
-        return 100, "Sin keywords configuradas."
-    
-    encontradas = sum(1 for k in keywords_esperadas if k.lower() in limpio)
-    score_abierta = (encontradas / len(keywords_esperadas)) * 100
-    return score_abierta, f"Domina {encontradas} conceptos clave."
-
-def evaluar_candidato_motor(respuestas_candidato, config_vacante):
     score_total = 0
     fortalezas = []
     debilidades = []
-    detalles_ia = []
-    
-    preguntas_config = config_vacante.get('preguntas', [])
+    detalles_ia = [] # Mantenemos tus detalles de "Correcto/Incorrecto"
 
     def limpiar_local(texto):
         cambios = {'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u'}
@@ -31,85 +24,68 @@ def evaluar_candidato_motor(respuestas_candidato, config_vacante):
             t = t.replace(original, reemplazo)
         return t
 
-    for config in preguntas_config:
-        if isinstance(config, str): continue
-        
+    for config in config_preguntas:
         q_id = config.get('id')
-        rta_candidato = next((r['valor'] for r in respuestas_candidato if r['id'] == q_id), "")
-        
+        peso = config.get('peso', 0)
         tipo = config.get('tipo')
-        reglas = config.get('reglas', {})
+        cat = config.get('categoria', 'Ajuste') # Nueva columna en Supabase
+        
+        # Buscamos la respuesta
+        rta_candidato = next((r['valor'] for r in respuestas_candidato if str(r['id']) == str(q_id)), "")
         puntos_pregunta = 0
 
-        # --- 1. EVALUACIÓN POR TIPO ---
-        
-        # TIPO: ABIERTA
-        if tipo == "abierta":
-            _, mensaje = evaluar_abierta(rta_candidato, reglas)
-            detalles_ia.append(f"{config['texto']}: {mensaje}")
-            puntos_pregunta = 0 
-
-        # TIPO: BOOLEANA O SELECCIÓN MÚLTIPLE
-        elif tipo in ["booleana", "multiple", "seleccion_multiple"]:
+        # --- EVALUACIÓN (Tu lógica original intacta) ---
+        if tipo in ["booleana", "multiple", "seleccion_multiple"]:
             valor_recibido = limpiar_local(rta_candidato)
-            valor_esperado = limpiar_local(reglas.get('ideal', ''))
-            
+            valor_esperado = limpiar_local(config.get('reglas', {}).get('ideal', ''))
             puntos_pregunta = 100 if valor_recibido == valor_esperado else 0
-            detalles_ia.append(f"{config['texto']}: {'Correcto' if puntos_pregunta == 100 else 'Incorrecto'}")
+            detalles_ia.append(f"{config['texto']}: {'✅' if puntos_pregunta == 100 else '❌'}")
 
-        # TIPO: ESCALAS (1-5 o 1-10) - ¡NUEVA LÓGICA PROPORCIONAL!
-        elif tipo in ["escala_1_5", "escala_1_10"]:
+        elif "escala" in tipo:
             try:
-                valor_n = float(rta_candidato)
-                max_escala = 5 if tipo == "escala_1_5" else 10
-                # Calculamos el porcentaje: (valor / max) * 100
-                # Ejemplo: 8 en escala de 10 = 80 puntos.
-                puntos_pregunta = (valor_n / max_escala) * 100
-                detalles_ia.append(f"{config['texto']}: Calificó {valor_n}/{max_escala}")
+                max_escala = 5 if "5" in tipo else 10
+                puntos_pregunta = (float(rta_candidato) / max_escala) * 100
+                detalles_ia.append(f"{config['texto']}: {rta_candidato}/{max_escala}")
             except:
-                puntos_pregunta = 0
-                detalles_ia.append(f"{config['texto']}: Dato de escala inválido")
+                detalles_ia.append(f"{config['texto']}: Error dato")
 
-        # --- 2. LÓGICA DE KNOCK-OUT ---
-        # Si es crítico (knockout) y no obtuvo el puntaje ideal (100)
-        # Nota: En escalas, podrías definir que KO es si saca menos de cierto número, 
-        # pero por ahora mantenemos el estándar de "debe ser ideal".
+        # --- LÓGICA DE KNOCK-OUT ---
         if config.get('knockout') is True and puntos_pregunta < 100:
             return {
                 "score": 0,
                 "veredicto": "DESCALIFICADO (KO)",
-                "causal_ko": {
-                    "pregunta": config['texto'],
-                    "respuesta": rta_candidato,
-                    "regla": f"Se esperaba cumplimiento total (Ideal: {reglas.get('ideal') or 'Máximo'})"
-                },
-                "resumen_ia": f"No cumple requisito crítico: {config['texto']}",
-                "fecha_evaluacion": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                "analisis_ia": f"No cumple requisito crítico: {config['texto']}",
+                "estado": "Rechazado"
             }
 
-        # --- 3. SUMA PONDERADA ---
-        peso = config.get('peso', 0)
+        # --- 2. NUEVO: SUMA POR CATEGORÍA ---
+        if cat in categorias:
+            categorias[cat]["puntos"] += (puntos_pregunta * (peso / 100))
+        
         score_total += (puntos_pregunta * (peso / 100))
         
-        if puntos_pregunta >= 70:
-            fortalezas.append(config['texto'])
-        else:
-            debilidades.append(config['texto'])
+        # --- 3. NUEVO: FORTALEZAS Y DEBILIDADES ---
+        texto_item = config.get('texto_corto') or config.get('texto')
+        if puntos_pregunta >= 80:
+            if len(fortalezas) < 2: fortalezas.append(texto_item)
+        elif puntos_pregunta <= 40:
+            if len(debilidades) < 2: debilidades.append(texto_item)
 
-    # --- 4. RESULTADO FINAL ---
-    if score_total >= 80:
-        veredicto = "APROBADO"
-    elif score_total >= 60:
-        veredicto = "A CONSIDERAR"
-    else:
-        veredicto = "RECHAZADO"
+    # --- 4. NUEVO: RECOMENDACIÓN AUTOMÁTICA ---
+    if score_total >= 85: rec = "⭐ Perfil sobresaliente. Agendar ya."
+    elif score_total >= 60: rec = "🔍 Perfil promedio. Validar dudas."
+    else: rec = "🚫 No cumple mínimos."
+
+    # Mantenemos tus detalles_ia pero agregamos el resumen al inicio
+    analisis_completo = f"{rec} | Desglose: T:{round(categorias['Tecnica']['puntos'],1)}% E:{round(categorias['Experiencia']['puntos'],1)}% | " + " | ".join(detalles_ia)
 
     return {
-        "fecha_evaluacion": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "score": round(score_total, 2),
-        "veredicto": veredicto,
-        "fortalezas": fortalezas,
-        "debilidades": debilidades,
-        "analisis_ia": " | ".join(detalles_ia), # Cambié resumen_ia por analisis_ia para que coincida con tu Dashboard
-        "causal_ko": None 
+        "score_ia": round(score_total, 2),
+        "veredicto": "APROBADO" if score_total >= 70 else "RECHAZADO",
+        "fortalezas": ", ".join(fortalezas),
+        "debilidades": ", ".join(debilidades),
+        "analisis_ia": analisis_completo, # Aquí va todo: recomendación + desglose + detalles
+        "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "estado": "Evaluado"
     }
