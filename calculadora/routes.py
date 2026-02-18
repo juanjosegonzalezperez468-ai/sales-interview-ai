@@ -62,13 +62,10 @@ def lead_gate(diagnostico_id):
         if result.data[0].get('desbloqueado'):
             return redirect(url_for('calculadora.resultados', diagnostico_id=diagnostico_id))
 
-        return render_template(
-            'calculadora/calculadora_lead_gate.html',
-            diagnostico_id=diagnostico_id
-        )
-
+        return render_template('calculadora/calculadora_lead_gate.html', diagnostico_id=diagnostico_id)
+        
     except Exception as e:
-        logger.error(f"Error en lead_gate: {e}")
+        logger.error(f"Error en lead_gate: {str(e)}") # Este es el error que vemos en el log
         return redirect(url_for('calculadora.formulario'))
 
 
