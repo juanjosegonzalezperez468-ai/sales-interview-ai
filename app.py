@@ -726,7 +726,7 @@ def google_callback():
                 <p>Espera un momento</p>
             </div>
             
-            // BUSCA ESTA PARTE EN TU app.py Y CÁMBIALA:
+    
 
             <script>
                 const SUPABASE_URL = '{{ supabase_url }}';
