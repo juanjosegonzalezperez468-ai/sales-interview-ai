@@ -726,15 +726,19 @@ def google_callback():
                 <p>Espera un momento</p>
             </div>
             
+            // BUSCA ESTA PARTE EN TU app.py Y CÁMBIALA:
+
             <script>
                 const SUPABASE_URL = '{{ supabase_url }}';
                 const SUPABASE_KEY = '{{ supabase_key }}';
                 
-                const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                // CAMBIO AQUÍ: Cambia 'const supabase' por 'const supabaseClient'
+                const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
                 
                 async function handleCallback() {
                     try {
-                        const { data: { session }, error } = await supabase.auth.getSession();
+                        // CAMBIO AQUÍ: Usa 'supabaseClient'
+                        const { data: { session }, error } = await supabaseClient.auth.getSession();
                         
                         if (error) throw error;
                         
