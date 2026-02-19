@@ -1049,7 +1049,36 @@ def comparar():
             if c.get('analisis_ia'):
                 c['analisis_ia_obj'] = json.loads(c['analisis_ia'])
 
-        # skill_stack del rol (tomado de la vacante del c1 — ambos deben ser del mismo rol)
+        # Cargar evaluaciones post-entrevista de ambos candidatos
+        def get_eval(entrevista_id):
+            try:
+                res = supabase.table('entrevista_scores').select('*').eq('entrevista_id', entrevista_id).execute()
+                return res.data[0] if res.data else None
+            except:
+                return None
+
+        eval1 = get_eval(id1)
+        eval2 = get_eval(id2)
+
+        # Calcular score_final_combinado para cada uno
+        def calc_score_final(score_pre, eval_data):
+            if not eval_data or not eval_data.get('criterios'):
+                return None
+            criterios = eval_data['criterios']
+            bloque_a = [criterios.get(k, 3) for k in ['dominio', 'resolucion']]
+            bloque_b = [criterios.get(k, 3) for k in ['comunicacion', 'pensamiento', 'cultura', 'seguridad']]
+            score_a = sum(bloque_a) / len(bloque_a) if bloque_a else 3
+            score_b = sum(bloque_b) / len(bloque_b) if bloque_b else 3
+            interview_raw = score_a * 0.4 + score_b * 0.6
+            score_interview = round((interview_raw - 1) / 4 * 100)
+            return round(float(score_pre) * 0.7 + score_interview * 0.3, 1)
+
+        c1.data['score_final'] = calc_score_final(c1.data.get('score', 0), eval1)
+        c2.data['score_final'] = calc_score_final(c2.data.get('score', 0), eval2)
+        c1.data['eval'] = eval1
+        c2.data['eval'] = eval2
+
+        # skill_stack del rol
         skill_stack = []
         if c1.data.get('vacantes') and c1.data['vacantes'].get('skill_stack'):
             skill_stack = c1.data['vacantes']['skill_stack']
