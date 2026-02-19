@@ -266,7 +266,7 @@ def procesar():
         )
 
         # Pasar el skill_stack de la vacante para fortalezas/alertas reales
-        skill_stack_rol = v.get('habilidades_criticas') or []
+        skill_stack_rol = v.get('skill_stack') or []
 
         analisis_ia_texto = generar_resumen_profesional(
             cargo=v['cargo'],
@@ -300,7 +300,7 @@ def procesar():
             "respuestas_detalle": detalle,
             "analisis_ia": analisis_ia_texto,
             "fecha": datetime.utcnow().isoformat(),
-            "scores_habilidades": {h: calc_pct(scores_habilidades[h], max_habilidades[h]) for h in scores_habilidades}
+            "entity_skill_score": {h: calc_pct(scores_habilidades[h], max_habilidades[h]) for h in scores_habilidades}
         }
         supabase.table('entrevistas').insert(nueva_entrevista).execute()
         return render_template('gracias.html')
@@ -480,7 +480,7 @@ def nueva_vacante():
             "id_vacante_publico": id_publico,
             "empresa_id": emp_id_str,
             "preguntas": nuevas_preguntas,
-            "habilidades_criticas": hab_criticas,
+            "skill_stack": hab_criticas,
             "activa": True,
             "created_at": datetime.utcnow().isoformat()
         }
@@ -931,6 +931,21 @@ def api_candidato(id):
                 "riesgos": [],
                 "recomendacion": ""
             }
+        # Cargar evaluación post-entrevista si existe
+        eval_result = supabase.table('entrevista_scores').select('*').eq('entrevista_id', id).execute()
+        evaluacion = eval_result.data[0] if eval_result.data else None
+
+        # Score combinado si hay evaluación
+        score_pre = float(candidato['score'] or 0)
+        score_interview = None
+        score_final_combinado = None
+        if evaluacion and evaluacion.get('criterios'):
+            criterios = evaluacion['criterios']
+            scores_vals = [v for v in criterios.values() if isinstance(v, (int, float))]
+            if scores_vals:
+                score_interview = round(sum(scores_vals) / len(scores_vals) * 10)  # escala 1-10 → 0-100
+                score_final_combinado = round(score_pre * 0.7 + score_interview * 0.3, 1)
+
         return jsonify({
             "nombre": candidato['nombre_candidato'],
             "identificacion": candidato['identificacion'],
@@ -940,10 +955,68 @@ def api_candidato(id):
             "tag": candidato['tag'],
             "fecha": candidato.get('fecha', 'N/A')[:10] if candidato.get('fecha') else "N/A",
             "analisis": analisis,
-            "respuestas": candidato.get('respuestas_detalle', [])
+            "respuestas": candidato.get('respuestas_detalle', []),
+            "estado": candidato.get('estado', None),
+            "evaluacion": evaluacion,
+            "score_interview": score_interview,
+            "score_final_combinado": score_final_combinado
         })
     except Exception as e:
         logger.error(f"Error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+
+@app.route('/api/guardar_evaluacion', methods=['POST'])
+def guardar_evaluacion():
+    """Guarda la evaluación post-entrevista y calcula score combinado."""
+    if not session.get('logeado'):
+        return jsonify({"error": "No autorizado"}), 401
+    try:
+        data = request.json
+        entrevista_id = data.get('entrevista_id')
+        criterios     = data.get('criterios', {})
+        comentario    = data.get('comentario', '')
+
+        if not entrevista_id or not criterios:
+            return jsonify({"error": "Datos incompletos"}), 400
+
+        # Calcular interview_score: promedio de criterios (escala 1-10) → porcentaje
+        scores_vals    = [v for v in criterios.values() if isinstance(v, (int, float))]
+        score_interview = round(sum(scores_vals) / len(scores_vals) * 10) if scores_vals else 0
+
+        # Obtener score_pre del candidato
+        cand = supabase.table('entrevistas').select('score').eq('id', entrevista_id).single().execute()
+        score_pre = float(cand.data['score'] or 0) if cand.data else 0
+
+        # Score final combinado: 70% pre + 30% entrevista
+        score_final_combinado = round(score_pre * 0.7 + score_interview * 0.3, 1)
+
+        # Guardar en entrevista_scores
+        payload = {
+            "entrevista_id": entrevista_id,
+            "criterios":     criterios,
+            "comentario":    comentario,
+            "score_interview": score_interview,
+            "score_final_combinado": score_final_combinado,
+            "evaluado_por":  session.get('usuario_id', 'reclutador')
+        }
+
+        # Upsert por entrevista_id
+        existing = supabase.table('entrevista_scores').select('id').eq('entrevista_id', entrevista_id).execute()
+        if existing.data:
+            supabase.table('entrevista_scores').update(payload).eq('entrevista_id', entrevista_id).execute()
+        else:
+            supabase.table('entrevista_scores').insert(payload).execute()
+
+        logger.info(f"✅ Evaluación guardada: {entrevista_id} — score combinado: {score_final_combinado}%")
+        return jsonify({
+            "status": "success",
+            "score_interview": score_interview,
+            "score_final_combinado": score_final_combinado
+        })
+    except Exception as e:
+        logger.error(f"❌ Error guardando evaluación: {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -956,8 +1029,8 @@ def comparar():
     if not id1 or not id2:
         return redirect(url_for('candidatos'))
     try:
-        c1 = supabase.table('entrevistas').select('*, vacantes(cargo, habilidades_criticas)').eq('id', id1).single().execute()
-        c2 = supabase.table('entrevistas').select('*, vacantes(cargo, habilidades_criticas)').eq('id', id2).single().execute()
+        c1 = supabase.table('entrevistas').select('*, vacantes(cargo, skill_stack)').eq('id', id1).single().execute()
+        c2 = supabase.table('entrevistas').select('*, vacantes(cargo, skill_stack)').eq('id', id2).single().execute()
 
         for c in [c1.data, c2.data]:
             if c.get('analisis_ia'):
@@ -965,8 +1038,8 @@ def comparar():
 
         # skill_stack del rol (tomado de la vacante del c1 — ambos deben ser del mismo rol)
         skill_stack = []
-        if c1.data.get('vacantes') and c1.data['vacantes'].get('habilidades_criticas'):
-            skill_stack = c1.data['vacantes']['habilidades_criticas']
+        if c1.data.get('vacantes') and c1.data['vacantes'].get('skill_stack'):
+            skill_stack = c1.data['vacantes']['skill_stack']
 
         return render_template('comparar.html', c1=c1.data, c2=c2.data, skill_stack=skill_stack)
     except Exception as e:

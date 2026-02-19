@@ -352,6 +352,26 @@
 
         <!-- Score y metadata -->
         <div class="px-8 py-6 bg-gray-50 border-b border-gray-200">
+            <!-- Evolución visual Fase 2 (oculta hasta que haya evaluación) -->
+            <div id="evolucion-scores" class="hidden mb-5 p-4 bg-blue-50 border border-blue-100 rounded-xl">
+                <p class="text-[10px] font-black uppercase text-blue-400 tracking-widest mb-3">Evolución del Candidato</p>
+                <div class="flex items-center gap-3 flex-wrap">
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500 mb-1">Pre-evaluación</p>
+                        <p id="ev-score-pre" class="text-2xl font-black text-gray-700">—</p>
+                    </div>
+                    <div class="text-gray-300 text-2xl font-light">→</div>
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500 mb-1">Entrevista</p>
+                        <p id="ev-score-interview" class="text-2xl font-black text-blue-600">—</p>
+                    </div>
+                    <div class="text-gray-300 text-2xl font-light">→</div>
+                    <div class="text-center bg-blue-600 rounded-xl px-4 py-2">
+                        <p class="text-xs text-blue-200 mb-1">Score Final</p>
+                        <p id="ev-score-final" class="text-2xl font-black text-white">—</p>
+                    </div>
+                </div>
+            </div>
             <div class="grid grid-cols-4 gap-6">
                 <div class="text-center">
                     <p class="text-sm text-gray-600 mb-2">Score Global</p>
@@ -471,6 +491,128 @@
 
         </div><!-- fin scroll -->
 
+
+            <!-- ══════════════════════════════════════════
+                 FASE 2 — EVALUACIÓN POST-ENTREVISTA
+            ══════════════════════════════════════════ -->
+            <div class="px-8 py-6 border-t border-gray-200">
+                <div class="flex items-center gap-2 mb-5">
+                    <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                    </svg>
+                    <h3 class="text-lg font-bold text-gray-900">Evaluación Post-Entrevista</h3>
+                    <span id="badge-evaluado" class="hidden ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded-full">✓ Evaluado</span>
+                </div>
+
+                <!-- Criterios 1–10 -->
+                <div id="form-evaluacion" class="space-y-4 mb-6">
+                    <p class="text-xs text-gray-400 mb-3">Puntúa del 1 al 10 cada criterio observado en la entrevista.</p>
+
+                    <div class="criterio-row grid grid-cols-[1fr_auto] items-center gap-4 pb-3 border-b border-gray-100">
+                        <label class="text-sm font-semibold text-gray-700">💬 Comunicación real</label>
+                        <div class="flex items-center gap-2">
+                            <input type="range" min="1" max="10" value="5" step="1"
+                                   id="crit-comunicacion" oninput="actualizarCrit(this)"
+                                   class="w-28 accent-blue-600">
+                            <span id="val-comunicacion" class="text-sm font-black text-blue-600 w-6 text-center">5</span>
+                        </div>
+                    </div>
+
+                    <div class="criterio-row grid grid-cols-[1fr_auto] items-center gap-4 pb-3 border-b border-gray-100">
+                        <label class="text-sm font-semibold text-gray-700">🧠 Claridad de pensamiento</label>
+                        <div class="flex items-center gap-2">
+                            <input type="range" min="1" max="10" value="5" step="1"
+                                   id="crit-claridad" oninput="actualizarCrit(this)"
+                                   class="w-28 accent-blue-600">
+                            <span id="val-claridad" class="text-sm font-black text-blue-600 w-6 text-center">5</span>
+                        </div>
+                    </div>
+
+                    <div class="criterio-row grid grid-cols-[1fr_auto] items-center gap-4 pb-3 border-b border-gray-100">
+                        <label class="text-sm font-semibold text-gray-700">🤝 Cultura / Fit</label>
+                        <div class="flex items-center gap-2">
+                            <input type="range" min="1" max="10" value="5" step="1"
+                                   id="crit-cultura" oninput="actualizarCrit(this)"
+                                   class="w-28 accent-blue-600">
+                            <span id="val-cultura" class="text-sm font-black text-blue-600 w-6 text-center">5</span>
+                        </div>
+                    </div>
+
+                    <div class="criterio-row grid grid-cols-[1fr_auto] items-center gap-4 pb-3 border-b border-gray-100">
+                        <label class="text-sm font-semibold text-gray-700">📦 Dominio del tema</label>
+                        <div class="flex items-center gap-2">
+                            <input type="range" min="1" max="10" value="5" step="1"
+                                   id="crit-dominio" oninput="actualizarCrit(this)"
+                                   class="w-28 accent-blue-600">
+                            <span id="val-dominio" class="text-sm font-black text-blue-600 w-6 text-center">5</span>
+                        </div>
+                    </div>
+
+                    <div class="criterio-row grid grid-cols-[1fr_auto] items-center gap-4 pb-3 border-b border-gray-100">
+                        <label class="text-sm font-semibold text-gray-700">⚡ Confianza</label>
+                        <div class="flex items-center gap-2">
+                            <input type="range" min="1" max="10" value="5" step="1"
+                                   id="crit-confianza" oninput="actualizarCrit(this)"
+                                   class="w-28 accent-blue-600">
+                            <span id="val-confianza" class="text-sm font-black text-blue-600 w-6 text-center">5</span>
+                        </div>
+                    </div>
+
+                    <!-- Comentario opcional -->
+                    <div class="pt-2">
+                        <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Comentario (opcional)</label>
+                        <textarea id="eval-comentario" rows="2" placeholder="Observaciones de la entrevista..."
+                                  class="mt-1 w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm
+                                         focus:ring-2 focus:ring-blue-400 outline-none resize-none"></textarea>
+                    </div>
+
+                    <button onclick="guardarEvaluacion()"
+                            id="btn-guardar-eval"
+                            class="w-full py-3 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white
+                                   font-black rounded-xl transition-all tracking-widest uppercase text-sm shadow-lg shadow-purple-200">
+                        Guardar Evaluación de Entrevista
+                    </button>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════════
+                 FASE 2 — ESTADO DEL CANDIDATO
+            ══════════════════════════════════════════ -->
+            <div class="px-8 py-6 bg-gray-50 border-t border-gray-200">
+                <div class="flex items-center gap-2 mb-4">
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+                    </svg>
+                    <h3 class="text-base font-bold text-gray-900">Decisión Final</h3>
+                    <span id="estado-actual-badge" class="hidden ml-auto text-xs font-bold px-3 py-1 rounded-full"></span>
+                </div>
+                <div class="grid grid-cols-3 gap-3" id="botones-estado">
+                    <button onclick="cambiarEstado('Finalista')"
+                            id="btn-finalista"
+                            class="estado-btn py-3 px-4 rounded-xl border-2 border-emerald-200 bg-emerald-50
+                                   hover:bg-emerald-500 hover:text-white hover:border-emerald-500
+                                   text-emerald-700 font-bold text-sm transition-all active:scale-95">
+                        ⭐ Finalista
+                    </button>
+                    <button onclick="cambiarEstado('Descartado')"
+                            id="btn-descartado"
+                            class="estado-btn py-3 px-4 rounded-xl border-2 border-red-200 bg-red-50
+                                   hover:bg-red-500 hover:text-white hover:border-red-500
+                                   text-red-700 font-bold text-sm transition-all active:scale-95">
+                        ✕ Descartado
+                    </button>
+                    <button onclick="cambiarEstado('Contratado')"
+                            id="btn-contratado"
+                            class="estado-btn py-3 px-4 rounded-xl border-2 border-blue-200 bg-blue-50
+                                   hover:bg-blue-600 hover:text-white hover:border-blue-600
+                                   text-blue-700 font-bold text-sm transition-all active:scale-95">
+                        🏆 Contratado
+                    </button>
+                </div>
+            </div>
+
         <!-- Footer modal -->
         <div class="px-8 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
             <p class="text-xs text-gray-500">
@@ -579,7 +721,25 @@
     }
 
     function verAnalisis(candidatoId) {
+        candidatoIdActual = candidatoId;
         document.getElementById('modal-analisis').classList.remove('hidden');
+        // Reset Fase 2 UI al abrir nuevo candidato
+        document.getElementById('badge-evaluado').classList.add('hidden');
+        document.getElementById('evolucion-scores').classList.add('hidden');
+        document.getElementById('estado-actual-badge').classList.add('hidden');
+        document.querySelectorAll('.estado-btn').forEach(b => b.classList.remove('ring-2','ring-offset-1'));
+        const btnEval = document.getElementById('btn-guardar-eval');
+        btnEval.textContent = 'Guardar Evaluación de Entrevista';
+        btnEval.disabled = false;
+        btnEval.className = btnEval.className.replace('bg-green-600','bg-purple-600').replace('hover:bg-green-700','hover:bg-purple-700');
+        // Resetear sliders a 5
+        ['comunicacion','claridad','cultura','dominio','confianza'].forEach(k => {
+            const s = document.getElementById('crit-' + k);
+            const v = document.getElementById('val-' + k);
+            if (s) s.value = 5;
+            if (v) v.textContent = 5;
+        });
+        document.getElementById('eval-comentario').value = '';
 
         fetch(`/api/candidato/${candidatoId}`)
             .then(res => res.json())
@@ -652,6 +812,10 @@
                 document.getElementById('modal-riesgos').innerHTML = riesgosHTML ||
                     '<li class="text-gray-500">Sin riesgos identificados</li>';
 
+                // Cargar Fase 2: evaluación y estado
+                cargarEvaluacion(data.evaluacion, data.score_interview, data.score_final_combinado, data.score);
+                cargarEstado(data.estado);
+
                 // Respuestas
                 const respuestasHTML = (data.respuestas || []).map(r => {
                     const puntos = r.puntos || 0;
@@ -705,6 +869,147 @@
         fetch(`/eliminar_candidato/${candidatoId}`, { method: 'POST' })
             .then(res => res.json())
             .then(data => { if (data.success) { location.reload(); } else { alert('Error al eliminar'); } });
+    }
+
+
+    // ══════════════════════════════════════════════════════
+    // FASE 2 — EVALUACIÓN POST-ENTREVISTA
+    // ══════════════════════════════════════════════════════
+    let candidatoIdActual = null;
+
+    // Actualizar valor visual de cada slider
+    function actualizarCrit(input) {
+        const key = input.id.replace('crit-', '');
+        document.getElementById('val-' + key).textContent = input.value;
+    }
+
+    // Precargar evaluación si ya existe
+    function cargarEvaluacion(evaluacion, scoreInterview, scoreFinalCombinado, scorePreEval) {
+        if (!evaluacion || !evaluacion.criterios) return;
+
+        document.getElementById('badge-evaluado').classList.remove('hidden');
+
+        // Llenar sliders con valores guardados
+        const mapa = {
+            comunicacion: evaluacion.criterios.comunicacion,
+            claridad:     evaluacion.criterios.claridad,
+            cultura:      evaluacion.criterios.cultura,
+            dominio:      evaluacion.criterios.dominio,
+            confianza:    evaluacion.criterios.confianza
+        };
+        for (const [key, val] of Object.entries(mapa)) {
+            if (val !== undefined) {
+                const slider = document.getElementById('crit-' + key);
+                const label  = document.getElementById('val-' + key);
+                if (slider) { slider.value = val; }
+                if (label)  { label.textContent = val; }
+            }
+        }
+        if (evaluacion.comentario) {
+            document.getElementById('eval-comentario').value = evaluacion.comentario;
+        }
+
+        // Mostrar evolución de scores
+        if (scoreInterview !== null && scoreFinalCombinado !== null) {
+            document.getElementById('evolucion-scores').classList.remove('hidden');
+            document.getElementById('ev-score-pre').textContent      = scorePreEval + '%';
+            document.getElementById('ev-score-interview').textContent = scoreInterview + '%';
+            document.getElementById('ev-score-final').textContent     = scoreFinalCombinado + '%';
+        }
+    }
+
+    // Cargar estado visual del candidato
+    function cargarEstado(estado) {
+        if (!estado) return;
+        const badge = document.getElementById('estado-actual-badge');
+        badge.classList.remove('hidden');
+
+        const config = {
+            'Finalista':  { text: '⭐ Finalista',  cls: 'bg-emerald-100 text-emerald-700', btnId: 'btn-finalista'  },
+            'Descartado': { text: '✕ Descartado', cls: 'bg-red-100 text-red-700',         btnId: 'btn-descartado' },
+            'Contratado': { text: '🏆 Contratado', cls: 'bg-blue-100 text-blue-700',       btnId: 'btn-contratado' },
+        };
+        const cfg = config[estado];
+        if (cfg) {
+            badge.textContent = cfg.text;
+            badge.className   = 'ml-auto text-xs font-bold px-3 py-1 rounded-full ' + cfg.cls;
+            // Resaltar botón activo
+            document.querySelectorAll('.estado-btn').forEach(b => b.classList.remove('ring-2', 'ring-offset-1'));
+            const btnActivo = document.getElementById(cfg.btnId);
+            if (btnActivo) btnActivo.classList.add('ring-2', 'ring-offset-1');
+        }
+    }
+
+    // Guardar evaluación post-entrevista
+    async function guardarEvaluacion() {
+        if (!candidatoIdActual) return;
+
+        const criterios = {
+            comunicacion: parseInt(document.getElementById('crit-comunicacion').value),
+            claridad:     parseInt(document.getElementById('crit-claridad').value),
+            cultura:      parseInt(document.getElementById('crit-cultura').value),
+            dominio:      parseInt(document.getElementById('crit-dominio').value),
+            confianza:    parseInt(document.getElementById('crit-confianza').value),
+        };
+        const comentario = document.getElementById('eval-comentario').value;
+
+        const btn = document.getElementById('btn-guardar-eval');
+        btn.textContent = 'Guardando...';
+        btn.disabled    = true;
+
+        try {
+            const res  = await fetch('/api/guardar_evaluacion', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ entrevista_id: candidatoIdActual, criterios, comentario })
+            });
+            const data = await res.json();
+
+            if (data.status === 'success') {
+                // Mostrar evolución actualizada
+                const scorePreEl = document.getElementById('modal-score-text').textContent;
+                const scorePre   = parseInt(scorePreEl);
+                document.getElementById('evolucion-scores').classList.remove('hidden');
+                document.getElementById('ev-score-pre').textContent       = scorePre + '%';
+                document.getElementById('ev-score-interview').textContent  = data.score_interview + '%';
+                document.getElementById('ev-score-final').textContent      = data.score_final_combinado + '%';
+
+                document.getElementById('badge-evaluado').classList.remove('hidden');
+                btn.textContent = '✓ Evaluación Guardada';
+                btn.classList.replace('bg-purple-600', 'bg-green-600');
+                btn.classList.replace('hover:bg-purple-700', 'hover:bg-green-700');
+                setTimeout(() => {
+                    btn.textContent = 'Actualizar Evaluación';
+                    btn.disabled    = false;
+                }, 2500);
+            } else {
+                alert('Error al guardar: ' + (data.error || 'Error desconocido'));
+                btn.textContent = 'Guardar Evaluación de Entrevista';
+                btn.disabled    = false;
+            }
+        } catch (err) {
+            console.error(err);
+            btn.textContent = 'Guardar Evaluación de Entrevista';
+            btn.disabled    = false;
+        }
+    }
+
+    // Cambiar estado del candidato
+    async function cambiarEstado(nuevoEstado) {
+        if (!candidatoIdActual) return;
+        try {
+            const res = await fetch('/actualizar_estado', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ id: candidatoIdActual, estado: nuevoEstado })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                cargarEstado(nuevoEstado);
+            }
+        } catch (err) {
+            console.error('Error actualizando estado:', err);
+        }
     }
 
     document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(); });
