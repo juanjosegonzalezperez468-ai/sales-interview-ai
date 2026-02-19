@@ -6,93 +6,355 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-slate-50 p-6 md:p-12">
+<body class="bg-slate-50 p-6 md:p-10 font-sans">
+<div class="max-w-6xl mx-auto space-y-8">
 
-    <div class="max-w-6xl mx-auto">
-        <header class="flex justify-between items-center mb-10">
-            <div>
-                <h1 class="text-3xl font-black text-slate-800 uppercase tracking-tighter">Comparativa de Potencial</h1>
-                <p class="text-slate-500 font-medium">Cargo: <span class="text-blue-600">{{ c1.vacantes.cargo }}</span></p>
-            </div>
-            <a href="/candidatos" class="bg-white px-6 py-2 rounded-xl shadow-sm border font-bold text-slate-600 hover:bg-slate-50 transition">← Volver</a>
-        </header>
+    <!-- ── Header ── -->
+    <header class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-black text-slate-800 tracking-tight">Comparativa de Talento</h1>
+            <p class="text-slate-400 text-sm mt-1">
+                Cargo: <span class="text-blue-600 font-bold">{{ c1.vacantes.cargo if c1.vacantes else 'N/A' }}</span>
+            </p>
+        </div>
+        <a href="/candidatos"
+           class="bg-white px-5 py-2 rounded-xl shadow-sm border border-slate-200 font-bold text-slate-600 hover:bg-slate-50 transition text-sm">
+            ← Volver
+        </a>
+    </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-            
-            <div class="bg-white p-6 rounded-3xl shadow-xl border-t-4 border-blue-500">
-                <div class="text-center mb-6">
-                    <span class="text-4xl">👤</span>
-                    <h2 class="text-xl font-bold mt-2">{{ c1.nombre_candidato }}</h2>
-                    <p class="text-blue-600 font-black text-2xl">{{ c1.score }}%</p>
+    <!-- ── Cards superiores ── -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Candidato 1 -->
+        <div class="bg-white rounded-3xl shadow-sm border-t-4 border-blue-500 p-6">
+            <div class="flex items-center gap-4 mb-5">
+                <div class="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center text-white text-xl font-black">
+                    {{ c1.nombre_candidato[0] | upper }}
                 </div>
-                <div class="space-y-4 text-sm">
-                    <h3 class="font-bold text-slate-400 uppercase tracking-widest text-[10px]">Fortalezas Clave</h3>
+                <div>
+                    <h2 class="text-lg font-black text-slate-800">{{ c1.nombre_candidato }}</h2>
+                    <p class="text-xs text-slate-400">ID: {{ c1.identificacion }}</p>
+                </div>
+                <div class="ml-auto text-right">
+                    <p class="text-3xl font-black text-blue-600">{{ c1.score }}%</p>
+                    <span class="text-xs font-bold px-2 py-1 rounded-full
+                        {% if 'RECOMENDADO' in c1.veredicto %}bg-green-100 text-green-700
+                        {% elif 'REVISAR' in c1.veredicto %}bg-yellow-100 text-yellow-700
+                        {% else %}bg-red-100 text-red-700{% endif %}">
+                        {{ c1.veredicto }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Fortalezas -->
+            {% if c1.analisis_ia_obj and c1.analisis_ia_obj.fortalezas %}
+            <div class="mb-4">
+                <p class="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Fortalezas</p>
+                <div class="space-y-1">
                     {% for f in c1.analisis_ia_obj.fortalezas %}
-                    <p class="bg-blue-50 text-blue-700 p-2 rounded-lg font-medium">{{ f }}</p>
+                    <p class="bg-blue-50 text-blue-700 text-xs px-3 py-2 rounded-xl font-medium">{{ f }}</p>
                     {% endfor %}
                 </div>
             </div>
+            {% endif %}
 
-            <div class="bg-white p-8 rounded-3xl shadow-2xl lg:col-span-1">
-                <canvas id="radarComparativo"></canvas>
+            <!-- Alertas -->
+            {% if c1.analisis_ia_obj and c1.analisis_ia_obj.riesgos %}
+            <div>
+                <p class="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Alertas</p>
+                <div class="space-y-1">
+                    {% for r in c1.analisis_ia_obj.riesgos %}
+                    <p class="bg-yellow-50 text-yellow-700 text-xs px-3 py-2 rounded-xl font-medium">{{ r }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Candidato 2 -->
+        <div class="bg-white rounded-3xl shadow-sm border-t-4 border-emerald-500 p-6">
+            <div class="flex items-center gap-4 mb-5">
+                <div class="w-14 h-14 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xl font-black">
+                    {{ c2.nombre_candidato[0] | upper }}
+                </div>
+                <div>
+                    <h2 class="text-lg font-black text-slate-800">{{ c2.nombre_candidato }}</h2>
+                    <p class="text-xs text-slate-400">ID: {{ c2.identificacion }}</p>
+                </div>
+                <div class="ml-auto text-right">
+                    <p class="text-3xl font-black text-emerald-600">{{ c2.score }}%</p>
+                    <span class="text-xs font-bold px-2 py-1 rounded-full
+                        {% if 'RECOMENDADO' in c2.veredicto %}bg-green-100 text-green-700
+                        {% elif 'REVISAR' in c2.veredicto %}bg-yellow-100 text-yellow-700
+                        {% else %}bg-red-100 text-red-700{% endif %}">
+                        {{ c2.veredicto }}
+                    </span>
+                </div>
             </div>
 
-            <div class="bg-white p-6 rounded-3xl shadow-xl border-t-4 border-emerald-500">
-                <div class="text-center mb-6">
-                    <span class="text-4xl">👤</span>
-                    <h2 class="text-xl font-bold mt-2">{{ c2.nombre_candidato }}</h2>
-                    <p class="text-emerald-600 font-black text-2xl">{{ c2.score }}%</p>
-                </div>
-                <div class="space-y-4 text-sm">
-                    <h3 class="font-bold text-slate-400 uppercase tracking-widest text-[10px]">Fortalezas Clave</h3>
+            <!-- Fortalezas -->
+            {% if c2.analisis_ia_obj and c2.analisis_ia_obj.fortalezas %}
+            <div class="mb-4">
+                <p class="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Fortalezas</p>
+                <div class="space-y-1">
                     {% for f in c2.analisis_ia_obj.fortalezas %}
-                    <p class="bg-emerald-50 text-emerald-700 p-2 rounded-lg font-medium">{{ f }}</p>
+                    <p class="bg-emerald-50 text-emerald-700 text-xs px-3 py-2 rounded-xl font-medium">{{ f }}</p>
                     {% endfor %}
                 </div>
+            </div>
+            {% endif %}
+
+            <!-- Alertas -->
+            {% if c2.analisis_ia_obj and c2.analisis_ia_obj.riesgos %}
+            <div>
+                <p class="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Alertas</p>
+                <div class="space-y-1">
+                    {% for r in c2.analisis_ia_obj.riesgos %}
+                    <p class="bg-yellow-50 text-yellow-700 text-xs px-3 py-2 rounded-xl font-medium">{{ r }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         TABLA DE HABILIDADES CRÍTICAS (PASO 5)
+    ══════════════════════════════════════════ -->
+    {% if skill_stack and skill_stack | length > 0 %}
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+            <span class="text-lg">⚡</span>
+            <h3 class="font-black text-slate-800">Habilidades Críticas del Rol</h3>
+            <span class="ml-auto text-xs text-slate-400 font-medium">
+                Score por habilidad vs. stack requerido
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-slate-50 border-b border-slate-100">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-[10px] font-black uppercase text-slate-400 tracking-widest w-1/3">
+                            Habilidad
+                        </th>
+                        <th class="px-6 py-3 text-center text-[10px] font-black uppercase text-blue-400 tracking-widest w-1/3">
+                            {{ c1.nombre_candidato }}
+                        </th>
+                        <th class="px-6 py-3 text-center text-[10px] font-black uppercase text-emerald-400 tracking-widest w-1/3">
+                            {{ c2.nombre_candidato }}
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    {% for hab in skill_stack %}
+                    {% set pct1 = c1.analisis_ia_obj.entity_skill_score.get(hab, -1) if c1.analisis_ia_obj and c1.analisis_ia_obj.entity_skill_score else -1 %}
+                    {% set pct2 = c2.analisis_ia_obj.entity_skill_score.get(hab, -1) if c2.analisis_ia_obj and c2.analisis_ia_obj.entity_skill_score else -1 %}
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+
+                        <!-- Nombre habilidad -->
+                        <td class="px-6 py-4">
+                            <span class="font-bold text-slate-700 text-sm">{{ hab }}</span>
+                            <span class="ml-2 text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-bold">crítica</span>
+                        </td>
+
+                        <!-- Score candidato 1 -->
+                        <td class="px-6 py-4">
+                            {% if pct1 >= 0 %}
+                            <div class="flex flex-col items-center gap-1.5">
+                                <div class="flex items-center gap-2 w-full max-w-[140px]">
+                                    <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                        <div class="h-full rounded-full transition-all"
+                                             style="width: {{ pct1 }}%;
+                                             background: {{ '#10b981' if pct1 >= 80 else '#f59e0b' if pct1 > 60 else '#ef4444' }}">
+                                        </div>
+                                    </div>
+                                    <span class="text-sm font-black w-10 text-right
+                                        {{ 'text-emerald-600' if pct1 >= 80 else 'text-yellow-500' if pct1 > 60 else 'text-red-500' }}">
+                                        {{ pct1 }}%
+                                    </span>
+                                </div>
+                                <span class="text-[10px] font-bold
+                                    {{ 'text-emerald-500' if pct1 >= 80 else 'text-yellow-500' if pct1 > 60 else 'text-red-400' }}">
+                                    {{ '✓ Fortaleza' if pct1 >= 80 else '~ Neutro' if pct1 > 60 else '⚠ Alerta' }}
+                                </span>
+                            </div>
+                            {% else %}
+                            <div class="text-center">
+                                <span class="text-xs text-slate-300 italic">No evaluada</span>
+                            </div>
+                            {% endif %}
+                        </td>
+
+                        <!-- Score candidato 2 -->
+                        <td class="px-6 py-4">
+                            {% if pct2 >= 0 %}
+                            <div class="flex flex-col items-center gap-1.5">
+                                <div class="flex items-center gap-2 w-full max-w-[140px]">
+                                    <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                        <div class="h-full rounded-full transition-all"
+                                             style="width: {{ pct2 }}%;
+                                             background: {{ '#10b981' if pct2 >= 80 else '#f59e0b' if pct2 > 60 else '#ef4444' }}">
+                                        </div>
+                                    </div>
+                                    <span class="text-sm font-black w-10 text-right
+                                        {{ 'text-emerald-600' if pct2 >= 80 else 'text-yellow-500' if pct2 > 60 else 'text-red-500' }}">
+                                        {{ pct2 }}%
+                                    </span>
+                                </div>
+                                <span class="text-[10px] font-bold
+                                    {{ 'text-emerald-500' if pct2 >= 80 else 'text-yellow-500' if pct2 > 60 else 'text-red-400' }}">
+                                    {{ '✓ Fortaleza' if pct2 >= 80 else '~ Neutro' if pct2 > 60 else '⚠ Alerta' }}
+                                </span>
+                            </div>
+                            {% else %}
+                            <div class="text-center">
+                                <span class="text-xs text-slate-300 italic">No evaluada</span>
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+                <!-- Fila resumen: score global -->
+                <tfoot class="bg-slate-50 border-t-2 border-slate-200">
+                    <tr>
+                        <td class="px-6 py-4 font-black text-slate-700 text-sm uppercase tracking-widest">
+                            Score Global
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="text-2xl font-black
+                                {{ 'text-blue-600' if c1.score >= c2.score else 'text-slate-400' }}">
+                                {{ c1.score }}%
+                                {% if c1.score >= c2.score %}<span class="text-sm">🏆</span>{% endif %}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="text-2xl font-black
+                                {{ 'text-emerald-600' if c2.score > c1.score else 'text-slate-400' }}">
+                                {{ c2.score }}%
+                                {% if c2.score > c1.score %}<span class="text-sm">🏆</span>{% endif %}
+                            </span>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Radar comparativo ── -->
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
+        <div class="flex items-center gap-2 mb-6">
+            <span class="text-lg">📡</span>
+            <h3 class="font-black text-slate-800">Radar Comparativo</h3>
+        </div>
+        <div class="max-w-md mx-auto" style="height: 320px;">
+            <canvas id="radarComparativo"></canvas>
+        </div>
+    </div>
+
+    <!-- ── Recomendación final ── -->
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+        <div class="flex items-center gap-2 mb-4">
+            <span class="text-lg">🎯</span>
+            <h3 class="font-black text-slate-800">Recomendación del Sistema</h3>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-blue-50 rounded-2xl p-4 border border-blue-100">
+                <p class="text-[10px] font-black uppercase text-blue-400 tracking-widest mb-1">{{ c1.nombre_candidato }}</p>
+                <p class="text-blue-800 font-bold text-sm">
+                    {{ c1.analisis_ia_obj.recomendacion if c1.analisis_ia_obj else '—' }}
+                </p>
+            </div>
+            <div class="bg-emerald-50 rounded-2xl p-4 border border-emerald-100">
+                <p class="text-[10px] font-black uppercase text-emerald-400 tracking-widest mb-1">{{ c2.nombre_candidato }}</p>
+                <p class="text-emerald-800 font-bold text-sm">
+                    {{ c2.analisis_ia_obj.recomendacion if c2.analisis_ia_obj else '—' }}
+                </p>
             </div>
         </div>
     </div>
 
-    <script>
-        const ctx = document.getElementById('radarComparativo');
-        
-        // Función para parsear el string de radar "T:80% E:100%..."
+</div><!-- fin max-w -->
+
+<script>
+    // ── Radar usando entity_skill_score ──────────────────────────────────────
+    const skillStack   = {{ skill_stack | tojson }};
+    const score1       = {{ c1.analisis_ia_obj.entity_skill_score | tojson if c1.analisis_ia_obj and c1.analisis_ia_obj.entity_skill_score else '{}' }};
+    const score2       = {{ c2.analisis_ia_obj.entity_skill_score | tojson if c2.analisis_ia_obj and c2.analisis_ia_obj.entity_skill_score else '{}' }};
+    const nombre1      = "{{ c1.nombre_candidato }}";
+    const nombre2      = "{{ c2.nombre_candidato }}";
+
+    // Si hay skill_stack usamos esas habilidades; si no, fallback al radar genérico
+    let radarLabels, dataC1, dataC2;
+
+    if (skillStack && skillStack.length > 0) {
+        radarLabels = skillStack;
+        dataC1 = skillStack.map(h => score1[h] !== undefined ? score1[h] : 0);
+        dataC2 = skillStack.map(h => score2[h] !== undefined ? score2[h] : 0);
+    } else {
+        // Fallback: radar genérico T/E/B/A del string guardado
         function parseRadar(radarStr) {
+            if (!radarStr) return [0, 0, 0, 0];
             const matches = radarStr.match(/\d+/g);
-            return matches ? matches.map(Number) : [0,0,0,0];
+            return matches ? matches.map(Number) : [0, 0, 0, 0];
         }
+        radarLabels = ['Técnica', 'Experiencia', 'Blandas', 'Ajuste'];
+        dataC1 = parseRadar("{{ c1.analisis_ia_obj.radar if c1.analisis_ia_obj else '' }}");
+        dataC2 = parseRadar("{{ c2.analisis_ia_obj.radar if c2.analisis_ia_obj else '' }}");
+    }
 
-        const dataC1 = parseRadar("{{ c1.analisis_ia_obj.radar }}");
-        const dataC2 = parseRadar("{{ c2.analisis_ia_obj.radar }}");
-
-        new Chart(ctx, {
-            type: 'radar',
-            data: {
-                labels: ['Técnica', 'Experiencia', 'Blandas', 'Ajuste'],
-                datasets: [
-                    {
-                        label: '{{ c1.nombre_candidato }}',
-                        data: dataC1,
-                        fill: true,
-                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                        borderColor: 'rgb(59, 130, 246)',
-                        pointBackgroundColor: 'rgb(59, 130, 246)',
-                    },
-                    {
-                        label: '{{ c2.nombre_candidato }}',
-                        data: dataC2,
-                        fill: true,
-                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
-                        borderColor: 'rgb(16, 185, 129)',
-                        pointBackgroundColor: 'rgb(16, 185, 129)',
-                    }
-                ]
+    const ctx = document.getElementById('radarComparativo').getContext('2d');
+    new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: radarLabels,
+            datasets: [
+                {
+                    label: nombre1,
+                    data: dataC1,
+                    fill: true,
+                    backgroundColor: 'rgba(59,130,246,0.15)',
+                    borderColor: 'rgb(59,130,246)',
+                    pointBackgroundColor: 'rgb(59,130,246)',
+                    pointRadius: 4,
+                    borderWidth: 2
+                },
+                {
+                    label: nombre2,
+                    data: dataC2,
+                    fill: true,
+                    backgroundColor: 'rgba(16,185,129,0.15)',
+                    borderColor: 'rgb(16,185,129)',
+                    pointBackgroundColor: 'rgb(16,185,129)',
+                    pointRadius: 4,
+                    borderWidth: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                r: {
+                    min: 0, max: 100,
+                    ticks: { stepSize: 25, callback: v => v + '%', font: { size: 10 }, color: '#94a3b8' },
+                    grid: { color: 'rgba(0,0,0,0.06)' },
+                    angleLines: { color: 'rgba(0,0,0,0.06)' },
+                    pointLabels: { font: { size: 11, weight: '600' }, color: '#475569' }
+                }
             },
-            options: {
-                scales: { r: { min: 0, max: 100, ticks: { display: false } } },
-                plugins: { legend: { position: 'bottom' } }
+            plugins: {
+                legend: { position: 'bottom', labels: { font: { size: 12, weight: 'bold' }, padding: 20 } },
+                tooltip: {
+                    callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.r}%` }
+                }
             }
-        });
-    </script>
+        }
+    });
+</script>
 </body>
 </html>

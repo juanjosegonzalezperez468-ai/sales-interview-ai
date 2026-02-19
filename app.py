@@ -956,12 +956,19 @@ def comparar():
     if not id1 or not id2:
         return redirect(url_for('candidatos'))
     try:
-        c1 = supabase.table('entrevistas').select('*, vacantes(cargo)').eq('id', id1).single().execute()
-        c2 = supabase.table('entrevistas').select('*, vacantes(cargo)').eq('id', id2).single().execute()
+        c1 = supabase.table('entrevistas').select('*, vacantes(cargo, habilidades_criticas)').eq('id', id1).single().execute()
+        c2 = supabase.table('entrevistas').select('*, vacantes(cargo, habilidades_criticas)').eq('id', id2).single().execute()
+
         for c in [c1.data, c2.data]:
             if c.get('analisis_ia'):
                 c['analisis_ia_obj'] = json.loads(c['analisis_ia'])
-        return render_template('comparar.html', c1=c1.data, c2=c2.data)
+
+        # skill_stack del rol (tomado de la vacante del c1 — ambos deben ser del mismo rol)
+        skill_stack = []
+        if c1.data.get('vacantes') and c1.data['vacantes'].get('habilidades_criticas'):
+            skill_stack = c1.data['vacantes']['habilidades_criticas']
+
+        return render_template('comparar.html', c1=c1.data, c2=c2.data, skill_stack=skill_stack)
     except Exception as e:
         logger.error(f"❌ Error en comparador: {e}")
         return redirect(url_for('candidatos'))
