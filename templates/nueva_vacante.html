@@ -18,21 +18,143 @@
         </div>
 
         <form method="POST" id="form-vacante" class="space-y-6">
+
+            <!-- Nombre del cargo -->
             <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                 <label class="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Nombre del Cargo</label>
-                <input type="text" name="cargo" placeholder="Ej: Ejecutivo de Ventas Senior" required class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-700">
+                <input type="text" name="cargo" placeholder="Ej: Ejecutivo de Ventas Senior" required
+                       class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-700">
             </div>
 
-            <div id="contenedor-preguntas" class="space-y-6">
+            <!-- ══════════════════════════════════════════════════
+                 SECCIÓN: HABILIDADES CRÍTICAS
+                 Mínimo 3 · Máximo 5
+            ══════════════════════════════════════════════════ -->
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+
+                <!-- Header -->
+                <div class="flex items-start justify-between mb-1">
+                    <div>
+                        <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                            Habilidades Críticas para este Rol
+                        </label>
+                        <p class="text-xs text-slate-400 mt-1">Selecciona entre 3 y 5 habilidades. Estas guiarán la evaluación IA.</p>
+                    </div>
+                    <!-- Contador -->
+                    <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
+                        <span id="contador-hab" class="text-lg font-black text-slate-300">0</span>
+                        <span class="text-xs text-slate-400 font-bold">/ 5</span>
+                    </div>
                 </div>
 
+                <!-- Barra de progreso mínimo -->
+                <div class="flex items-center gap-2 mb-5 mt-3">
+                    <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div id="barra-hab" class="h-full rounded-full transition-all duration-300 bg-slate-200" style="width:0%"></div>
+                    </div>
+                    <span id="label-minimo" class="text-[10px] font-bold text-slate-400 whitespace-nowrap">mín. 3</span>
+                </div>
+
+                <!-- Grid de habilidades -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2" id="grid-habilidades">
+
+                    <!-- Ventas y Negociación -->
+                    <button type="button" data-hab="Prospección" onclick="toggleHab(this)"
+                            class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all">
+                        <span class="text-base">🎯</span>
+                        <p class="text-xs font-bold text-slate-600 mt-1">Prospección</p>
+                    </button>
+
+                    <button type="button" data-hab="Cierre de Ventas" onclick="toggleHab(this)"
+                            class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all">
+                        <span class="text-base">🤝</span>
+                        <p class="text-xs font-bold text-slate-600 mt-1">Cierre de Ventas</p>
+                    </button>
+
+                    <button type="button" data-hab="Negociación" onclick="toggleHab(this)"
+                            class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all">
+                        <span class="text-base">💬</span>
+                        <p class="text-xs font-bold text-slate-600 mt-1">Negociación</p>
+                    </button>
+
+                    <button type="button" data-hab="Manejo de CRM" onclick="toggleHab(this)"
+                            class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all">
+                        <span class="text-base">💻</span>
+                        <p class="text-xs font-bold text-slate-600 mt-1">Manejo de CRM</p>
+                    </button>
+
+                    <button type="button" data-hab="Comunicación" onclick="toggleHab(this)"
+                            class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all">
+                        <span class="text-base">📣</span>
+                        <p class="text-xs font-bold text-slate-600 mt-1">Comunicación</p>
+                    </button>
+
+                    <button type="button" data-hab="Trabajo en Equipo" onclick="toggleHab(this)"
+                            class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all">
+                        <span class="text-base">👥</span>
+                        <p class="text-xs font-bold text-slate-600 mt-1">Trabajo en Equipo</p>
+                    </button>
+
+                    <button type="button" data-hab="Orientación a Resultados" onclick="toggleHab(this)"
+                            class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all">
+                        <span class="text-base">📈</span>
+                        <p class="text-xs font-bold text-slate-600 mt-1">Orientación a Resultados</p>
+                    </button>
+
+                    <button type="button" data-hab="Resiliencia" onclick="toggleHab(this)"
+                            class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all">
+                        <span class="text-base">💪</span>
+                        <p class="text-xs font-bold text-slate-600 mt-1">Resiliencia</p>
+                    </button>
+
+                    <button type="button" data-hab="Autonomía" onclick="toggleHab(this)"
+                            class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all">
+                        <span class="text-base">🧭</span>
+                        <p class="text-xs font-bold text-slate-600 mt-1">Autonomía</p>
+                    </button>
+
+                    <button type="button" data-hab="Escucha Activa" onclick="toggleHab(this)"
+                            class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all">
+                        <span class="text-base">👂</span>
+                        <p class="text-xs font-bold text-slate-600 mt-1">Escucha Activa</p>
+                    </button>
+
+                    <button type="button" data-hab="Gestión del Tiempo" onclick="toggleHab(this)"
+                            class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all">
+                        <span class="text-base">⏱️</span>
+                        <p class="text-xs font-bold text-slate-600 mt-1">Gestión del Tiempo</p>
+                    </button>
+
+                    <button type="button" data-hab="Liderazgo" onclick="toggleHab(this)"
+                            class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all">
+                        <span class="text-base">🏆</span>
+                        <p class="text-xs font-bold text-slate-600 mt-1">Liderazgo</p>
+                    </button>
+
+                </div>
+
+                <!-- Mensaje de validación -->
+                <p id="msg-hab" class="text-xs font-bold text-rose-400 mt-3 hidden">
+                    ⚠️ Debes seleccionar al menos 3 habilidades críticas.
+                </p>
+
+                <!-- Input oculto que envía al backend -->
+                <input type="hidden" name="habilidades_seleccionadas" id="habilidades-seleccionadas" value="">
+            </div>
+            <!-- ══════════════════════════════════════════════════ -->
+
+            <!-- Preguntas -->
+            <div id="contenedor-preguntas" class="space-y-6"></div>
+
             <div class="space-y-4">
-                <button type="button" onclick="agregarPregunta()" class="w-full py-4 border-2 border-dashed border-slate-200 rounded-3xl text-slate-400 font-bold hover:bg-slate-100 hover:border-blue-300 hover:text-blue-500 transition-all">
+                <button type="button" onclick="agregarPregunta()"
+                        class="w-full py-4 border-2 border-dashed border-slate-200 rounded-3xl text-slate-400 font-bold hover:bg-slate-100 hover:border-blue-300 hover:text-blue-500 transition-all">
                     + Añadir Pregunta
                 </button>
 
                 <div class="sticky bottom-6 pt-4">
-                    <button type="submit" class="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all tracking-widest uppercase">
+                    <button type="submit"
+                            class="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all tracking-widest uppercase">
                         Crear y Publicar Vacante
                     </button>
                 </div>
@@ -41,12 +163,95 @@
     </div>
 
     <script>
-        // Función para cambiar vista según tipo
+        // ══════════════════════════════════════════
+        // LÓGICA DE HABILIDADES CRÍTICAS
+        // ══════════════════════════════════════════
+        const MAX_HAB = 5;
+        const MIN_HAB = 3;
+        let seleccionadas = [];
+
+        function toggleHab(btn) {
+            const hab = btn.dataset.hab;
+            const idx = seleccionadas.indexOf(hab);
+
+            if (idx === -1) {
+                // Quiere seleccionar
+                if (seleccionadas.length >= MAX_HAB) return; // bloquear si ya hay 5
+                seleccionadas.push(hab);
+                btn.classList.remove('border-slate-100', 'bg-slate-50', 'hover:border-blue-200', 'hover:bg-blue-50');
+                btn.classList.add('border-blue-500', 'bg-blue-50', 'ring-2', 'ring-blue-200');
+                btn.querySelector('p').classList.add('text-blue-700');
+                btn.querySelector('p').classList.remove('text-slate-600');
+            } else {
+                // Quiere deseleccionar
+                seleccionadas.splice(idx, 1);
+                btn.classList.add('border-slate-100', 'bg-slate-50', 'hover:border-blue-200', 'hover:bg-blue-50');
+                btn.classList.remove('border-blue-500', 'bg-blue-50', 'ring-2', 'ring-blue-200');
+                btn.querySelector('p').classList.remove('text-blue-700');
+                btn.querySelector('p').classList.add('text-slate-600');
+            }
+
+            actualizarUI();
+        }
+
+        function actualizarUI() {
+            const n = seleccionadas.length;
+
+            // Contador
+            const contador = document.getElementById('contador-hab');
+            contador.textContent = n;
+            if (n >= MIN_HAB && n <= MAX_HAB) {
+                contador.classList.remove('text-slate-300', 'text-rose-400');
+                contador.classList.add('text-blue-600');
+            } else if (n === 0) {
+                contador.classList.add('text-slate-300');
+                contador.classList.remove('text-blue-600', 'text-rose-400');
+            } else {
+                contador.classList.remove('text-slate-300', 'text-blue-600');
+                contador.classList.add('text-rose-400');
+            }
+
+            // Barra de progreso (sobre el mínimo de 3)
+            const barra = document.getElementById('barra-hab');
+            const pct = Math.min((n / MAX_HAB) * 100, 100);
+            barra.style.width = pct + '%';
+            if (n >= MIN_HAB) {
+                barra.classList.remove('bg-slate-200', 'bg-rose-300');
+                barra.classList.add('bg-blue-500');
+            } else if (n > 0) {
+                barra.classList.remove('bg-slate-200', 'bg-blue-500');
+                barra.classList.add('bg-rose-300');
+            } else {
+                barra.classList.remove('bg-blue-500', 'bg-rose-300');
+                barra.classList.add('bg-slate-200');
+            }
+
+            // Bloquear botones no seleccionados si ya hay 5
+            document.querySelectorAll('.hab-btn').forEach(b => {
+                const estaSeleccionado = seleccionadas.includes(b.dataset.hab);
+                if (n >= MAX_HAB && !estaSeleccionado) {
+                    b.classList.add('opacity-40', 'cursor-not-allowed');
+                } else {
+                    b.classList.remove('opacity-40', 'cursor-not-allowed');
+                }
+            });
+
+            // Input oculto para el backend
+            document.getElementById('habilidades-seleccionadas').value = seleccionadas.join(',');
+
+            // Ocultar mensaje de error si ya cumple
+            if (n >= MIN_HAB) {
+                document.getElementById('msg-hab').classList.add('hidden');
+            }
+        }
+
+        // ══════════════════════════════════════════
+        // LÓGICA DE PREGUNTAS (sin cambios)
+        // ══════════════════════════════════════════
         function alternarCampos(select) {
             const card = select.closest('.pregunta-card');
             const seccionMultiple = card.querySelector('.seccion-multiple');
             const labelRegla = card.querySelector('.label-regla');
-            
             if (select.value === 'multiple') {
                 seccionMultiple.classList.remove('hidden');
                 labelRegla.innerText = "Respuesta Correcta (Debe ser idéntica a una opción)";
@@ -56,21 +261,20 @@
             }
         }
 
-        // Añadir opciones para múltiple
         function agregarOpcion(btn) {
             const lista = btn.previousElementSibling;
             if (lista.children.length < 4) {
                 const div = document.createElement('div');
                 div.className = "flex items-center gap-2";
                 div.innerHTML = `
-                    <input type="text" name="p_opciones_lista[]" placeholder="Opción..." class="flex-1 p-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-400">
+                    <input type="text" name="p_opciones_lista[]" placeholder="Opción..."
+                           class="flex-1 p-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-400">
                     <button type="button" onclick="this.parentElement.remove()" class="text-slate-300 hover:text-rose-500">✕</button>
                 `;
                 lista.appendChild(div);
             }
         }
 
-        // Función Maestra para agregar preguntas
         function agregarPregunta() {
             const contenedor = document.getElementById('contenedor-preguntas');
             const index = contenedor.children.length;
@@ -81,28 +285,28 @@
                         <span class="text-xs font-black text-blue-600 uppercase tracking-widest">Pregunta #${index + 1}</span>
                         <button type="button" onclick="this.closest('.pregunta-card').remove()" class="text-slate-300 hover:text-rose-500 transition font-bold text-lg">✕</button>
                     </div>
-                    <input type="text" name="p_texto[]" required placeholder="Escribe la pregunta aquí..." class="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm outline-none focus:bg-white transition">
-                    
+                    <input type="text" name="p_texto[]" required placeholder="Escribe la pregunta aquí..."
+                           class="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm outline-none focus:bg-white transition">
                     <div class="grid grid-cols-2 gap-4">
-                        <select name="p_tipo[]" onchange="alternarCampos(this)" class="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-medium">
+                        <select name="p_tipo[]" onchange="alternarCampos(this)"
+                                class="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-medium">
                             <option value="si_no">Sí / No</option>
                             <option value="multiple">Opción Múltiple</option>
                             <option value="abierta">Abierta (IA)</option>
                         </select>
-                        <input type="number" name="p_peso[]" placeholder="Peso %" class="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm">
+                        <input type="number" name="p_peso[]" placeholder="Peso %"
+                               class="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm">
                     </div>
-
                     <div class="seccion-multiple hidden space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
                         <label class="block text-[10px] font-black uppercase text-slate-400">Opciones (Máximo 4)</label>
                         <div class="lista-opciones space-y-2"></div>
                         <button type="button" onclick="agregarOpcion(this)" class="text-blue-600 text-[10px] font-black uppercase">+ Añadir Opción</button>
                     </div>
-
                     <div class="seccion-regla">
                         <label class="label-regla block text-[10px] font-black uppercase text-slate-400 mb-1">Regla (Ideal / Keywords)</label>
-                        <input type="text" name="p_regla[]" required placeholder="si / no / palabra clave" class="w-full p-3 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-700 font-bold">
+                        <input type="text" name="p_regla[]" required placeholder="si / no / palabra clave"
+                               class="w-full p-3 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-700 font-bold">
                     </div>
-
                     <div class="flex items-center gap-2">
                         <input type="checkbox" name="p_ko[]" value="${index}" class="w-4 h-4 rounded text-blue-600">
                         <label class="text-[10px] font-bold text-rose-500 uppercase">¿KO? (Elimina al candidato si falla)</label>
@@ -111,32 +315,36 @@
             contenedor.insertAdjacentHTML('beforeend', nuevaHtml);
         }
 
-        // CARGAR LA PRIMERA PREGUNTA AL INICIAR
         window.onload = agregarPregunta;
 
-        // --- NUEVA VALIDACIÓN DE SUMA 100% ---
+        // ══════════════════════════════════════════
+        // VALIDACIÓN AL ENVIAR
+        // ══════════════════════════════════════════
         document.getElementById('form-vacante').onsubmit = function(e) {
-            const pesos = document.getElementsByName('p_peso[]');
-            const kos = document.getElementsByName('p_ko[]');
-            let total = 0;
 
-            // 1. Validar que la suma sea exactamente 100
-            pesos.forEach(p => {
-                total += parseFloat(p.value || 0);
-            });
-
-            if (total !== 100) {
-                e.preventDefault(); // Detiene el envío
-                alert("🚨 Error: La suma de los pesos debe ser exactamente 100%. \nActualmente suma: " + total + "%");
+            // 1. Validar habilidades críticas (mínimo 3)
+            if (seleccionadas.length < MIN_HAB) {
+                e.preventDefault();
+                document.getElementById('msg-hab').classList.remove('hidden');
+                document.getElementById('grid-habilidades').scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return false;
             }
 
-            // 2. Sincronizar índices de KO (opcional pero recomendado)
-            // Esto asegura que el valor del checkbox coincida con la posición real en el array
+            // 2. Validar suma de pesos = 100
+            const pesos = document.getElementsByName('p_peso[]');
+            let total = 0;
+            pesos.forEach(p => { total += parseFloat(p.value || 0); });
+            if (total !== 100) {
+                e.preventDefault();
+                alert("🚨 Error: La suma de los pesos debe ser exactamente 100%.\nActualmente suma: " + total + "%");
+                return false;
+            }
+
+            // 3. Sincronizar índices de KO
             const cards = document.querySelectorAll('.pregunta-card');
             cards.forEach((card, i) => {
                 const checkbox = card.querySelector('input[type="checkbox"]');
-                if(checkbox) checkbox.value = i;
+                if (checkbox) checkbox.value = i;
             });
         };
     </script>
