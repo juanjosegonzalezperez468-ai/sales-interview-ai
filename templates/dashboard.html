@@ -546,9 +546,14 @@
             graficaActual = new Chart(ctx, {
                 type: 'radar',
                 data: {
-                    labels: ['Habilidades Técnicas', 'Experiencia', 'Habilidades Blandas', 'Ajuste Cultural'],
+                    labels: [
+                        'Técnicas',        // Etiquetas más cortas
+                        'Experiencia',
+                        'Blandas',
+                        'Cultura'
+                    ],
                     datasets: [{
-                        label: 'Puntaje del Candidato',
+                        label: 'Puntaje',
                         data: [datos.tecnica, datos.experiencia, datos.blandas, datos.ajuste],
                         backgroundColor: 'rgba(59, 130, 246, 0.2)',
                         borderColor: 'rgba(59, 130, 246, 1)',
@@ -557,28 +562,49 @@
                         pointBorderColor: '#fff',
                         pointHoverBackgroundColor: '#fff',
                         pointHoverBorderColor: 'rgba(59, 130, 246, 1)',
-                        pointRadius: 4,
-                        pointHoverRadius: 6
+                        pointRadius: 5,
+                        pointHoverRadius: 7
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: true,
+                    layout: {
+                        padding: {
+                            top: 30,      // ← Padding para que no se corten las etiquetas
+                            right: 30,
+                            bottom: 30,
+                            left: 30
+                        }
+                    },
                     scales: {
                         r: {
                             beginAtZero: true,
                             max: 100,
+                            min: 0,
                             ticks: {
-                                stepSize: 20,
+                                stepSize: 25,
                                 callback: function(value) {
                                     return value + '%';
-                                }
+                                },
+                                font: {
+                                    size: 11
+                                },
+                                color: '#6b7280'
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            },
+                            angleLines: {
+                                color: 'rgba(0, 0, 0, 0.1)'
                             },
                             pointLabels: {
                                 font: {
-                                    size: 12,
-                                    weight: 'bold'
-                                }
+                                    size: 13,
+                                    weight: '600'
+                                },
+                                color: '#374151',
+                                padding: 15    // ← Espacio extra entre el gráfico y las etiquetas
                             }
                         }
                     },
@@ -587,9 +613,29 @@
                             display: false
                         },
                         tooltip: {
+                            enabled: true,
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                size: 13
+                            },
                             callbacks: {
+                                title: function(context) {
+                                    // Mapeo de etiquetas cortas a nombres completos
+                                    const labels = {
+                                        'Técnicas': 'Habilidades Técnicas',
+                                        'Experiencia': 'Experiencia',
+                                        'Blandas': 'Habilidades Blandas',
+                                        'Cultura': 'Ajuste Cultural'
+                                    };
+                                    return labels[context[0].label] || context[0].label;
+                                },
                                 label: function(context) {
-                                    return context.label + ': ' + context.parsed.r.toFixed(1) + '%';
+                                    return 'Puntaje: ' + context.parsed.r.toFixed(1) + '%';
                                 }
                             }
                         }
