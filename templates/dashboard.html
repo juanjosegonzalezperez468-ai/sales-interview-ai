@@ -224,35 +224,36 @@
                     <!-- Header de la tabla -->
                     <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                         <h2 class="text-xl font-bold text-gray-900">Últimos Candidatos Evaluados</h2>
-                        <a href="/gestionar_vacantes" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition">
+                        <a href="/nueva_vacante" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                             </svg>
                             Crear Vacante
                         </a>
-                    </div>
-
-                    <!-- Estado vacío o tabla -->
-                    {% if total_c == 0 %}
-                    <div class="px-6 py-16 text-center">
-                        <div class="inline-block p-6 bg-blue-50 rounded-full mb-6">
-                            <svg class="w-16 h-16 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                            </svg>
                         </div>
-                        <h3 class="text-2xl font-bold text-gray-900 mb-3">¡Workspace activado!</h3>
-                        <p class="text-gray-600 mb-6 max-w-md mx-auto">
-                            Aún no tienes candidatos. Comparte el link de tu vacante<br>
-                            para que la IA empiece a trabajar por ti.
-                        </p>
-                        <a href="/gestionar_vacantes" class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition">
-                            Ver mis vacantes
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                            </svg>
-                        </a>
-                    </div>
-                    {% else %}
+
+                        {% if total_c == 0 %}
+                        <div class="px-6 py-16 text-center">
+                            <div class="inline-block p-6 bg-blue-50 rounded-full mb-6">
+                                <svg class="w-16 h-16 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                            </div>
+                            <h3 class="text-2xl font-bold text-gray-900 mb-3">¡Workspace activado!</h3>
+                            <p class="text-gray-600 mb-6 max-w-md mx-auto">
+                                Aún no tienes candidatos. Crea una vacante con IA <br>
+                                para que el sistema empiece a evaluar por ti.
+                            </p>
+                            
+                            <a href="/nueva_vacante" class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition">
+                                Configurar mi primera vacante
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                </svg>
+                            </a>
+                        </div>
+                        {% endif %}
+                
                     <!-- Tabla de candidatos -->
                     <div class="overflow-x-auto">
                         <table class="w-full">

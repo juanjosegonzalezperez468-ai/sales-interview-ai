@@ -3,57 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configurar Nueva Vacante | Sales AI</title>
+    <title>Configurar Nueva Vacante | Sales AI Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-slate-50 min-h-screen">
 
-    <div class="max-w-4xl mx-auto py-10 px-4">
-        <div class="bg-white shadow-xl rounded-2xl overflow-hidden">
-            <div class="bg-blue-600 p-6 text-white">
-                <h1 class="text-2xl font-bold">🚀 Configurador de Vacante Profesional</h1>
-                <p class="text-blue-100">Define los pesos, tipos de pregunta y filtros críticos (Knock-out).</p>
+    <div class="max-w-5xl mx-auto py-10 px-4">
+        <div class="bg-white shadow-2xl rounded-3xl overflow-hidden border border-slate-200">
+            <div class="bg-gradient-to-r from-blue-700 to-blue-500 p-8 text-white">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h1 class="text-3xl font-extrabold tracking-tight">🚀 Configurador de Vacante Inteligente</h1>
+                        <p class="text-blue-100 mt-2 text-lg">Define el ADN del candidato ideal usando IA y Habilidades Críticas.</p>
+                    </div>
+                    <div class="hidden md:block bg-white/10 p-4 rounded-2xl backdrop-blur-sm">
+                        <span class="text-sm font-medium">Estado:</span>
+                        <span class="bg-emerald-400 text-emerald-900 px-3 py-1 rounded-full text-xs font-bold ml-2">FASE 2 ACTIVA</span>
+                    </div>
+                </div>
             </div>
 
-            <form action="/guardar_vacante" method="POST" class="p-8 space-y-8">
+            <form action="/guardar_vacante" method="POST" class="p-8 space-y-10">
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">ID de Vacante (Código Único)</label>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="md:col-span-1">
+                        <label class="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">ID Vacante</label>
                         <input type="text" name="id_vacante" value="{{ vacante.id_vacante if vacante else '' }}" 
                                 {{ 'readonly' if vacante else '' }} required 
-                                class="w-full p-3 border border-gray-300 rounded-lg {{ 'bg-gray-100' if vacante else '' }}">
+                                class="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:border-blue-500 outline-none transition font-mono">
                     </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Nombre del Cargo</label>
-                        <input type="text" name="cargo" value="{{ vacante.cargo if vacante else '' }}" required 
-                                class="w-full p-3 border border-gray-300 rounded-lg">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Nombre del Cargo</label>
+                        <input type="text" name="cargo" placeholder="Ej: Ejecutivo de Cuenta Senior" value="{{ vacante.cargo if vacante else '' }}" required 
+                                class="w-full p-4 border-2 border-slate-200 rounded-2xl focus:border-blue-500 outline-none transition text-lg">
                     </div>
                 </div>
 
-                <hr>
-
-                <div>
-                    <h3 class="text-lg font-bold text-gray-800 mb-2 flex items-center">
-                        <span class="bg-emerald-100 text-emerald-600 p-2 rounded-full mr-2">⚙️</span> 
-                        Configuración de Preguntas y Evaluación
+                <div class="bg-blue-50 rounded-3xl p-6 border border-blue-100">
+                    <h3 class="text-xl font-bold text-blue-800 mb-4 flex items-center">
+                        <span class="mr-3">🎯</span> Habilidades Críticas del Cargo
                     </h3>
-                    <p class="text-sm text-gray-500 mb-6">
-                        Define qué preguntarás, cuánto pesa cada respuesta y si es una pregunta eliminatoria (Knock-out).
-                    </p>
+                    <p class="text-sm text-blue-600 mb-6">Selecciona las habilidades que la IA debe medir prioritariamente (Máximo 5).</p>
                     
-                    <div id="contenedor-preguntas" class="space-y-4 mb-6">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="biblioteca-habilidades">
+                        </div>
+                    <input type="hidden" name="habilidades_seleccionadas" id="habilidades_input">
+                </div>
+
+                <div class="space-y-6">
+                    <div class="flex justify-between items-end border-b border-slate-100 pb-4">
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-800">⚙️ Estructura de Evaluación</h3>
+                            <p class="text-sm text-slate-500">Asocia cada pregunta a una habilidad y define su peso.</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs font-bold text-slate-400 uppercase">Peso Total</span>
+                            <div id="total-peso" class="text-2xl font-black text-blue-600">0%</div>
+                        </div>
+                    </div>
+
+                    <div id="contenedor-preguntas" class="space-y-6">
                         </div>
 
                     <button type="button" onclick="agregarPregunta()" 
-                            class="w-full py-3 border-2 border-dashed border-blue-300 rounded-xl text-blue-600 font-bold hover:bg-blue-50 transition">
-                        + Añadir Nueva Pregunta
+                            class="w-full py-5 border-2 border-dashed border-slate-300 rounded-3xl text-slate-500 font-bold hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50 transition-all flex justify-center items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Añadir Pregunta Estratégica
                     </button>
                 </div>
 
-                <div class="pt-6">
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition shadow-lg transform hover:scale-[1.01]">
-                        ✅ Guardar Vacante y Activar Evaluación
+                <div class="pt-8 border-t border-slate-100">
+                    <button type="submit" class="w-full bg-slate-900 hover:bg-blue-700 text-white font-extrabold py-5 rounded-3xl transition-all shadow-2xl transform hover:-translate-y-1">
+                        🚀 ACTIVAR VACANTE Y MODELO IA
                     </button>
                 </div>
             </form>
@@ -62,108 +85,135 @@
 
     <script>
     let preguntaCount = 0;
+    const listaHabilidades = [
+        "Cierre de Ventas", "Prospección", "Negociación Avanzada", "Manejo de Objeciones", 
+        "Liderazgo", "Escucha Activa", "Trabajo bajo presión", "Residencia Local", 
+        "Disponibilidad de Viaje", "Gestión de Inventarios", "Estabilidad Laboral"
+    ];
+    let seleccionadas = [];
+
+    // Cargar Biblioteca de Habilidades
+    function cargarBiblioteca() {
+        const container = document.getElementById('biblioteca-habilidades');
+        listaHabilidades.forEach(h => {
+            const btn = document.createElement('button');
+            btn.type = "button";
+            btn.textContent = h;
+            btn.className = "p-3 text-xs font-bold rounded-xl border-2 border-white bg-white text-slate-600 shadow-sm hover:bg-blue-100 transition-all";
+            btn.onclick = () => toggleHabilidad(h, btn);
+            container.appendChild(btn);
+        });
+    }
+
+    function toggleHabilidad(h, btn) {
+        if (seleccionadas.includes(h)) {
+            seleccionadas = seleccionadas.filter(item => item !== h);
+            btn.className = "p-3 text-xs font-bold rounded-xl border-2 border-white bg-white text-slate-600 shadow-sm";
+        } else if (seleccionadas.length < 5) {
+            seleccionadas.push(h);
+            btn.className = "p-3 text-xs font-bold rounded-xl border-2 border-blue-500 bg-blue-500 text-white shadow-md scale-105";
+        }
+        document.getElementById('habilidades_input').value = seleccionadas.join(',');
+        actualizarSelectsHabilidades();
+    }
+
+    function actualizarSelectsHabilidades() {
+        const selects = document.getElementsByName('habilidad_asociada[]');
+        selects.forEach(select => {
+            const valorPrevio = select.value;
+            select.innerHTML = '<option value="">-- Selecciona Habilidad --</option>';
+            seleccionadas.forEach(h => {
+                const opt = document.createElement('option');
+                opt.value = h;
+                opt.textContent = h;
+                if(h === valorPrevio) opt.selected = true;
+                select.appendChild(opt);
+            });
+        });
+    }
 
     function agregarPregunta() {
         const contenedor = document.getElementById('contenedor-preguntas');
         const div = document.createElement('div');
-        div.className = "bg-gray-50 p-6 rounded-2xl border border-gray-200 relative shadow-sm animate-fade-in";
+        div.className = "bg-white p-6 rounded-3xl border-2 border-slate-100 relative shadow-xl hover:border-blue-200 transition-all group";
         div.innerHTML = `
-            <button type="button" onclick="this.parentElement.remove()" class="absolute top-4 right-4 text-gray-400 hover:text-red-500">✕ Eliminar</button>
-            <div class="mb-4">
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Texto de la Pregunta</label>
-                <input type="text" name="pregunta[]" required class="w-full p-3 border rounded-lg text-sm focus:ring-2 focus:ring-blue-400 outline-none">
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button type="button" onclick="this.parentElement.remove(); actualizarTotales()" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </button>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <div class="md:col-span-2">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Pregunta Estratégica</label>
+                    <input type="text" name="pregunta[]" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-400 outline-none transition">
+                </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Tipo</label>
-                    <select name="tipo[]" class="w-full p-3 rounded-xl border-2 border-slate-100 focus:border-blue-500 outline-none transition appearance-none bg-white">
-                        <option value="abierta">Respuesta Abierta (Análisis IA)</option>
-                        <option value="multiple">Opción Múltiple (Cerrada)</option>
-                        <option value="booleana">Sí / No</option>
-                        <option value="escala_1_5">Escala del 1 al 5</option>
-                        <option value="escala_1_10">Escala del 1 al 10</option>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Habilidad Crítica</label>
+                    <select name="habilidad_asociada[]" required class="w-full p-3 bg-blue-50 border border-blue-100 rounded-xl text-sm font-bold text-blue-700 outline-none">
+                        </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Categoría</label>
+                    <select name="categoria[]" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none">
+                        <option value="Experiencia">Experiencia</option>
+                        <option value="Técnica">Técnica</option>
+                        <option value="Blandas">H. Blandas</option>
+                        <option value="Ajuste">Ajuste Cultural</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Tipo de Respuesta</label>
+                    <select name="tipo[]" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none">
+                        <option value="booleana">Sí / No (Recomendado)</option>
+                        <option value="abierta">Abierta (Análisis IA)</option>
+                        <option value="escala_1_5">Escala 1 al 5</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Peso (%)</label>
-                    <input type="number" name="peso[]" id="peso-${preguntaCount}" required min="0" max="100" class="w-full p-2 border rounded-lg text-sm text-center bg-white">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Valor Ideal</label>
+                    <input type="text" name="regla_valor[]" placeholder="Ej: si o palabras clave" class="w-full p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-sm text-emerald-700 outline-none">
                 </div>
-                <div class="flex items-center justify-center pt-4">
-                    <label class="flex items-center cursor-pointer">
-                        <input type="checkbox" name="ko[]" value="${preguntaCount}" onchange="gestionarKO(this, ${preguntaCount})" class="w-5 h-5 text-red-600">
-                        <span class="ml-2 text-xs font-bold text-red-600 uppercase">¿Es Knock-out?</span>
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Peso en Habilidad (%)</label>
+                    <input type="number" name="peso[]" onchange="actualizarTotales()" required min="0" max="100" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-center font-bold text-blue-600">
+                </div>
+                <div class="flex items-center justify-center p-3 bg-red-50 rounded-xl border border-red-100">
+                    <label class="flex items-center cursor-pointer group">
+                        <input type="checkbox" name="ko[]" value="${preguntaCount}" class="w-5 h-5 text-red-600 rounded focus:ring-red-500">
+                        <span class="ml-2 text-[10px] font-black text-red-600 uppercase">¿Filtro KO?</span>
                     </label>
                 </div>
-            </div>
-            <div class="mt-4">
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Regla (Keywords o Ideal)</label>
-                <input type="text" name="regla_valor[]" required class="w-full p-2 border border-blue-100 rounded-lg text-sm bg-blue-50">
             </div>
         `;
         contenedor.appendChild(div);
         preguntaCount++;
+        actualizarSelectsHabilidades();
     }
 
-    function gestionarKO(checkbox, id) {
-        const inputPeso = document.getElementById(`peso-${id}`);
-        if (checkbox.checked) {
-            inputPeso.value = 0;
-            inputPeso.readOnly = true;
-            inputPeso.classList.add('bg-gray-200', 'cursor-not-allowed');
-        } else {
-            inputPeso.readOnly = false;
-            inputPeso.classList.remove('bg-gray-200', 'cursor-not-allowed');
-        }
-    }
-
-    // FUNCIÓN DE CARGA SEGURO PARA EDITAR
-  // FUNCIÓN DE CARGA SEGURO PARA EDITAR
-    window.onload = function() {
-        // Esta línea es crítica: sin etiquetas < > extras dentro del JS
-        const datosVacante = {{ vacante | tojson | safe if vacante else 'null' }};
+    function actualizarTotales() {
+        const pesos = document.getElementsByName('peso[]');
+        let total = 0;
+        pesos.forEach(p => total += parseInt(p.value || 0));
+        const visualTotal = document.getElementById('total-peso');
+        visualTotal.textContent = total + "%";
         
-        if (datosVacante && datosVacante.preguntas) {
-            // Limpiamos el contenedor por si hay una pregunta vacía por defecto
-            document.getElementById('contenedor-preguntas').innerHTML = '';
-            
-            datosVacante.preguntas.forEach((p, index) => {
-                agregarPregunta();
-                const inputs = document.getElementsByName('pregunta[]');
-                const tipos = document.getElementsByName('tipo[]');
-                const pesos = document.getElementsByName('peso[]');
-                const reglas = document.getElementsByName('regla_valor[]');
-                const kos = document.getElementsByName('ko[]');
+        if(total !== 100) visualTotal.className = "text-2xl font-black text-red-500";
+        else visualTotal.className = "text-2xl font-black text-emerald-500";
+    }
 
-                inputs[index].value = p.texto || "";
-                tipos[index].value = p.tipo || "abierta";
-                pesos[index].value = p.peso || 0;
-                
-                if (p.tipo === 'abierta' && p.reglas && p.reglas.palabras_clave) {
-                    reglas[index].value = p.reglas.palabras_clave.join(', ');
-                } else if (p.reglas && p.reglas.ideal) {
-                    reglas[index].value = p.reglas.ideal;
-                }
-
-                if (p.knockout === true) {
-                    kos[index].checked = true;
-                    gestionarKO(kos[index], index);
-                }
-            });
-        } else {
-            // Si es nueva, solo una pregunta vacía
-            agregarPregunta(); 
-        }
+    window.onload = function() {
+        cargarBiblioteca();
+        agregarPregunta();
     };
-</script>
-    <style>
-        .animate-fade-in {
-            animation: fadeIn 0.3s ease-in-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
+    </script>
 
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
 </body>
 </html>

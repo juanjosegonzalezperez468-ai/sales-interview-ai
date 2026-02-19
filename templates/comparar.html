@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Comparador de Talento | Sales AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-50 p-6 md:p-12">
+
+    <div class="max-w-6xl mx-auto">
+        <header class="flex justify-between items-center mb-10">
+            <div>
+                <h1 class="text-3xl font-black text-slate-800 uppercase tracking-tighter">Comparativa de Potencial</h1>
+                <p class="text-slate-500 font-medium">Cargo: <span class="text-blue-600">{{ c1.vacantes.cargo }}</span></p>
+            </div>
+            <a href="/candidatos" class="bg-white px-6 py-2 rounded-xl shadow-sm border font-bold text-slate-600 hover:bg-slate-50 transition">← Volver</a>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+            
+            <div class="bg-white p-6 rounded-3xl shadow-xl border-t-4 border-blue-500">
+                <div class="text-center mb-6">
+                    <span class="text-4xl">👤</span>
+                    <h2 class="text-xl font-bold mt-2">{{ c1.nombre_candidato }}</h2>
+                    <p class="text-blue-600 font-black text-2xl">{{ c1.score }}%</p>
+                </div>
+                <div class="space-y-4 text-sm">
+                    <h3 class="font-bold text-slate-400 uppercase tracking-widest text-[10px]">Fortalezas Clave</h3>
+                    {% for f in c1.analisis_ia_obj.fortalezas %}
+                    <p class="bg-blue-50 text-blue-700 p-2 rounded-lg font-medium">{{ f }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="bg-white p-8 rounded-3xl shadow-2xl lg:col-span-1">
+                <canvas id="radarComparativo"></canvas>
+            </div>
+
+            <div class="bg-white p-6 rounded-3xl shadow-xl border-t-4 border-emerald-500">
+                <div class="text-center mb-6">
+                    <span class="text-4xl">👤</span>
+                    <h2 class="text-xl font-bold mt-2">{{ c2.nombre_candidato }}</h2>
+                    <p class="text-emerald-600 font-black text-2xl">{{ c2.score }}%</p>
+                </div>
+                <div class="space-y-4 text-sm">
+                    <h3 class="font-bold text-slate-400 uppercase tracking-widest text-[10px]">Fortalezas Clave</h3>
+                    {% for f in c2.analisis_ia_obj.fortalezas %}
+                    <p class="bg-emerald-50 text-emerald-700 p-2 rounded-lg font-medium">{{ f }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('radarComparativo');
+        
+        // Función para parsear el string de radar "T:80% E:100%..."
+        function parseRadar(radarStr) {
+            const matches = radarStr.match(/\d+/g);
+            return matches ? matches.map(Number) : [0,0,0,0];
+        }
+
+        const dataC1 = parseRadar("{{ c1.analisis_ia_obj.radar }}");
+        const dataC2 = parseRadar("{{ c2.analisis_ia_obj.radar }}");
+
+        new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['Técnica', 'Experiencia', 'Blandas', 'Ajuste'],
+                datasets: [
+                    {
+                        label: '{{ c1.nombre_candidato }}',
+                        data: dataC1,
+                        fill: true,
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: 'rgb(59, 130, 246)',
+                        pointBackgroundColor: 'rgb(59, 130, 246)',
+                    },
+                    {
+                        label: '{{ c2.nombre_candidato }}',
+                        data: dataC2,
+                        fill: true,
+                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                        borderColor: 'rgb(16, 185, 129)',
+                        pointBackgroundColor: 'rgb(16, 185, 129)',
+                    }
+                ]
+            },
+            options: {
+                scales: { r: { min: 0, max: 100, ticks: { display: false } } },
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+    </script>
+</body>
+</html>

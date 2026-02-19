@@ -46,69 +46,73 @@ supabase: Client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_
 # MOTOR DE EVALUACIÓN - LÓGICA
 # ============================================
 
-def generar_resumen_profesional(cargo, score_final, detalle, hubo_ko, motivo_ko):
-    """Genera un resumen profesional basado en REGLAS LÓGICAS (sin IA)."""
+def generar_resumen_profesional(cargo, score_final, detalle, hubo_ko, motivo_ko, metricas_radar):
+    """Genera un análisis estructurado integrando métricas para el Dashboard."""
     
+    # 1. Definición del Resumen Narrativo
     if hubo_ko:
-        resumen = f"Candidato descartado automáticamente. {motivo_ko}. No cumple con requisitos críticos para el cargo de {cargo}."
+        resumen = f"Candidato descartado automáticamente. {motivo_ko}. No cumple con requisitos críticos (Knock-out) para el cargo de {cargo}."
     elif score_final >= 75:
-        resumen = f"Candidato altamente calificado para {cargo}. Cumple con la mayoría de requisitos clave. Se recomienda entrevista prioritaria."
+        resumen = f"Candidato con perfil sobresaliente para {cargo}. Presenta un alto índice de compatibilidad técnica y cultural. Se recomienda entrevista prioritaria."
     elif score_final >= 40:
-        resumen = f"Candidato con perfil moderado para {cargo}. Cumple requisitos básicos pero requiere validación adicional del reclutador."
+        resumen = f"Candidato con potencial moderado para {cargo}. Posee las bases requeridas pero presenta brechas en competencias clave que deben ser validadas."
     else:
-        resumen = f"Candidato por debajo del umbral mínimo para {cargo}. No se recomienda continuar el proceso."
+        resumen = f"Candidato por debajo del perfil mínimo esperado para {cargo}. Los resultados sugieren falta de alineación con los requisitos del puesto."
     
+    # 2. Identificación de Fortalezas (Basadas en Habilidades)
     fortalezas = []
+    # Priorizamos mostrar las habilidades donde sacó puntaje máximo
     for item in detalle:
-        if item.get('tipo') == 'abierta':
-            continue
-        puntos_obtenidos = item.get('puntos', 0)
-        puntos_posibles = item.get('peso', 1)
-        if puntos_obtenidos == puntos_posibles and puntos_posibles > 0:
-            pregunta_corta = item['pregunta'][:50]
-            fortalezas.append(f"✓ {pregunta_corta}")
+        if item.get('puntos', 0) >= item.get('peso', 1) and item.get('peso', 0) > 0:
+            # Usamos la Habilidad asociada si existe, si no, una versión corta de la pregunta
+            nombre_hito = item.get('habilidad') if item.get('habilidad') else item['pregunta'][:40]
+            if f"✓ {nombre_hito}" not in fortalezas:
+                fortalezas.append(f"✓ {nombre_hito}")
     
     if not fortalezas:
-        fortalezas = ["Proceso de evaluación completado"]
-    fortalezas = fortalezas[:5]
+        fortalezas = ["Evaluación estandarizada completada"]
+    fortalezas = fortalezas[:5] # Máximo 5 para no saturar la UI
     
+    # 3. Identificación de Alertas o Riesgos
     riesgos = []
     if hubo_ko:
-        riesgos.append(f"⚠ {motivo_ko}")
+        riesgos.append(f"⚠ KO: {motivo_ko}")
     
     for item in detalle:
-        if item.get('tipo') == 'abierta':
-            continue
-        puntos_obtenidos = item.get('puntos', 0)
-        puntos_posibles = item.get('peso', 1)
-        if puntos_obtenidos == 0 and puntos_posibles > 0:
-            pregunta_corta = item['pregunta'][:50]
-            riesgos.append(f"✗ {pregunta_corta}")
+        if item.get('puntos', 0) == 0 and item.get('peso', 0) > 0:
+            nombre_falla = item.get('habilidad') if item.get('habilidad') else item['pregunta'][:40]
+            if f"✗ {nombre_falla}" not in riesgos:
+                riesgos.append(f"✗ {nombre_falla}")
     
     if not riesgos:
-        if score_final < 75:
-            riesgos = ["Requiere validación manual del reclutador"]
-        else:
-            riesgos = ["Sin riesgos identificados"]
-    riesgos = riesgos[:5]
+        riesgos = ["Sin riesgos críticos detectados"] if score_final >= 75 else ["Requiere validación de competencias blandas"]
+    riesgos = riesgos[:4]
     
+    # 4. Recomendación Final de Acción
     if hubo_ko:
         recomendacion = "❌ No continuar proceso"
-    elif score_final >= 75:
-        recomendacion = "✅ Agendar entrevista prioritaria"
+    elif score_final >= 85:
+        recomendacion = "⭐ Agendar Entrevista Inmediata"
+    elif score_final >= 70:
+        recomendacion = "✅ Avanzar a siguiente fase"
     elif score_final >= 40:
-        recomendacion = "⚠ Validar manualmente antes de decidir"
+        recomendacion = "⚠ Entrevista técnica de validación"
     else:
-        recomendacion = "❌ Descartar"
+        recomendacion = "❌ Descartar candidato"
     
+    # 5. Construcción del Objeto Final
+    # Importante: Incluimos 'metricas_radar' al final del texto para que el JS lo encuentre
     resultado = {
         "resumen": resumen,
         "fortalezas": fortalezas,
         "riesgos": riesgos,
         "recomendacion": recomendacion,
-        "metodo": "Evaluación lógica automatizada"
+        "radar": metricas_radar, # <--- Esto es lo que lee tu gráfica
+        "metodo": "Motor de Competencias Sales AI"
     }
     
+    # Retornamos el JSON con un marcador para las métricas si es necesario
+    # o simplemente el JSON que el frontend ya sabe procesar.
     return json.dumps(resultado, ensure_ascii=False)
 
 # ============================================
@@ -192,19 +196,22 @@ def procesar():
         
         logger.info(f"🎯 Procesando candidato: {nombre} para cargo: {v['cargo']}")
         
-        peso_total_posible = sum(
-            float(p.get('peso', 0)) 
-            for p in v['preguntas'] 
-            if p.get('tipo') in ['si_no', 'multiple']
-        )
+        # 1. PREPARACIÓN DE DICCIONARIOS PARA DIMENSIONES (Radar y Categorías)
+        # Inicializamos los acumuladores para las 4 categorías base del radar
+        scores_categorias = {"Técnica": 0, "Experiencia": 0, "Blandas": 0, "Ajuste": 0}
+        max_categorias = {"Técnica": 0, "Experiencia": 0, "Blandas": 0, "Ajuste": 0}
         
-        logger.info(f"📊 Peso total calificable: {peso_total_posible}")
-        
+        # Diccionario dinámico para Habilidades Críticas (Fase 2)
+        scores_habilidades = {}
+        max_habilidades = {}
+
+        peso_total_posible = 0
         puntos_brutos_acumulados = 0
         hubo_ko = False
         motivo_descarte = ""
         detalle = []
 
+        # 2. PROCESAMIENTO DE RESPUESTAS
         for i in range(len(ids_q)):
             p_orig = next((p for p in v['preguntas'] if p['id'] == ids_q[i]), None)
             if not p_orig: 
@@ -216,63 +223,90 @@ def procesar():
             es_ko = p_orig.get('knockout', False)
             reglas = p_orig.get('reglas', {})
             ideal = str(reglas.get('ideal', '')).strip()
+            
+            # Nuevos campos de la Fase 2
+            cat_nombre = p_orig.get('categoria', 'Ajuste')
+            hab_nombre = p_orig.get('habilidad', 'General')
+
+            # Inicializar acumuladores de habilidad si no existen
+            if hab_nombre not in scores_habilidades:
+                scores_habilidades[hab_nombre] = 0
+                max_habilidades[hab_nombre] = 0
 
             puntos_obtenidos = 0
             
-            if tipo in ['si_no', 'multiple']:
+            if tipo in ['si_no', 'multiple', 'escala_1_5', 'escala_1_10']:
+                # Sumamos al peso total posible solo si es calificable
+                peso_total_posible += peso_pregunta
+                
+                # Sumamos a los máximos de categoría y habilidad para el cálculo porcentual
+                if cat_nombre in max_categorias: max_categorias[cat_nombre] += peso_pregunta
+                max_habilidades[hab_nombre] += peso_pregunta
+
+                # Lógica de calificación
                 if respuesta_user.lower() == ideal.lower():
                     puntos_obtenidos = peso_pregunta
-                    logger.info(f"✅ Pregunta {p_orig['id']}: {peso_pregunta} pts")
+                    # Acumulamos en las dimensiones
+                    if cat_nombre in scores_categorias: scores_categorias[cat_nombre] += peso_pregunta
+                    scores_habilidades[hab_nombre] += peso_pregunta
                 else:
-                    logger.info(f"❌ Pregunta {p_orig['id']}: 0 pts")
                     if es_ko:
                         hubo_ko = True
                         motivo_descarte = f"No cumple: {p_orig['texto']}"
-                        logger.warning(f"🚫 KNOCKOUT: {motivo_descarte}")
             
             elif tipo == 'abierta':
-                logger.info(f"📝 Pregunta abierta {p_orig['id']}: Guardada")
+                # Las abiertas no suelen sumar al score numérico directo a menos que uses keywords
+                logger.info(f"📝 Pregunta abierta {p_orig['id']}: Guardada para análisis IA")
             
             puntos_brutos_acumulados += puntos_obtenidos
-            
             detalle.append({
                 "pregunta": p_orig['texto'],
                 "respuesta": respuesta_user,
                 "puntos": puntos_obtenidos,
                 "peso": peso_pregunta,
-                "tipo": tipo
+                "tipo": tipo,
+                "categoria": cat_nombre,
+                "habilidad": hab_nombre
             })
         
-        if peso_total_posible == 0:
-            score_final = 0
-        else:
-            score_final = (puntos_brutos_acumulados / peso_total_posible) * 100
-        
+        # 3. CÁLCULO DE SCORES FINALES
+        score_final = (puntos_brutos_acumulados / peso_total_posible * 100) if peso_total_posible > 0 else 0
         score_final = round(score_final, 1)
-        
-        logger.info(f"💯 Score final: {score_final}%")
 
-        analisis_json = generar_resumen_profesional(
+        # 4. GENERACIÓN DEL STRING DE MÉTRICAS (Para tu gráfica de Radar actual)
+        # Formato: T:XX% E:XX% B:XX% A:XX%
+        def calc_pct(obtenido, maximo):
+            return round((obtenido / maximo * 100)) if maximo > 0 else 0
+
+        metricas_radar = (
+            f"T:{calc_pct(scores_categorias['Técnica'], max_categorias['Técnica'])}% "
+            f"E:{calc_pct(scores_categorias['Experiencia'], max_categorias['Experiencia'])}% "
+            f"B:{calc_pct(scores_categorias['Blandas'], max_categorias['Blandas'])}% "
+            f"A:{calc_pct(scores_categorias['Ajuste'], max_categorias['Ajuste'])}%"
+        )
+
+        # 5. ANÁLISIS IA Y VEREDICTO
+        # Pasamos las métricas calculadas a tu función de resumen
+        analisis_ia_texto = generar_resumen_profesional(
             cargo=v['cargo'],
             score_final=score_final,
             detalle=detalle,
             hubo_ko=hubo_ko,
-            motivo_ko=motivo_descarte
+            motivo_ko=motivo_descarte,
+            metricas_radar=metricas_radar # Enviamos el string formateado
         )
 
+        # Lógica de Veredicto (Tu lógica original se mantiene)
         if hubo_ko:
-            veredicto = "DESCARTADO (KO)"
-            tag = "🔴"
+            veredicto, tag = "DESCARTADO (KO)", "🔴"
         elif score_final >= 75:
-            veredicto = "RECOMENDADO"
-            tag = "🟢"
+            veredicto, tag = "RECOMENDADO", "🟢"
         elif score_final >= 40:
-            veredicto = "REVISAR"
-            tag = "🟡"
+            veredicto, tag = "REVISAR", "🟡"
         else:
-            veredicto = "NO APTO"
-            tag = "🔴"
+            veredicto, tag = "NO APTO", "🔴"
 
+        # 6. GUARDADO EN SUPABASE
         nueva_entrevista = {
             "id": str(uuid.uuid4()),
             "vacante_id": v['id'],
@@ -284,36 +318,47 @@ def procesar():
             "tag": tag,
             "comentarios_tecnicos": motivo_descarte,
             "respuestas_detalle": detalle,
-            "analisis_ia": analisis_json,
-            "fecha": datetime.utcnow().isoformat()
+            "analisis_ia": analisis_ia_texto,
+            "fecha": datetime.utcnow().isoformat(),
+            # Guardamos el desglose de habilidades para el futuro comparador
+            "scores_habilidades": {h: calc_pct(scores_habilidades[h], max_habilidades[h]) for h in scores_habilidades}
         }
         
         supabase.table('entrevistas').insert(nueva_entrevista).execute()
         
-        logger.info(f"✅ Candidato guardado: {nombre} - {veredicto}")
         return render_template('gracias.html')
         
     except Exception as e:
-        logger.error(f"❌ Error: {e}")
+        logger.error(f"❌ Error en procesar: {e}")
         return f"Error: {e}", 500
     
 @app.route('/candidatos')
-def lista_candidatos():
-    try:
-        res = supabase.table('entrevistas').select('*').execute()
-        candidatos = res.data if res.data else []
-        
-        if candidatos:
-            print(f"Columnas detectadas: {candidatos[0].keys()}")
-
-        for c in candidatos:
-            c['nombre_puesto'] = "Candidato Registrado"
-
-        return render_template('candidatos.html', candidatos=candidatos)
+def candidatos(): # Manteniendo el nombre de tu función original
+    if not session.get('logeado'):
+        return redirect(url_for('login'))
     
+    try:
+        # Traemos las entrevistas de Supabase
+        result = supabase.table('entrevistas').select('*').order('score', desc=True).execute()
+        entrevistas = result.data
+
+        # PROCESAMIENTO CRÍTICO: 
+        # Convertimos el string JSON de 'analisis_ia' en un objeto Python
+        # para que el HTML pueda acceder a fortalezas, riesgos y radar.
+        for e in entrevistas:
+            if e.get('analisis_ia'):
+                try:
+                    # Cargamos el JSON que generamos con generar_resumen_profesional
+                    e['analisis_ia_obj'] = json.loads(e['analisis_ia'])
+                except Exception as ex:
+                    logger.error(f"Error parseando analisis_ia: {ex}")
+                    e['analisis_ia_obj'] = None
+
+        return render_template('candidatos.html', candidatos=entrevistas)
+        
     except Exception as e:
-        print(f"ERROR EN APP.PY: {str(e)}")
-        return f"Error de conexión: {str(e)}", 500
+        logger.error(f"❌ Error en ruta candidatos: {e}")
+        return f"Error: {e}", 500
     
 @app.route('/actualizar_estado', methods=['POST'])
 def actualizar_estado():
@@ -418,24 +463,37 @@ def nueva_vacante():
         return redirect(url_for('login'))
 
     if request.method == 'POST':
+        # 1. Datos básicos y de sesión
         cargo = request.form.get('cargo')
         emp_id_str = session.get('empresa_id')
         id_publico = f"JOB-{int(time.time())}"
-
-        textos = request.form.getlist('p_texto[]')
-        tipos = request.form.getlist('p_tipo[]')
-        pesos = request.form.getlist('p_peso[]')
-        reglas = request.form.getlist('p_regla[]')
+        
+        # 2. Captura de arrays del formulario
+        textos = request.form.getlist('pregunta[]')
+        tipos = request.form.getlist('tipo[]')
+        pesos = request.form.getlist('peso[]')
+        reglas = request.form.getlist('regla_valor[]')
+        habilidades_asociadas = request.form.getlist('habilidad_asociada[]')
+        categorias = request.form.getlist('categoria[]')
+        kos = request.form.getlist('ko[]')
+        
+        # Recuperamos la lógica de opciones múltiples (las 4 opciones por pregunta)
         opciones_todas = request.form.getlist('p_opciones_lista[]')
 
+        # 3. Procesamiento de Habilidades Críticas
+        hab_criticas_raw = request.form.get('habilidades_seleccionadas', '')
+        hab_criticas = [h.strip() for h in hab_criticas_raw.split(',') if h.strip()]
+
         nuevas_preguntas = []
-        opcion_idx = 0
+        opcion_idx = 0 # Contador para las opciones múltiples
         
         for i in range(len(textos)):
             t = tipos[i]
             regla_dict = {}
             
+            # Lógica de reglas REINTEGRADA Y MEJORADA
             if t == 'multiple':
+                # Extraemos las 4 opciones correspondientes a esta pregunta
                 opciones_pregunta = opciones_todas[opcion_idx : opcion_idx + 4]
                 regla_dict = {
                     "opciones": [o for o in opciones_pregunta if o],
@@ -443,35 +501,42 @@ def nueva_vacante():
                 }
                 opcion_idx += 4
             elif t == 'abierta':
-                regla_dict = {"palabras_clave": reglas[i]}
+                palabras = [p.strip() for p in reglas[i].split(',')] if reglas[i] else []
+                regla_dict = {"palabras_clave": palabras}
             else:
                 regla_dict = {"ideal": reglas[i]}
 
+            # Construcción del objeto pregunta
             nuevas_preguntas.append({
                 "id": f"q{i+1}",
                 "texto": textos[i],
                 "tipo": t,
                 "reglas": regla_dict,
-                "peso": int(pesos[i]) if pesos[i] else 0,
-                "knockout": str(i) in request.form.getlist('p_ko[]')
+                "peso": float(pesos[i]) if pesos[i] else 0.0,
+                "categoria": categorias[i] if i < len(categorias) else "General",
+                "habilidad": habilidades_asociadas[i] if i < len(habilidades_asociadas) else "General",
+                "knockout": str(i) in kos,
+                "texto_corto": textos[i][:30] + "..." 
             })
 
-        nueva = {
+        # 4. Objeto final para Supabase
+        nueva_vacante_data = {
             "id": str(uuid.uuid4()),
             "cargo": cargo,
             "id_vacante_publico": id_publico,
             "empresa_id": emp_id_str,
             "preguntas": nuevas_preguntas,
+            "habilidades_criticas": hab_criticas,
             "activa": True,
             "created_at": datetime.utcnow().isoformat()
         }
         
         try:
-            supabase.table('vacantes').insert(nueva).execute()
+            supabase.table('vacantes').insert(nueva_vacante_data).execute()
             return redirect(url_for('gestionar_vacantes'))
         except Exception as e:
-            logger.error(f"Error: {e}")
-            return f"Error: {e}", 500
+            logger.error(f"Error al insertar vacante: {e}")
+            return f"Error en el servidor: {e}", 500
 
     return render_template('nueva_vacante.html')
 
@@ -977,6 +1042,30 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
+@app.route('/api/habilidades', methods=['GET'])
+def get_habilidades():
+    if not session.get('logeado'):
+        return jsonify({"error": "No autorizado"}), 401
+    
+    try:
+        # Traemos la lista maestra que cargamos en la Fase 1
+        result = supabase.table('habilidades').select('*').execute()
+        return jsonify(result.data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/candidato/<id_entrevista>', methods=['GET'])
+def get_detalle_candidato(id_entrevista):
+    if not session.get('logeado'):
+        return jsonify({"error": "No autorizado"}), 401
+
+    try:
+        # Traemos la entrevista con los nuevos campos de habilidades que creamos en la Fase 3
+        result = supabase.table('entrevistas').select('*').eq('id', id_entrevista).single().execute()
+        return jsonify(result.data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/api/candidato/<id>')
 def api_candidato(id):
     """API para obtener datos completos del candidato"""
@@ -1022,6 +1111,35 @@ def api_candidato(id):
     except Exception as e:
         logger.error(f"Error: {e}")
         return jsonify({"error": str(e)}), 500
+
+@app.route('/comparar')
+def comparar():
+    """Ruta para la vista de comparación de candidatos."""
+    if not session.get('logeado'):
+        return redirect(url_for('login'))
+        
+    id1 = request.args.get('c1')
+    id2 = request.args.get('c2')
+    
+    # Si no hay IDs, mostramos la página de selección (opcional) o redirigimos
+    if not id1 or not id2:
+        return redirect(url_for('candidatos'))
+
+    try:
+        # Obtenemos los datos de ambos candidatos
+        c1 = supabase.table('entrevistas').select('*, vacantes(cargo)').eq('id', id1).single().execute()
+        c2 = supabase.table('entrevistas').select('*, vacantes(cargo)').eq('id', id2).single().execute()
+        
+        # Parseamos sus análisis para que el template los lea fácil
+        for c in [c1.data, c2.data]:
+            if c.get('analisis_ia'):
+                c['analisis_ia_obj'] = json.loads(c['analisis_ia'])
+
+        return render_template('comparar.html', c1=c1.data, c2=c2.data)
+        
+    except Exception as e:
+        logger.error(f"❌ Error en comparador: {e}")
+        return redirect(url_for('candidatos'))
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
