@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Sales AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
-        /* Sidebar con efecto galaxia */
         .sidebar-galaxy {
             background: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
             position: relative;
@@ -29,7 +27,6 @@
             pointer-events: none;
         }
 
-        /* Animaciones suaves */
         .fade-in {
             animation: fadeIn 0.5s ease-in;
         }
@@ -39,13 +36,11 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Hover effects */
         .hover-lift:hover {
             transform: translateY(-2px);
             transition: all 0.2s ease;
         }
 
-        /* Custom scrollbar */
         .custom-scrollbar::-webkit-scrollbar {
             width: 6px;
         }
@@ -59,7 +54,6 @@
             border-radius: 3px;
         }
 
-        /* Estilos para la gráfica */
         .chart-container {
             position: relative;
             height: 300px;
@@ -71,7 +65,6 @@
     <div class="flex h-screen overflow-hidden">
         <!-- SIDEBAR -->
         <aside class="w-64 sidebar-galaxy text-white flex flex-col relative z-10">
-            <!-- Logo -->
             <div class="p-6 flex items-center gap-3">
                 <img 
                     src="{{ url_for('static', filename='img/logo-salesai.webp') }}" 
@@ -85,7 +78,6 @@
                 </div>
             </div>
 
-            <!-- Navegación -->
             <nav class="flex-1 px-3 py-4 space-y-1">
                 <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ 'bg-blue-600/20 border-l-4 border-blue-500 text-white font-medium' if request.path == '/dashboard' else 'text-gray-300 hover:bg-white/10 hover:text-white transition' }}">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -124,7 +116,6 @@
                 </a>
             </nav>
 
-            <!-- Empresa y Usuario -->
             <div class="p-4 border-t border-white/10 space-y-3">
                 <div class="flex items-center gap-2 text-sm text-gray-400 px-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -152,7 +143,6 @@
 
         <!-- CONTENIDO PRINCIPAL -->
         <main class="flex-1 overflow-y-auto custom-scrollbar">
-            <!-- Header -->
             <header class="bg-white border-b border-gray-200 px-8 py-5 sticky top-0 z-10">
                 <div class="flex items-center justify-between">
                     <h1 class="text-2xl font-bold text-gray-900">
@@ -171,10 +161,8 @@
                 </div>
             </header>
 
-            <!-- Métricas -->
             <div class="p-8">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <!-- Vacantes Activas -->
                     <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200 hover-lift fade-in">
                         <div class="flex items-start justify-between mb-4">
                             <div class="p-3 bg-blue-500 rounded-xl">
@@ -188,7 +176,6 @@
                         <p class="text-xs text-blue-600">Abiertas y activas</p>
                     </div>
 
-                    <!-- Candidatos Evaluados -->
                     <div class="bg-gradient-to-br from-teal-50 to-teal-100 rounded-2xl p-6 border border-teal-200 hover-lift fade-in" style="animation-delay: 0.1s;">
                         <div class="flex items-start justify-between mb-4">
                             <div class="p-3 bg-teal-500 rounded-xl">
@@ -202,7 +189,6 @@
                         <p class="text-xs text-teal-600">Analizados con IA</p>
                     </div>
 
-                    <!-- Tasa de Filtrado -->
                     <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 border border-purple-200 hover-lift fade-in" style="animation-delay: 0.2s;">
                         <div class="flex items-start justify-between mb-4">
                             <div class="p-3 bg-purple-500 rounded-xl">
@@ -259,16 +245,16 @@
                                         <td class="px-6 py-4">
                                             <div class="flex items-center gap-3">
                                                 <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xs uppercase">
-                                                    {{ candidato.nombre_candidato[0] if candidato.nombre_candidato else 'U' }}
+                                                    {{ candidato.nombre[0] if candidato.nombre else 'U' }}
                                                 </div>
                                                 <div>
-                                                    <p class="font-medium text-gray-900">{{ candidato.nombre_candidato }}</p>
+                                                    <p class="font-medium text-gray-900">{{ candidato.nombre }}</p>
                                                     <p class="text-xs text-gray-500">ID: {{ candidato.id[:8] }}</p>
                                                 </div>
                                             </div>
                                         </td>
                                         <td class="px-6 py-4 text-sm text-gray-600">
-                                            {{ candidato.vacantes.cargo if candidato.vacantes else 'Sin cargo' }}
+                                            {{ candidato.cargo }}
                                         </td>
                                         <td class="px-6 py-4">
                                             <span class="text-lg font-bold text-gray-900">{{ candidato.score }}%</span>
@@ -297,17 +283,17 @@
                             </table>
                         </div>
                     {% endif %}
-                </div> ```
+                </div>
+            </div>
+        </main>
+    </div>
 
     <!-- Modal de análisis detallado -->
     <div id="modal-analisis" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl animate-slide-in">
-            <!-- Header del modal -->
+        <div class="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
             <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 flex items-center justify-between text-white">
                 <div class="flex items-center gap-4">
-                    <div id="modal-avatar" class="w-16 h-16 rounded-full bg-white/20 backdrop-blur flex items-center justify-center text-2xl font-bold">
-                        A
-                    </div>
+                    <div id="modal-avatar" class="w-16 h-16 rounded-full bg-white/20 backdrop-blur flex items-center justify-center text-2xl font-bold">A</div>
                     <div>
                         <h2 id="modal-nombre" class="text-2xl font-bold">Cargando...</h2>
                         <p class="text-blue-100 text-sm">ID: <span id="modal-id">---</span></p>
@@ -320,7 +306,6 @@
                 </button>
             </div>
 
-            <!-- Score y metadata -->
             <div class="px-8 py-6 bg-gray-50 border-b border-gray-200">
                 <div class="grid grid-cols-4 gap-6">
                     <div class="text-center">
@@ -328,8 +313,7 @@
                         <div class="relative inline-block">
                             <svg class="w-24 h-24 transform -rotate-90">
                                 <circle cx="48" cy="48" r="40" stroke="#e5e7eb" stroke-width="8" fill="none"/>
-                                <circle id="modal-score-circle" cx="48" cy="48" r="40" stroke="#3b82f6" stroke-width="8" fill="none"
-                                    stroke-dasharray="251.2" stroke-dashoffset="0" class="transition-all duration-1000"/>
+                                <circle id="modal-score-circle" cx="48" cy="48" r="40" stroke="#3b82f6" stroke-width="8" fill="none" stroke-dasharray="251.2" stroke-dashoffset="0" class="transition-all duration-1000"/>
                             </svg>
                             <div class="absolute inset-0 flex items-center justify-center">
                                 <span id="modal-score-text" class="text-2xl font-bold text-gray-900">0%</span>
@@ -354,9 +338,7 @@
                 </div>
             </div>
 
-            <!-- Contenido scrolleable -->
             <div class="overflow-y-auto max-h-[60vh] custom-scrollbar">
-                <!-- Gráfica de Radar -->
                 <div class="px-8 py-6 bg-gradient-to-br from-blue-50 to-purple-50 border-b border-gray-200">
                     <div class="flex items-center gap-2 mb-4">
                         <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -369,7 +351,6 @@
                     </div>
                 </div>
 
-                <!-- Resumen ejecutivo -->
                 <div class="px-8 py-6 border-b border-gray-200">
                     <div class="flex items-center gap-2 mb-3">
                         <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -380,7 +361,6 @@
                     <p id="modal-resumen" class="text-gray-700 leading-relaxed">Cargando análisis...</p>
                 </div>
 
-                <!-- Fortalezas CON BADGES MEJORADOS -->
                 <div class="px-8 py-6 bg-gradient-to-br from-green-50 to-emerald-50 border-b border-gray-200">
                     <div class="flex items-center gap-2 mb-4">
                         <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -388,12 +368,9 @@
                         </svg>
                         <h3 class="text-lg font-bold text-green-900">Fortalezas Detectadas</h3>
                     </div>
-                    <div id="modal-fortalezas" class="flex flex-wrap gap-2">
-                        <!-- Los badges se insertarán aquí dinámicamente -->
-                    </div>
+                    <div id="modal-fortalezas" class="flex flex-wrap gap-2"></div>
                 </div>
 
-                <!-- Riesgos -->
                 <div class="px-8 py-6 bg-yellow-50 border-b border-gray-200">
                     <div class="flex items-center gap-2 mb-4">
                         <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -409,7 +386,6 @@
                     </ul>
                 </div>
 
-                <!-- Respuestas detalladas -->
                 <div class="px-8 py-6">
                     <div class="flex items-center gap-2 mb-4">
                         <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -422,7 +398,6 @@
                     </div>
                 </div>
 
-                <!-- Recomendación final -->
                 <div class="px-8 py-6 bg-blue-50 border-t border-gray-200">
                     <div class="flex items-center gap-2 mb-3">
                         <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -434,15 +409,12 @@
                 </div>
             </div>
 
-            <!-- Footer con acciones -->
             <div class="px-8 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
                 <p class="text-xs text-gray-500">
                     <span class="font-medium">Método:</span> <span id="modal-metodo">Evaluación lógica automatizada</span>
                 </p>
                 <div class="flex items-center gap-3">
-                    <button onclick="cerrarModal()" class="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg font-medium transition">
-                        Cerrar
-                    </button>
+                    <button onclick="cerrarModal()" class="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg font-medium transition">Cerrar</button>
                     <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
@@ -455,59 +427,35 @@
     </div>
 
     <script>
-        // Variable global para la gráfica
         let graficaActual = null;
 
-        // ✅ FUNCIÓN CORREGIDA - Extrae métricas del objeto analisis (no del string)
         function extraerMetricas(analisisObj) {
             console.log('📊 Extrayendo métricas de:', analisisObj);
+            if (!analisisObj) return { tecnica: 50, experiencia: 50, blandas: 50, ajuste: 50 };
             
-            // Si no hay análisis, valores por defecto
-            if (!analisisObj) {
-                return { tecnica: 50, experiencia: 50, blandas: 50, ajuste: 50 };
-            }
-            
-            // Calcular basado en fortalezas y riesgos
             const numFortalezas = (analisisObj.fortalezas || []).length;
             const numRiesgos = (analisisObj.riesgos || []).filter(r => r !== 'Sin riesgos identificados').length;
-            
-            // Base de 50% + 10% por fortaleza - 8% por riesgo
-            const base = 50;
-            const bonus = numFortalezas * 10;
-            const penalty = numRiesgos * 8;
-            
+            const base = 50, bonus = numFortalezas * 10, penalty = numRiesgos * 8;
             const valor = Math.min(100, Math.max(0, base + bonus - penalty));
             
             console.log(`📈 Calculado: ${valor}% (${numFortalezas} fortalezas, ${numRiesgos} riesgos)`);
-            
-            // Distribuir con pequeñas variaciones para que se vea más real
             return {
-                tecnica: Math.round(valor * 0.95),      // -5%
-                experiencia: Math.round(valor * 1.0),   // 100%
-                blandas: Math.round(valor * 0.90),      // -10%
-                ajuste: Math.min(100, Math.round(valor * 1.05))  // +5% con límite 100
+                tecnica: Math.round(valor * 0.95),
+                experiencia: Math.round(valor * 1.0),
+                blandas: Math.round(valor * 0.90),
+                ajuste: Math.min(100, Math.round(valor * 1.05))
             };
         }
 
-        // ✅ FUNCIÓN CORREGIDA - Recibe el objeto analisis directamente
         function dibujarGrafica(analisisObj) {
             const datos = extraerMetricas(analisisObj);
             const ctx = document.getElementById('graficaCandidato').getContext('2d');
-            
-            // Destruir gráfica anterior si existe
-            if (graficaActual) {
-                graficaActual.destroy();
-            }
+            if (graficaActual) graficaActual.destroy();
             
             graficaActual = new Chart(ctx, {
                 type: 'radar',
                 data: {
-                    labels: [
-                        'Técnicas',        // Etiquetas más cortas
-                        'Experiencia',
-                        'Blandas',
-                        'Cultura'
-                    ],
+                    labels: ['Técnicas', 'Experiencia', 'Blandas', 'Cultura'],
                     datasets: [{
                         label: 'Puntaje',
                         data: [datos.tecnica, datos.experiencia, datos.blandas, datos.ajuste],
@@ -525,74 +473,27 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: true,
-                    layout: {
-                        padding: {
-                            top: 30,      // ← Padding para que no se corten las etiquetas
-                            right: 30,
-                            bottom: 30,
-                            left: 30
-                        }
-                    },
+                    layout: { padding: { top: 30, right: 30, bottom: 30, left: 30 } },
                     scales: {
                         r: {
                             beginAtZero: true,
                             max: 100,
                             min: 0,
-                            ticks: {
-                                stepSize: 25,
-                                callback: function(value) {
-                                    return value + '%';
-                                },
-                                font: {
-                                    size: 11
-                                },
-                                color: '#6b7280'
-                            },
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.1)'
-                            },
-                            angleLines: {
-                                color: 'rgba(0, 0, 0, 0.1)'
-                            },
-                            pointLabels: {
-                                font: {
-                                    size: 13,
-                                    weight: '600'
-                                },
-                                color: '#374151',
-                                padding: 15    // ← Espacio extra entre el gráfico y las etiquetas
-                            }
+                            ticks: { stepSize: 25, callback: (v) => v + '%', font: { size: 11 }, color: '#6b7280' },
+                            grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                            angleLines: { color: 'rgba(0, 0, 0, 0.1)' },
+                            pointLabels: { font: { size: 13, weight: '600' }, color: '#374151', padding: 15 }
                         }
                     },
                     plugins: {
-                        legend: {
-                            display: false
-                        },
+                        legend: { display: false },
                         tooltip: {
                             enabled: true,
                             backgroundColor: 'rgba(0, 0, 0, 0.8)',
                             padding: 12,
-                            titleFont: {
-                                size: 14,
-                                weight: 'bold'
-                            },
-                            bodyFont: {
-                                size: 13
-                            },
                             callbacks: {
-                                title: function(context) {
-                                    // Mapeo de etiquetas cortas a nombres completos
-                                    const labels = {
-                                        'Técnicas': 'Habilidades Técnicas',
-                                        'Experiencia': 'Experiencia',
-                                        'Blandas': 'Habilidades Blandas',
-                                        'Cultura': 'Ajuste Cultural'
-                                    };
-                                    return labels[context[0].label] || context[0].label;
-                                },
-                                label: function(context) {
-                                    return 'Puntaje: ' + context.parsed.r.toFixed(1) + '%';
-                                }
+                                title: (ctx) => ({ 'Técnicas': 'Habilidades Técnicas', 'Experiencia': 'Experiencia', 'Blandas': 'Habilidades Blandas', 'Cultura': 'Ajuste Cultural' }[ctx[0].label]),
+                                label: (ctx) => 'Puntaje: ' + ctx.parsed.r.toFixed(1) + '%'
                             }
                         }
                     }
@@ -600,189 +501,97 @@
             });
         }
 
-        // Función para abrir el modal y cargar datos
         function verAnalisis(candidatoId) {
-            // Mostrar modal inmediatamente
             document.getElementById('modal-analisis').classList.remove('hidden');
-            
-            // Fetch de datos
             fetch(`/api/candidato/${candidatoId}`)
                 .then(res => res.json())
                 .then(data => {
-                    console.log('🔍 DATOS COMPLETOS DEL CANDIDATO:', data);
-                    
-                    // Avatar con inicial
-                    const inicial = data.nombre.charAt(0).toUpperCase();
-                    document.getElementById('modal-avatar').textContent = inicial;
-                    
-                    // Datos básicos
+                    console.log('🔍 DATOS:', data);
+                    document.getElementById('modal-avatar').textContent = data.nombre.charAt(0).toUpperCase();
                     document.getElementById('modal-nombre').textContent = data.nombre;
                     document.getElementById('modal-id').textContent = data.identificacion;
                     document.getElementById('modal-cargo').textContent = data.cargo;
                     document.getElementById('modal-fecha').textContent = data.fecha;
                     
-                    // Score con animación circular
                     const score = data.score;
                     const circumference = 251.2;
                     const offset = circumference - (score / 100) * circumference;
                     document.getElementById('modal-score-text').textContent = score + '%';
                     document.getElementById('modal-score-circle').style.strokeDashoffset = offset;
                     
-                    // Color del círculo según score
                     const circulo = document.getElementById('modal-score-circle');
                     if (score >= 75) circulo.style.stroke = '#10b981';
                     else if (score >= 40) circulo.style.stroke = '#f59e0b';
                     else circulo.style.stroke = '#ef4444';
                     
-                    // Veredicto con color
                     document.getElementById('modal-tag').textContent = data.tag;
                     document.getElementById('modal-veredicto').textContent = data.veredicto;
                     
                     const badge = document.getElementById('modal-veredicto-badge');
                     badge.className = 'inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium';
-                    if (data.veredicto.includes('RECOMENDADO')) {
-                        badge.classList.add('bg-green-100', 'text-green-800');
-                    } else if (data.veredicto.includes('REVISAR')) {
-                        badge.classList.add('bg-yellow-100', 'text-yellow-800');
-                    } else {
-                        badge.classList.add('bg-red-100', 'text-red-800');
-                    }
+                    if (data.veredicto.includes('RECOMENDADO')) badge.classList.add('bg-green-100', 'text-green-800');
+                    else if (data.veredicto.includes('REVISAR')) badge.classList.add('bg-yellow-100', 'text-yellow-800');
+                    else badge.classList.add('bg-red-100', 'text-red-800');
                     
-                    // ✅ CORREGIDO: Dibujar gráfica con el objeto analisis (no analisis_ia)
                     if (data.analisis) {
                         console.log('🎨 Dibujando gráfica con:', data.analisis);
                         dibujarGrafica(data.analisis);
                     }
                     
-                    // Análisis
                     const analisis = data.analisis;
-                    document.getElementById('modal-resumen').textContent = analisis.resumen || 'Sin análisis disponible';
+                    document.getElementById('modal-resumen').textContent = analisis.resumen || 'Sin análisis';
                     document.getElementById('modal-recomendacion').textContent = analisis.recomendacion || 'Validar manualmente';
                     document.getElementById('modal-metodo').textContent = analisis.metodo || 'Evaluación automatizada';
                     
-                    // ✅ FORTALEZAS CON BADGES DE COLORES
                     const coloresBadges = [
                         'bg-green-100 text-green-800 border-green-300',
                         'bg-blue-100 text-blue-800 border-blue-300',
                         'bg-purple-100 text-purple-800 border-purple-300',
                         'bg-teal-100 text-teal-800 border-teal-300',
-                        'bg-indigo-100 text-indigo-800 border-indigo-300',
+                        'bg-indigo-100 text-indigo-800 border-indigo-300'
                     ];
 
-                    const fortalezasHTML = (analisis.fortalezas || []).map((f, index) => {
-                        const colorClase = coloresBadges[index % coloresBadges.length];
-                        // Limpiar el texto (quitar ✓ si viene del backend)
+                    const fortalezasHTML = (analisis.fortalezas || []).map((f, i) => {
+                        const colorClase = coloresBadges[i % coloresBadges.length];
                         const textoLimpio = f.replace(/^[✓✔]?\s*/, '');
-                        
-                        return `
-                            <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full border-2 ${colorClase} font-medium text-sm shadow-sm hover:shadow-md transition-shadow cursor-default">
-                                <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                                </svg>
-                                <span>${textoLimpio}</span>
-                            </span>
-                        `;
+                        return `<span class="inline-flex items-center gap-2 px-4 py-2 rounded-full border-2 ${colorClase} font-medium text-sm shadow-sm hover:shadow-md transition-shadow cursor-default">
+                            <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg><span>${textoLimpio}</span></span>`;
                     }).join('');
 
                     document.getElementById('modal-fortalezas').innerHTML = fortalezasHTML || 
-                        '<div class="flex items-center gap-2 text-gray-500 italic text-sm">' +
-                        '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-                        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>' +
-                        '</svg>' +
-                        '<span>Sin fortalezas destacadas en esta evaluación</span>' +
-                        '</div>';
+                        '<div class="flex items-center gap-2 text-gray-500 italic text-sm"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span>Sin fortalezas destacadas</span></div>';
                     
-                    // Riesgos
                     const riesgosHTML = (analisis.riesgos || []).map(r => 
-                        `<li class="flex items-start gap-2 text-yellow-800">
-                            <svg class="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                            </svg>
-                            <span>${r}</span>
-                        </li>`
+                        `<li class="flex items-start gap-2 text-yellow-800"><svg class="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg><span>${r}</span></li>`
                     ).join('');
-                    document.getElementById('modal-riesgos').innerHTML = riesgosHTML || '<li class="text-gray-500">Sin riesgos identificados</li>';
+                    document.getElementById('modal-riesgos').innerHTML = riesgosHTML || '<li class="text-gray-500">Sin riesgos</li>';
                     
-                    // Respuestas detalladas
                     const respuestasHTML = (data.respuestas || []).map(r => {
-                        const puntos = r.puntos || 0;
-                        const peso = r.peso || 0;
-                        const porcentaje = peso > 0 ? Math.round((puntos / peso) * 100) : 0;
-                        const esAbierta = r.tipo === 'abierta';
-                        
-                        let colorClase = 'bg-gray-100';
-                        let iconHTML = '';
-                        
+                        const puntos = r.puntos || 0, peso = r.peso || 0, esAbierta = r.tipo === 'abierta';
+                        let colorClase = 'bg-gray-100', iconHTML = '';
                         if (!esAbierta) {
-                            if (puntos === peso && peso > 0) {
-                                colorClase = 'bg-green-50 border-green-200';
-                                iconHTML = '<span class="text-2xl">✅</span>';
-                            } else if (puntos === 0) {
-                                colorClase = 'bg-red-50 border-red-200';
-                                iconHTML = '<span class="text-2xl">❌</span>';
-                            } else {
-                                colorClase = 'bg-yellow-50 border-yellow-200';
-                                iconHTML = '<span class="text-2xl">⚠️</span>';
-                            }
-                        } else {
-                            colorClase = 'bg-blue-50 border-blue-200';
-                            iconHTML = '<span class="text-2xl">📝</span>';
-                        }
-                        
-                        return `
-                            <div class="border rounded-lg p-4 ${colorClase}">
-                                <div class="flex items-start justify-between gap-4 mb-2">
-                                    <div class="flex-1">
-                                        <p class="font-semibold text-gray-900 mb-1">${r.pregunta}</p>
-                                        <p class="text-gray-700">${r.respuesta}</p>
-                                    </div>
-                                    <div class="text-right flex-shrink-0">
-                                        ${iconHTML}
-                                        ${!esAbierta ? `<p class="text-sm font-bold text-gray-900 mt-1">${puntos}/${peso} pts</p>` : '<p class="text-xs text-gray-500 mt-1">Revisión manual</p>'}
-                                    </div>
-                                </div>
-                            </div>
-                        `;
+                            if (puntos === peso && peso > 0) { colorClase = 'bg-green-50 border-green-200'; iconHTML = '<span class="text-2xl">✅</span>'; }
+                            else if (puntos === 0) { colorClase = 'bg-red-50 border-red-200'; iconHTML = '<span class="text-2xl">❌</span>'; }
+                            else { colorClase = 'bg-yellow-50 border-yellow-200'; iconHTML = '<span class="text-2xl">⚠️</span>'; }
+                        } else { colorClase = 'bg-blue-50 border-blue-200'; iconHTML = '<span class="text-2xl">📝</span>'; }
+                        return `<div class="border rounded-lg p-4 ${colorClase}"><div class="flex items-start justify-between gap-4 mb-2"><div class="flex-1"><p class="font-semibold text-gray-900 mb-1">${r.pregunta}</p><p class="text-gray-700">${r.respuesta}</p></div><div class="text-right flex-shrink-0">${iconHTML}${!esAbierta ? `<p class="text-sm font-bold text-gray-900 mt-1">${puntos}/${peso} pts</p>` : '<p class="text-xs text-gray-500 mt-1">Revisión manual</p>'}</div></div></div>`;
                     }).join('');
-                    document.getElementById('modal-respuestas').innerHTML = respuestasHTML || '<p class="text-gray-500">Sin respuestas registradas</p>';
+                    document.getElementById('modal-respuestas').innerHTML = respuestasHTML || '<p class="text-gray-500">Sin respuestas</p>';
                 })
                 .catch(err => {
-                    console.error('Error cargando análisis:', err);
-                    document.getElementById('modal-resumen').textContent = 'Error al cargar el análisis';
+                    console.error('Error:', err);
+                    document.getElementById('modal-resumen').textContent = 'Error al cargar';
                 });
         }
 
         function cerrarModal() {
             document.getElementById('modal-analisis').classList.add('hidden');
-            // Destruir gráfica al cerrar
-            if (graficaActual) {
-                graficaActual.destroy();
-                graficaActual = null;
-            }
+            if (graficaActual) { graficaActual.destroy(); graficaActual = null; }
         }
 
-        function eliminarCandidato(candidatoId) {
-            if (!confirm('¿Estás seguro de eliminar este candidato?')) return;
-            
-            fetch(`/eliminar_candidato/${candidatoId}`, {
-                method: 'POST'
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert('Error al eliminar');
-                }
-            });
-        }
-
-        // Cerrar modal con tecla ESC
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                cerrarModal();
-            }
-        });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrarModal(); });
     </script>
 </body>
 </html>
