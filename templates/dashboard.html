@@ -219,12 +219,10 @@
                     </div>
                 </div>
 
-                <!-- Sección de Candidatos -->
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden fade-in" style="animation-delay: 0.3s;">
-                    <!-- Header de la tabla -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                     <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                         <h2 class="text-xl font-bold text-gray-900">Últimos Candidatos Evaluados</h2>
-                        <a href="/nueva_vacante" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition">
+                        <a href="/nueva_vacante" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                             </svg>
@@ -233,128 +231,73 @@
                     </div>
 
                     {% if total_c == 0 %}
-                        <div class="px-6 py-16 text-center">
-                            <h3 class="text-2xl font-bold text-gray-900">¡Workspace activado!</h3>
-                            <p class="text-gray-600 mb-6">Aún no tienes candidatos.</p>
-                            <a href="/nueva_vacante" class="...">Configurar mi primera vacante</a>
+                        <div class="p-16 text-center">
+                            <div class="inline-block p-6 bg-blue-50 rounded-full mb-4">
+                                <svg class="w-12 h-12 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-900">No hay candidatos aún</h3>
+                            <p class="text-gray-500 mb-6">Configura una vacante para empezar a recibir análisis.</p>
+                            <a href="/nueva_vacante" class="text-blue-600 font-bold hover:underline">Configurar mi primera vacante →</a>
                         </div>
-
                     {% else %}
                         <div class="overflow-x-auto">
                             <table class="w-full">
                                 <thead class="bg-gray-50 border-b border-gray-200">
                                     <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Candidato</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
-                                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Candidato</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Cargo</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Score IA</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Veredicto</th>
+                                        <th class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-200">
-                                    {% for c in candidatos %}
-                                    <tr>
-                                        <td class="px-6 py-4">{{ c.nombre_candidato }}</td>
+                                    {% for candidato in entrevistas[:10] %}
+                                    <tr class="hover:bg-gray-50 transition">
                                         <td class="px-6 py-4">
-                                            <span class="font-bold text-blue-600">{{ c.score }}%</span>
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xs uppercase">
+                                                    {{ candidato.nombre_candidato[0] if candidato.nombre_candidato else 'U' }}
+                                                </div>
+                                                <div>
+                                                    <p class="font-medium text-gray-900">{{ candidato.nombre_candidato }}</p>
+                                                    <p class="text-xs text-gray-500">ID: {{ candidato.id[:8] }}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 text-sm text-gray-600">
+                                            {{ candidato.vacantes.cargo if candidato.vacantes else 'Sin cargo' }}
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span class="text-lg font-bold text-gray-900">{{ candidato.score }}%</span>
+                                        </td>
+                                        <td class="px-6 py-4 text-sm">
+                                            {% if candidato.veredicto == 'RECOMENDADO' %}
+                                                <span class="px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">Apto</span>
+                                            {% elif candidato.veredicto == 'REVISAR' %}
+                                                <span class="px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-medium">Revisar</span>
+                                            {% else %}
+                                                <span class="px-2 py-1 rounded-full bg-red-100 text-red-800 text-xs font-medium">Descartado</span>
+                                            {% endif %}
                                         </td>
                                         <td class="px-6 py-4 text-right">
-                                            <a href="/api/candidato/{{ c.id }}" class="text-gray-400 hover:text-blue-600">Ver Detalle</a>
+                                            <div class="flex justify-end gap-2">
+                                                <button onclick="verAnalisis('{{ candidato.id }}')" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Ver análisis">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                                    </svg>
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
                         </div>
-                    {% endif %} ```
-                        
-                    <!-- Tabla de candidatos -->
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead class="bg-gray-50 border-b border-gray-200">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Candidato</th>
-                                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Cargo</th>
-                                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Score IA</th>
-                                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Veredicto</th>
-                                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Fecha</th>
-                                    <th class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-200">
-                                {% for candidato in entrevistas[:10] %}
-                                <tr class="hover:bg-gray-50 transition">
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center gap-3">
-                                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-sm">
-                                                {{ candidato.nombre[0] }}
-                                            </div>
-                                            <div>
-                                                <p class="font-medium text-gray-900">{{ candidato.nombre }}</p>
-                                                <p class="text-sm text-gray-500">ID: {{ candidato.id[:8] }}</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <p class="text-sm text-gray-900">{{ candidato.cargo }}</p>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-2xl font-bold text-gray-900">{{ candidato.score }}%</span>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        {% if candidato.veredicto == 'RECOMENDADO' %}
-                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
-                                            Apto
-                                        </span>
-                                        {% elif candidato.veredicto == 'REVISAR' %}
-                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                            <span class="w-2 h-2 bg-yellow-500 rounded-full"></span>
-                                            En Revisión
-                                        </span>
-                                        {% else %}
-                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                            <span class="w-2 h-2 bg-red-500 rounded-full"></span>
-                                            Descartado
-                                        </span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <p class="text-sm text-gray-600">{{ candidato.fecha }}</p>
-                                    </td>
-                                    <td class="px-6 py-4 text-right">
-                                        <div class="flex items-center justify-end gap-2">
-                                            <button 
-                                                onclick="verAnalisis('{{ candidato.id }}')"
-                                                class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                                                title="Ver análisis"
-                                            >
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                                </svg>
-                                            </button>
-                                            <button 
-                                                onclick="eliminarCandidato('{{ candidato.id }}')"
-                                                class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                                                title="Eliminar"
-                                            >
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
                     {% endif %}
-                </div>
-            </div>
-        </main>
-    </div>
+                </div> ```
 
     <!-- Modal de análisis detallado -->
     <div id="modal-analisis" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
