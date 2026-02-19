@@ -66,9 +66,9 @@
         <nav class="flex-1 px-3 py-4 space-y-1">
 
             <!-- Vacantes -->
-            <a href="/dashboard"
+            <a href="{{ url_for('gestionar_vacantes') }}"
                class="flex items-center gap-3 px-3 py-2.5 rounded-lg
-               {{ 'bg-blue-600/20 border-l-4 border-blue-500 text-white font-medium' if request.path == '/dashboard'
+               {{ 'bg-blue-600/20 border-l-4 border-blue-500 text-white font-medium' if request.path == '/gestionar_vacantes'
                   else 'text-gray-300 hover:bg-white/10 hover:text-white transition' }}">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
