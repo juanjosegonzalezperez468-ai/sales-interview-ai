@@ -353,9 +353,9 @@
         <!-- Score y metadata -->
         <div class="px-8 py-6 bg-gray-50 border-b border-gray-200">
             <!-- Evolución visual Fase 2 (oculta hasta que haya evaluación) -->
-            <div id="evolucion-scores" class="hidden mb-5 p-4 bg-blue-50 border border-blue-100 rounded-xl">
+            <div id="evolucion-scores" class="hidden mb-4 p-4 bg-blue-50 border border-blue-100 rounded-xl">
                 <p class="text-[10px] font-black uppercase text-blue-400 tracking-widest mb-3">Evolución del Candidato</p>
-                <div class="flex items-center gap-3 flex-wrap">
+                <div class="flex items-center gap-3 flex-wrap mb-4">
                     <div class="text-center">
                         <p class="text-xs text-gray-500 mb-1">Pre-evaluación</p>
                         <p id="ev-score-pre" class="text-2xl font-black text-gray-700">—</p>
@@ -369,6 +369,24 @@
                     <div class="text-center bg-blue-600 rounded-xl px-4 py-2">
                         <p class="text-xs text-blue-200 mb-1">Score Final</p>
                         <p id="ev-score-final" class="text-2xl font-black text-white">—</p>
+                    </div>
+                </div>
+
+                <!-- Fortalezas y alertas de entrevista -->
+                <div id="obs-entrevista" class="hidden grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 border-t border-blue-100">
+                    <!-- Fortalezas confirmadas -->
+                    <div id="bloque-fortalezas-ev" class="hidden">
+                        <p class="text-[10px] font-black uppercase text-emerald-500 tracking-widest mb-2">
+                            ✓ Fortalezas confirmadas en entrevista
+                        </p>
+                        <ul id="lista-fortalezas-ev" class="space-y-1"></ul>
+                    </div>
+                    <!-- Alertas detectadas -->
+                    <div id="bloque-alertas-ev" class="hidden">
+                        <p class="text-[10px] font-black uppercase text-amber-500 tracking-widest mb-2">
+                            ⚠ Alerta detectada
+                        </p>
+                        <ul id="lista-alertas-ev" class="space-y-1"></ul>
                     </div>
                 </div>
             </div>
@@ -496,7 +514,7 @@
                  FASE 2 — EVALUACIÓN POST-ENTREVISTA
             ══════════════════════════════════════════ -->
             <div class="px-8 py-6 border-t border-gray-200">
-                <div class="flex items-center gap-2 mb-5">
+                <div class="flex items-center gap-2 mb-2">
                     <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
@@ -505,66 +523,147 @@
                     <span id="badge-evaluado" class="hidden ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded-full">✓ Evaluado</span>
                 </div>
 
-                <!-- Criterios 1–10 -->
-                <div id="form-evaluacion" class="space-y-4 mb-6">
-                    <p class="text-xs text-gray-400 mb-3">Puntúa del 1 al 10 cada criterio observado en la entrevista.</p>
+                <!-- Frase anti-sesgo -->
+                <p class="text-xs text-slate-400 italic mb-5 pl-1">
+                    "Evalúa lo que observaste, no lo que esperabas."
+                </p>
 
-                    <div class="criterio-row grid grid-cols-[1fr_auto] items-center gap-4 pb-3 border-b border-gray-100">
-                        <label class="text-sm font-semibold text-gray-700">💬 Comunicación real</label>
-                        <div class="flex items-center gap-2">
-                            <input type="range" min="1" max="10" value="5" step="1"
-                                   id="crit-comunicacion" oninput="actualizarCrit(this)"
-                                   class="w-28 accent-blue-600">
-                            <span id="val-comunicacion" class="text-sm font-black text-blue-600 w-6 text-center">5</span>
+                <div id="form-evaluacion" class="space-y-6 mb-6">
+
+                    <!-- BLOQUE A: Competencia Técnica (40%) -->
+                    <div class="bg-blue-50 border border-blue-100 rounded-2xl p-4">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <p class="text-[10px] font-black uppercase text-blue-400 tracking-widest">Bloque A</p>
+                                <p class="text-sm font-bold text-blue-800">Validación de Competencia</p>
+                            </div>
+                            <span class="text-xs bg-blue-100 text-blue-600 font-bold px-2 py-1 rounded-full">40%</span>
+                        </div>
+                        <div class="space-y-4">
+                            <!-- Criterio 1 -->
+                            <div class="criterio-row">
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="text-sm font-semibold text-gray-700">📦 Dominio práctico del rol</label>
+                                    <span id="val-dominio" class="text-lg font-black text-blue-600 w-6 text-center">3</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] text-gray-400">1</span>
+                                    <input type="range" min="1" max="5" value="3" step="1"
+                                           id="crit-dominio" oninput="actualizarCrit(this)"
+                                           class="flex-1 accent-blue-600 h-2">
+                                    <span class="text-[10px] text-gray-400">5</span>
+                                </div>
+                                <div class="flex justify-between text-[10px] text-gray-300 mt-0.5 px-3">
+                                    <span>Muy débil</span><span>Excelente</span>
+                                </div>
+                            </div>
+                            <!-- Criterio 2 -->
+                            <div class="criterio-row">
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="text-sm font-semibold text-gray-700">🧩 Resolución de escenarios reales</label>
+                                    <span id="val-resolucion" class="text-lg font-black text-blue-600 w-6 text-center">3</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] text-gray-400">1</span>
+                                    <input type="range" min="1" max="5" value="3" step="1"
+                                           id="crit-resolucion" oninput="actualizarCrit(this)"
+                                           class="flex-1 accent-blue-600 h-2">
+                                    <span class="text-[10px] text-gray-400">5</span>
+                                </div>
+                                <div class="flex justify-between text-[10px] text-gray-300 mt-0.5 px-3">
+                                    <span>Muy débil</span><span>Excelente</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="criterio-row grid grid-cols-[1fr_auto] items-center gap-4 pb-3 border-b border-gray-100">
-                        <label class="text-sm font-semibold text-gray-700">🧠 Claridad de pensamiento</label>
-                        <div class="flex items-center gap-2">
-                            <input type="range" min="1" max="10" value="5" step="1"
-                                   id="crit-claridad" oninput="actualizarCrit(this)"
-                                   class="w-28 accent-blue-600">
-                            <span id="val-claridad" class="text-sm font-black text-blue-600 w-6 text-center">5</span>
+                    <!-- BLOQUE B: Habilidades Conductuales (60%) -->
+                    <div class="bg-purple-50 border border-purple-100 rounded-2xl p-4">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <p class="text-[10px] font-black uppercase text-purple-400 tracking-widest">Bloque B</p>
+                                <p class="text-sm font-bold text-purple-800">Validación Conductual</p>
+                            </div>
+                            <span class="text-xs bg-purple-100 text-purple-600 font-bold px-2 py-1 rounded-full">60%</span>
                         </div>
-                    </div>
-
-                    <div class="criterio-row grid grid-cols-[1fr_auto] items-center gap-4 pb-3 border-b border-gray-100">
-                        <label class="text-sm font-semibold text-gray-700">🤝 Cultura / Fit</label>
-                        <div class="flex items-center gap-2">
-                            <input type="range" min="1" max="10" value="5" step="1"
-                                   id="crit-cultura" oninput="actualizarCrit(this)"
-                                   class="w-28 accent-blue-600">
-                            <span id="val-cultura" class="text-sm font-black text-blue-600 w-6 text-center">5</span>
-                        </div>
-                    </div>
-
-                    <div class="criterio-row grid grid-cols-[1fr_auto] items-center gap-4 pb-3 border-b border-gray-100">
-                        <label class="text-sm font-semibold text-gray-700">📦 Dominio del tema</label>
-                        <div class="flex items-center gap-2">
-                            <input type="range" min="1" max="10" value="5" step="1"
-                                   id="crit-dominio" oninput="actualizarCrit(this)"
-                                   class="w-28 accent-blue-600">
-                            <span id="val-dominio" class="text-sm font-black text-blue-600 w-6 text-center">5</span>
-                        </div>
-                    </div>
-
-                    <div class="criterio-row grid grid-cols-[1fr_auto] items-center gap-4 pb-3 border-b border-gray-100">
-                        <label class="text-sm font-semibold text-gray-700">⚡ Confianza</label>
-                        <div class="flex items-center gap-2">
-                            <input type="range" min="1" max="10" value="5" step="1"
-                                   id="crit-confianza" oninput="actualizarCrit(this)"
-                                   class="w-28 accent-blue-600">
-                            <span id="val-confianza" class="text-sm font-black text-blue-600 w-6 text-center">5</span>
+                        <div class="space-y-4">
+                            <!-- Criterio 3 -->
+                            <div class="criterio-row">
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="text-sm font-semibold text-gray-700">💬 Comunicación y claridad</label>
+                                    <span id="val-comunicacion" class="text-lg font-black text-purple-600 w-6 text-center">3</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] text-gray-400">1</span>
+                                    <input type="range" min="1" max="5" value="3" step="1"
+                                           id="crit-comunicacion" oninput="actualizarCrit(this)"
+                                           class="flex-1 accent-purple-600 h-2">
+                                    <span class="text-[10px] text-gray-400">5</span>
+                                </div>
+                                <div class="flex justify-between text-[10px] text-gray-300 mt-0.5 px-3">
+                                    <span>Muy débil</span><span>Excelente</span>
+                                </div>
+                            </div>
+                            <!-- Criterio 4 -->
+                            <div class="criterio-row">
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="text-sm font-semibold text-gray-700">🧠 Pensamiento estructurado</label>
+                                    <span id="val-pensamiento" class="text-lg font-black text-purple-600 w-6 text-center">3</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] text-gray-400">1</span>
+                                    <input type="range" min="1" max="5" value="3" step="1"
+                                           id="crit-pensamiento" oninput="actualizarCrit(this)"
+                                           class="flex-1 accent-purple-600 h-2">
+                                    <span class="text-[10px] text-gray-400">5</span>
+                                </div>
+                                <div class="flex justify-between text-[10px] text-gray-300 mt-0.5 px-3">
+                                    <span>Muy débil</span><span>Excelente</span>
+                                </div>
+                            </div>
+                            <!-- Criterio 5 -->
+                            <div class="criterio-row">
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="text-sm font-semibold text-gray-700">🤝 Alineación cultural</label>
+                                    <span id="val-cultura" class="text-lg font-black text-purple-600 w-6 text-center">3</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] text-gray-400">1</span>
+                                    <input type="range" min="1" max="5" value="3" step="1"
+                                           id="crit-cultura" oninput="actualizarCrit(this)"
+                                           class="flex-1 accent-purple-600 h-2">
+                                    <span class="text-[10px] text-gray-400">5</span>
+                                </div>
+                                <div class="flex justify-between text-[10px] text-gray-300 mt-0.5 px-3">
+                                    <span>Muy débil</span><span>Excelente</span>
+                                </div>
+                            </div>
+                            <!-- Criterio 6 -->
+                            <div class="criterio-row">
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="text-sm font-semibold text-gray-700">⚡ Seguridad y criterio profesional</label>
+                                    <span id="val-seguridad" class="text-lg font-black text-purple-600 w-6 text-center">3</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] text-gray-400">1</span>
+                                    <input type="range" min="1" max="5" value="3" step="1"
+                                           id="crit-seguridad" oninput="actualizarCrit(this)"
+                                           class="flex-1 accent-purple-600 h-2">
+                                    <span class="text-[10px] text-gray-400">5</span>
+                                </div>
+                                <div class="flex justify-between text-[10px] text-gray-300 mt-0.5 px-3">
+                                    <span>Muy débil</span><span>Excelente</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Comentario opcional -->
-                    <div class="pt-2">
-                        <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Comentario (opcional)</label>
-                        <textarea id="eval-comentario" rows="2" placeholder="Observaciones de la entrevista..."
+                    <div>
+                        <label class="text-xs font-bold uppercase text-gray-400 tracking-widest">Comentario del entrevistador (opcional)</label>
+                        <textarea id="eval-comentario" rows="2" placeholder="Observaciones específicas de la entrevista..."
                                   class="mt-1 w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm
-                                         focus:ring-2 focus:ring-blue-400 outline-none resize-none"></textarea>
+                                         focus:ring-2 focus:ring-purple-400 outline-none resize-none"></textarea>
                     </div>
 
                     <button onclick="guardarEvaluacion()"
@@ -726,6 +825,9 @@
         // Reset Fase 2 UI al abrir nuevo candidato
         document.getElementById('badge-evaluado').classList.add('hidden');
         document.getElementById('evolucion-scores').classList.add('hidden');
+        document.getElementById('obs-entrevista').classList.add('hidden');
+        document.getElementById('bloque-fortalezas-ev').classList.add('hidden');
+        document.getElementById('bloque-alertas-ev').classList.add('hidden');
         document.getElementById('estado-actual-badge').classList.add('hidden');
         document.querySelectorAll('.estado-btn').forEach(b => b.classList.remove('ring-2','ring-offset-1'));
         const btnEval = document.getElementById('btn-guardar-eval');
@@ -733,11 +835,11 @@
         btnEval.disabled = false;
         btnEval.className = btnEval.className.replace('bg-green-600','bg-purple-600').replace('hover:bg-green-700','hover:bg-purple-700');
         // Resetear sliders a 5
-        ['comunicacion','claridad','cultura','dominio','confianza'].forEach(k => {
+        ['dominio','resolucion','comunicacion','pensamiento','cultura','seguridad'].forEach(k => {
             const s = document.getElementById('crit-' + k);
             const v = document.getElementById('val-' + k);
-            if (s) s.value = 5;
-            if (v) v.textContent = 5;
+            if (s) s.value = 3;
+            if (v) v.textContent = 3;
         });
         document.getElementById('eval-comentario').value = '';
 
@@ -883,19 +985,81 @@
         document.getElementById('val-' + key).textContent = input.value;
     }
 
+
+    // Mapa de criterios → texto legible para fortalezas/alertas
+    const CRITERIO_LABELS = {
+        dominio:      'Dominio práctico del rol',
+        resolucion:   'Resolución de escenarios reales',
+        comunicacion: 'Comunicación y claridad',
+        pensamiento:  'Pensamiento estructurado',
+        cultura:      'Alineación cultural',
+        seguridad:    'Seguridad y criterio profesional',
+    };
+
+    function generarObsEntrevista(criterios) {
+        if (!criterios) return;
+
+        const fortalezas = [];
+        const alertas    = [];
+
+        for (const [key, val] of Object.entries(criterios)) {
+            const label = CRITERIO_LABELS[key] || key;
+            if (val >= 4) fortalezas.push(label);
+            else if (val <= 2) alertas.push(label);
+        }
+
+        const bloqF = document.getElementById('bloque-fortalezas-ev');
+        const bloqA = document.getElementById('bloque-alertas-ev');
+        const obsEl = document.getElementById('obs-entrevista');
+
+        // Fortalezas
+        if (fortalezas.length > 0) {
+            bloqF.classList.remove('hidden');
+            document.getElementById('lista-fortalezas-ev').innerHTML =
+                fortalezas.map(f =>
+                    `<li class="flex items-center gap-1.5 text-xs text-emerald-700 font-medium">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>${f}
+                    </li>`
+                ).join('');
+        } else {
+            bloqF.classList.add('hidden');
+        }
+
+        // Alertas
+        if (alertas.length > 0) {
+            bloqA.classList.remove('hidden');
+            document.getElementById('lista-alertas-ev').innerHTML =
+                alertas.map(a =>
+                    `<li class="flex items-center gap-1.5 text-xs text-amber-700 font-medium">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>${a}
+                    </li>`
+                ).join('');
+        } else {
+            bloqA.classList.add('hidden');
+        }
+
+        // Mostrar bloque si hay algo que mostrar
+        if (fortalezas.length > 0 || alertas.length > 0) {
+            obsEl.classList.remove('hidden');
+        } else {
+            obsEl.classList.add('hidden');
+        }
+    }
+
     // Precargar evaluación si ya existe
     function cargarEvaluacion(evaluacion, scoreInterview, scoreFinalCombinado, scorePreEval) {
         if (!evaluacion || !evaluacion.criterios) return;
 
         document.getElementById('badge-evaluado').classList.remove('hidden');
 
-        // Llenar sliders con valores guardados
+        // Llenar sliders con valores guardados (6 criterios, escala 1-5)
         const mapa = {
-            comunicacion: evaluacion.criterios.comunicacion,
-            claridad:     evaluacion.criterios.claridad,
-            cultura:      evaluacion.criterios.cultura,
             dominio:      evaluacion.criterios.dominio,
-            confianza:    evaluacion.criterios.confianza
+            resolucion:   evaluacion.criterios.resolucion,
+            comunicacion: evaluacion.criterios.comunicacion,
+            pensamiento:  evaluacion.criterios.pensamiento,
+            cultura:      evaluacion.criterios.cultura,
+            seguridad:    evaluacion.criterios.seguridad,
         };
         for (const [key, val] of Object.entries(mapa)) {
             if (val !== undefined) {
@@ -913,9 +1077,12 @@
         if (scoreInterview !== null && scoreFinalCombinado !== null) {
             document.getElementById('evolucion-scores').classList.remove('hidden');
             document.getElementById('ev-score-pre').textContent      = scorePreEval + '%';
-            document.getElementById('ev-score-interview').textContent = scoreInterview + '%';
+            document.getElementById('ev-score-interview').textContent = (scoreInterview / 20).toFixed(1) + ' / 5';
             document.getElementById('ev-score-final').textContent     = scoreFinalCombinado + '%';
         }
+
+        // Generar fortalezas/alertas basadas en criterios
+        generarObsEntrevista(evaluacion.criterios);
     }
 
     // Cargar estado visual del candidato
@@ -945,11 +1112,14 @@
         if (!candidatoIdActual) return;
 
         const criterios = {
-            comunicacion: parseInt(document.getElementById('crit-comunicacion').value),
-            claridad:     parseInt(document.getElementById('crit-claridad').value),
-            cultura:      parseInt(document.getElementById('crit-cultura').value),
+            // Bloque A: Competencia Técnica (40%)
             dominio:      parseInt(document.getElementById('crit-dominio').value),
-            confianza:    parseInt(document.getElementById('crit-confianza').value),
+            resolucion:   parseInt(document.getElementById('crit-resolucion').value),
+            // Bloque B: Conductual (60%)
+            comunicacion: parseInt(document.getElementById('crit-comunicacion').value),
+            pensamiento:  parseInt(document.getElementById('crit-pensamiento').value),
+            cultura:      parseInt(document.getElementById('crit-cultura').value),
+            seguridad:    parseInt(document.getElementById('crit-seguridad').value),
         };
         const comentario = document.getElementById('eval-comentario').value;
 
@@ -971,9 +1141,11 @@
                 const scorePre   = parseInt(scorePreEl);
                 document.getElementById('evolucion-scores').classList.remove('hidden');
                 document.getElementById('ev-score-pre').textContent       = scorePre + '%';
-                document.getElementById('ev-score-interview').textContent  = data.score_interview + '%';
+                document.getElementById('ev-score-interview').textContent  = (data.score_interview / 20).toFixed(1) + ' / 5';
                 document.getElementById('ev-score-final').textContent      = data.score_final_combinado + '%';
 
+                // Generar fortalezas/alertas con los criterios recién guardados
+                generarObsEntrevista(criterios);
                 document.getElementById('badge-evaluado').classList.remove('hidden');
                 btn.textContent = '✓ Evaluación Guardada';
                 btn.classList.replace('bg-purple-600', 'bg-green-600');
