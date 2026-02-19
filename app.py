@@ -8,21 +8,14 @@ from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, render_template_string
 from supabase import create_client, Client
 
-# ═══════════════════════════════════════════════════════════════════════════
-# ✅ IMPORTS DE BLUEPRINTS (sin registrar aún)
-# ═══════════════════════════════════════════════════════════════════════════
 from calculadora.routes import calculadora_bp
 from calculadora.epayco_checkout import epayco_bp
 
-# Configurar logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 load_dotenv()
 
-# ═══════════════════════════════════════════════════════════════════════════
-# ✅ CREAR LA APP (AHORA SÍ)
-# ═══════════════════════════════════════════════════════════════════════════
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'una-clave-muy-secreta')
 
@@ -31,15 +24,11 @@ app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = 86400
 
-# ═══════════════════════════════════════════════════════════════════════════
-# ✅ REGISTRAR BLUEPRINTS (DESPUÉS de crear app)
-# ═══════════════════════════════════════════════════════════════════════════
 app.register_blueprint(calculadora_bp, url_prefix='/calculadora')
 app.register_blueprint(epayco_bp, url_prefix='/epayco')
 logger.info("✅ Módulo de calculadora registrado en /calculadora")
 logger.info("✅ Módulo de ePayco registrado en /epayco")
 
-# Cliente Supabase
 supabase: Client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_KEY'))
 
 # ============================================
@@ -47,9 +36,6 @@ supabase: Client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_
 # ============================================
 
 def generar_resumen_profesional(cargo, score_final, detalle, hubo_ko, motivo_ko, metricas_radar):
-    """Genera un análisis estructurado integrando métricas para el Dashboard."""
-    
-    # 1. Definición del Resumen Narrativo
     if hubo_ko:
         resumen = f"Candidato descartado automáticamente. {motivo_ko}. No cumple con requisitos críticos (Knock-out) para el cargo de {cargo}."
     elif score_final >= 75:
@@ -58,37 +44,29 @@ def generar_resumen_profesional(cargo, score_final, detalle, hubo_ko, motivo_ko,
         resumen = f"Candidato con potencial moderado para {cargo}. Posee las bases requeridas pero presenta brechas en competencias clave que deben ser validadas."
     else:
         resumen = f"Candidato por debajo del perfil mínimo esperado para {cargo}. Los resultados sugieren falta de alineación con los requisitos del puesto."
-    
-    # 2. Identificación de Fortalezas (Basadas en Habilidades)
+
     fortalezas = []
-    # Priorizamos mostrar las habilidades donde sacó puntaje máximo
     for item in detalle:
         if item.get('puntos', 0) >= item.get('peso', 1) and item.get('peso', 0) > 0:
-            # Usamos la Habilidad asociada si existe, si no, una versión corta de la pregunta
             nombre_hito = item.get('habilidad') if item.get('habilidad') else item['pregunta'][:40]
             if f"✓ {nombre_hito}" not in fortalezas:
                 fortalezas.append(f"✓ {nombre_hito}")
-    
     if not fortalezas:
         fortalezas = ["Evaluación estandarizada completada"]
-    fortalezas = fortalezas[:5] # Máximo 5 para no saturar la UI
-    
-    # 3. Identificación de Alertas o Riesgos
+    fortalezas = fortalezas[:5]
+
     riesgos = []
     if hubo_ko:
         riesgos.append(f"⚠ KO: {motivo_ko}")
-    
     for item in detalle:
         if item.get('puntos', 0) == 0 and item.get('peso', 0) > 0:
             nombre_falla = item.get('habilidad') if item.get('habilidad') else item['pregunta'][:40]
             if f"✗ {nombre_falla}" not in riesgos:
                 riesgos.append(f"✗ {nombre_falla}")
-    
     if not riesgos:
         riesgos = ["Sin riesgos críticos detectados"] if score_final >= 75 else ["Requiere validación de competencias blandas"]
     riesgos = riesgos[:4]
-    
-    # 4. Recomendación Final de Acción
+
     if hubo_ko:
         recomendacion = "❌ No continuar proceso"
     elif score_final >= 85:
@@ -99,20 +77,15 @@ def generar_resumen_profesional(cargo, score_final, detalle, hubo_ko, motivo_ko,
         recomendacion = "⚠ Entrevista técnica de validación"
     else:
         recomendacion = "❌ Descartar candidato"
-    
-    # 5. Construcción del Objeto Final
-    # Importante: Incluimos 'metricas_radar' al final del texto para que el JS lo encuentre
+
     resultado = {
         "resumen": resumen,
         "fortalezas": fortalezas,
         "riesgos": riesgos,
         "recomendacion": recomendacion,
-        "radar": metricas_radar, # <--- Esto es lo que lee tu gráfica
+        "radar": metricas_radar,
         "metodo": "Motor de Competencias Sales AI"
     }
-    
-    # Retornamos el JSON con un marcador para las métricas si es necesario
-    # o simplemente el JSON que el frontend ya sabe procesar.
     return json.dumps(resultado, ensure_ascii=False)
 
 # ============================================
@@ -121,22 +94,18 @@ def generar_resumen_profesional(cargo, score_final, detalle, hubo_ko, motivo_ko,
 
 @app.route('/')
 def home():
-    """Página principal (landing)"""
     return render_template('index.html')
 
 @app.route('/como-funciona')
 def como_funciona():
-    """Página cómo funciona"""
     return render_template('como-funciona.html')
 
 @app.route('/pricing')
 def pricing():
-    """Página de precios"""
     return render_template('pricing.html')
 
 @app.route('/contacto')
 def contacto():
-    """Página de contacto"""
     return render_template('contacto.html')
 
 # ============================================
@@ -148,29 +117,23 @@ def index():
     id_seleccionada = request.args.get('vacante')
     if not id_seleccionada:
         return "<h1>Link incompleto</h1>", 400
-
     try:
         result = supabase.table('vacantes').select('*').eq('id_vacante_publico', id_seleccionada).execute()
-        
         if not result.data:
             return "<h1>Vacante no encontrada</h1>", 404
-        
         v = result.data[0]
         preguntas_finales = v.get('preguntas', [])
-        
         if isinstance(preguntas_finales, dict) and 'preguntas' in preguntas_finales:
             preguntas_finales = preguntas_finales['preguntas']
-
         vacantes_dict = {
             str(v['id_vacante_publico']): {
                 "cargo": v['cargo'],
                 "preguntas": preguntas_finales
             }
         }
-
-        return render_template('encuesta.html', 
-                               vacantes=[v], 
-                               vacantes_dict=vacantes_dict, 
+        return render_template('encuesta.html',
+                               vacantes=[v],
+                               vacantes_dict=vacantes_dict,
                                id_seleccionada=id_seleccionada)
     except Exception as e:
         logger.error(f"Error en encuesta: {e}")
@@ -182,82 +145,60 @@ def procesar():
     id_publico = request.form.get('id_vacante')
     nombre = request.form.get('nombre')
     cc = request.form.get('cc')
-
     try:
         result = supabase.table('vacantes').select('*').eq('id_vacante_publico', id_publico).execute()
-        
         if not result.data:
             return "Vacante no encontrada", 404
-        
         v = result.data[0]
-        
         ids_q = request.form.getlist('preguntas_custom[]')
         vals_r = request.form.getlist('respuestas_custom[]')
-        
         logger.info(f"🎯 Procesando candidato: {nombre} para cargo: {v['cargo']}")
-        
-        # 1. PREPARACIÓN DE DICCIONARIOS PARA DIMENSIONES (Radar y Categorías)
-        # Inicializamos los acumuladores para las 4 categorías base del radar
+
         scores_categorias = {"Técnica": 0, "Experiencia": 0, "Blandas": 0, "Ajuste": 0}
         max_categorias = {"Técnica": 0, "Experiencia": 0, "Blandas": 0, "Ajuste": 0}
-        
-        # Diccionario dinámico para Habilidades Críticas (Fase 2)
         scores_habilidades = {}
         max_habilidades = {}
-
         peso_total_posible = 0
         puntos_brutos_acumulados = 0
         hubo_ko = False
         motivo_descarte = ""
         detalle = []
 
-        # 2. PROCESAMIENTO DE RESPUESTAS
         for i in range(len(ids_q)):
             p_orig = next((p for p in v['preguntas'] if p['id'] == ids_q[i]), None)
-            if not p_orig: 
+            if not p_orig:
                 continue
-
             respuesta_user = vals_r[i].strip()
             peso_pregunta = float(p_orig.get('peso', 0))
             tipo = p_orig.get('tipo')
             es_ko = p_orig.get('knockout', False)
             reglas = p_orig.get('reglas', {})
             ideal = str(reglas.get('ideal', '')).strip()
-            
-            # Nuevos campos de la Fase 2
             cat_nombre = p_orig.get('categoria', 'Ajuste')
             hab_nombre = p_orig.get('habilidad', 'General')
 
-            # Inicializar acumuladores de habilidad si no existen
             if hab_nombre not in scores_habilidades:
                 scores_habilidades[hab_nombre] = 0
                 max_habilidades[hab_nombre] = 0
 
             puntos_obtenidos = 0
-            
             if tipo in ['si_no', 'multiple', 'escala_1_5', 'escala_1_10']:
-                # Sumamos al peso total posible solo si es calificable
                 peso_total_posible += peso_pregunta
-                
-                # Sumamos a los máximos de categoría y habilidad para el cálculo porcentual
-                if cat_nombre in max_categorias: max_categorias[cat_nombre] += peso_pregunta
+                if cat_nombre in max_categorias:
+                    max_categorias[cat_nombre] += peso_pregunta
                 max_habilidades[hab_nombre] += peso_pregunta
-
-                # Lógica de calificación
                 if respuesta_user.lower() == ideal.lower():
                     puntos_obtenidos = peso_pregunta
-                    # Acumulamos en las dimensiones
-                    if cat_nombre in scores_categorias: scores_categorias[cat_nombre] += peso_pregunta
+                    if cat_nombre in scores_categorias:
+                        scores_categorias[cat_nombre] += peso_pregunta
                     scores_habilidades[hab_nombre] += peso_pregunta
                 else:
                     if es_ko:
                         hubo_ko = True
                         motivo_descarte = f"No cumple: {p_orig['texto']}"
-            
             elif tipo == 'abierta':
-                # Las abiertas no suelen sumar al score numérico directo a menos que uses keywords
                 logger.info(f"📝 Pregunta abierta {p_orig['id']}: Guardada para análisis IA")
-            
+
             puntos_brutos_acumulados += puntos_obtenidos
             detalle.append({
                 "pregunta": p_orig['texto'],
@@ -268,13 +209,10 @@ def procesar():
                 "categoria": cat_nombre,
                 "habilidad": hab_nombre
             })
-        
-        # 3. CÁLCULO DE SCORES FINALES
+
         score_final = (puntos_brutos_acumulados / peso_total_posible * 100) if peso_total_posible > 0 else 0
         score_final = round(score_final, 1)
 
-        # 4. GENERACIÓN DEL STRING DE MÉTRICAS (Para tu gráfica de Radar actual)
-        # Formato: T:XX% E:XX% B:XX% A:XX%
         def calc_pct(obtenido, maximo):
             return round((obtenido / maximo * 100)) if maximo > 0 else 0
 
@@ -285,18 +223,15 @@ def procesar():
             f"A:{calc_pct(scores_categorias['Ajuste'], max_categorias['Ajuste'])}%"
         )
 
-        # 5. ANÁLISIS IA Y VEREDICTO
-        # Pasamos las métricas calculadas a tu función de resumen
         analisis_ia_texto = generar_resumen_profesional(
             cargo=v['cargo'],
             score_final=score_final,
             detalle=detalle,
             hubo_ko=hubo_ko,
             motivo_ko=motivo_descarte,
-            metricas_radar=metricas_radar # Enviamos el string formateado
+            metricas_radar=metricas_radar
         )
 
-        # Lógica de Veredicto (Tu lógica original se mantiene)
         if hubo_ko:
             veredicto, tag = "DESCARTADO (KO)", "🔴"
         elif score_final >= 75:
@@ -306,7 +241,6 @@ def procesar():
         else:
             veredicto, tag = "NO APTO", "🔴"
 
-        # 6. GUARDADO EN SUPABASE
         nueva_entrevista = {
             "id": str(uuid.uuid4()),
             "vacante_id": v['id'],
@@ -320,64 +254,50 @@ def procesar():
             "respuestas_detalle": detalle,
             "analisis_ia": analisis_ia_texto,
             "fecha": datetime.utcnow().isoformat(),
-            # Guardamos el desglose de habilidades para el futuro comparador
             "scores_habilidades": {h: calc_pct(scores_habilidades[h], max_habilidades[h]) for h in scores_habilidades}
         }
-        
         supabase.table('entrevistas').insert(nueva_entrevista).execute()
-        
         return render_template('gracias.html')
-        
+
     except Exception as e:
         logger.error(f"❌ Error en procesar: {e}")
         return f"Error: {e}", 500
-    
+
+
 @app.route('/candidatos')
-def candidatos(): # Manteniendo el nombre de tu función original
+def candidatos():
     if not session.get('logeado'):
         return redirect(url_for('login'))
-    
     try:
-        # Traemos las entrevistas de Supabase
         result = supabase.table('entrevistas').select('*').order('score', desc=True).execute()
         entrevistas = result.data
-
-        # PROCESAMIENTO CRÍTICO: 
-        # Convertimos el string JSON de 'analisis_ia' en un objeto Python
-        # para que el HTML pueda acceder a fortalezas, riesgos y radar.
         for e in entrevistas:
             if e.get('analisis_ia'):
                 try:
-                    # Cargamos el JSON que generamos con generar_resumen_profesional
                     e['analisis_ia_obj'] = json.loads(e['analisis_ia'])
                 except Exception as ex:
                     logger.error(f"Error parseando analisis_ia: {ex}")
                     e['analisis_ia_obj'] = None
-
         return render_template('candidatos.html', candidatos=entrevistas)
-        
     except Exception as e:
         logger.error(f"❌ Error en ruta candidatos: {e}")
         return f"Error: {e}", 500
-    
+
+
 @app.route('/actualizar_estado', methods=['POST'])
 def actualizar_estado():
     try:
         data = request.json
         candidato_id = data.get('id')
         nuevo_estado = data.get('estado')
-
         if not candidato_id or not nuevo_estado:
             return jsonify({"status": "error", "message": "Datos incompletos"}), 400
-
         supabase.table('entrevistas').update({'estado': nuevo_estado}).eq('id', candidato_id).execute()
-
         print(f"✅ Candidato {candidato_id} actualizado a: {nuevo_estado}")
         return jsonify({"status": "success"}), 200
-
     except Exception as e:
         print(f"❌ Error en actualización: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500   
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 # ============================================
 # DASHBOARD
@@ -385,31 +305,31 @@ def actualizar_estado():
 
 @app.route('/dashboard')
 def dashboard():
-    if not session.get('logeado'): 
+    if not session.get('logeado'):
         return redirect(url_for('login'))
-    
+
     user_id = session.get('user_id')
     emp_id_str = session.get('empresa_id')
-    
+
     try:
         usuario_result = supabase.table('usuarios_empresa').select('*').eq('id', user_id).execute()
         if not usuario_result.data:
             session.clear()
             return redirect(url_for('login'))
         usuario = usuario_result.data[0]
-        
+
         empresa_result = supabase.table('empresas').select('*').eq('id', emp_id_str).execute()
         if not empresa_result.data:
             session.clear()
             return redirect(url_for('login'))
         empresa = empresa_result.data[0]
-        
+
         vacantes_result = supabase.table('vacantes').select('*').eq('empresa_id', emp_id_str).execute()
         vacantes = vacantes_result.data
-        
+
         entrevistas_result = supabase.table('entrevistas').select('*').eq('empresa_id', emp_id_str).order('fecha', desc=True).execute()
         resultados = entrevistas_result.data
-        
+
         candidatos_cards = []
         for e in resultados:
             v_rel = next((v for v in vacantes if v['id'] == e['vacante_id']), None)
@@ -425,12 +345,12 @@ def dashboard():
                 "respuestas_detalle": e.get('respuestas_detalle')
             })
 
-        return render_template("dashboard.html", 
+        return render_template("dashboard.html",
                                usuario=usuario,
                                empresa=empresa,
-                               entrevistas=candidatos_cards, 
-                               vacantes=vacantes, 
-                               total_c=len(resultados), 
+                               entrevistas=candidatos_cards,
+                               vacantes=vacantes,
+                               total_c=len(resultados),
                                total_v=len(vacantes),
                                nombre_empresa=empresa['nombre_empresa'])
     except Exception as e:
@@ -444,11 +364,9 @@ def dashboard():
 
 @app.route('/gestionar_vacantes')
 def gestionar_vacantes():
-    if not session.get('logeado'): 
+    if not session.get('logeado'):
         return redirect(url_for('login'))
-    
     emp_id_str = session.get('empresa_id')
-    
     try:
         vacantes_result = supabase.table('vacantes').select('*').eq('empresa_id', emp_id_str).execute()
         vacantes = vacantes_result.data
@@ -457,18 +375,17 @@ def gestionar_vacantes():
         logger.error(f"Error: {e}")
         return f"Error: {e}", 500
 
+
 @app.route('/nueva_vacante', methods=['GET', 'POST'])
 def nueva_vacante():
     if not session.get('logeado'):
         return redirect(url_for('login'))
 
     if request.method == 'POST':
-        # 1. Datos básicos y de sesión
         cargo = request.form.get('cargo')
         emp_id_str = session.get('empresa_id')
         id_publico = f"JOB-{int(time.time())}"
-        
-        # 2. Captura de arrays del formulario
+
         textos = request.form.getlist('pregunta[]')
         tipos = request.form.getlist('tipo[]')
         pesos = request.form.getlist('peso[]')
@@ -476,25 +393,18 @@ def nueva_vacante():
         habilidades_asociadas = request.form.getlist('habilidad_asociada[]')
         categorias = request.form.getlist('categoria[]')
         kos = request.form.getlist('ko[]')
-        
-        # Recuperamos la lógica de opciones múltiples (las 4 opciones por pregunta)
         opciones_todas = request.form.getlist('p_opciones_lista[]')
 
-        # 3. Procesamiento de Habilidades Críticas
         hab_criticas_raw = request.form.get('habilidades_seleccionadas', '')
         hab_criticas = [h.strip() for h in hab_criticas_raw.split(',') if h.strip()]
 
         nuevas_preguntas = []
-        opcion_idx = 0 # Contador para las opciones múltiples
-        
+        opcion_idx = 0
         for i in range(len(textos)):
             t = tipos[i]
             regla_dict = {}
-            
-            # Lógica de reglas REINTEGRADA Y MEJORADA
             if t == 'multiple':
-                # Extraemos las 4 opciones correspondientes a esta pregunta
-                opciones_pregunta = opciones_todas[opcion_idx : opcion_idx + 4]
+                opciones_pregunta = opciones_todas[opcion_idx: opcion_idx + 4]
                 regla_dict = {
                     "opciones": [o for o in opciones_pregunta if o],
                     "ideal": reglas[i]
@@ -506,7 +416,6 @@ def nueva_vacante():
             else:
                 regla_dict = {"ideal": reglas[i]}
 
-            # Construcción del objeto pregunta
             nuevas_preguntas.append({
                 "id": f"q{i+1}",
                 "texto": textos[i],
@@ -516,10 +425,9 @@ def nueva_vacante():
                 "categoria": categorias[i] if i < len(categorias) else "General",
                 "habilidad": habilidades_asociadas[i] if i < len(habilidades_asociadas) else "General",
                 "knockout": str(i) in kos,
-                "texto_corto": textos[i][:30] + "..." 
+                "texto_corto": textos[i][:30] + "..."
             })
 
-        # 4. Objeto final para Supabase
         nueva_vacante_data = {
             "id": str(uuid.uuid4()),
             "cargo": cargo,
@@ -530,7 +438,6 @@ def nueva_vacante():
             "activa": True,
             "created_at": datetime.utcnow().isoformat()
         }
-        
         try:
             supabase.table('vacantes').insert(nueva_vacante_data).execute()
             return redirect(url_for('gestionar_vacantes'))
@@ -540,44 +447,37 @@ def nueva_vacante():
 
     return render_template('nueva_vacante.html')
 
+
 @app.route('/vacante_lista/<id_publico>')
 def vacante_lista(id_publico):
-    if not session.get('logeado'): 
+    if not session.get('logeado'):
         return redirect(url_for('login'))
-    
     try:
         result = supabase.table('vacantes').select('*').eq('id_vacante_publico', id_publico).execute()
         if not result.data:
             return "No encontrada", 404
-        
         v = result.data[0]
         link = f"{request.url_root}encuesta?vacante={id_publico}"
-        
         return render_template('vacante_lista.html', vacante=v, link=link)
     except Exception as e:
         return f"Error: {e}", 500
 
+
 @app.route('/editar_vacante/<id_publico>', methods=['GET', 'POST'])
 def editar_vacante(id_publico):
-    """Editar una vacante existente"""
-    if not session.get('logeado'): 
+    if not session.get('logeado'):
         return redirect(url_for('login'))
-    
     try:
         result = supabase.table('vacantes').select('*').eq('id_vacante_publico', id_publico).execute()
-        
         if not result.data:
             return "Vacante no encontrada", 404
-        
         v = result.data[0]
-        
         emp_id_str = session.get('empresa_id')
         if v['empresa_id'] != emp_id_str:
             return "No autorizado", 403
 
         if request.method == 'POST':
             cargo = request.form.get('cargo')
-            
             ids = request.form.getlist('p_id[]')
             textos = request.form.getlist('p_texto[]')
             tipos = request.form.getlist('p_tipo[]')
@@ -588,14 +488,12 @@ def editar_vacante(id_publico):
             nuevas_preguntas = []
             for i in range(len(textos)):
                 regla_obj = {}
-                
                 if tipos[i] == "si_no":
                     regla_obj = {"ideal": reglas[i]}
                 elif tipos[i] == "multiple":
                     regla_obj = {"ideal": reglas[i]}
                 else:
                     regla_obj = {"palabras_clave": reglas[i]}
-                
                 nuevas_preguntas.append({
                     "id": ids[i] if i < len(ids) else f"q{i+1}",
                     "texto": textos[i],
@@ -604,33 +502,32 @@ def editar_vacante(id_publico):
                     "knockout": str(i) in kos,
                     "reglas": regla_obj
                 })
-            
+
             supabase.table('vacantes').update({
                 "cargo": cargo,
                 "preguntas": nuevas_preguntas
             }).eq('id_vacante_publico', id_publico).execute()
-            
             logger.info(f"✅ Vacante actualizada: {id_publico}")
             return redirect(url_for('gestionar_vacantes'))
 
         return render_template('editar_vacante.html', vacante=v)
-        
     except Exception as e:
         logger.error(f"Error editando vacante: {e}")
         return f"Error: {e}", 500
 
+
 @app.route('/marketplace')
 def marketplace():
-    if not session.get('logeado'): 
+    if not session.get('logeado'):
         return redirect(url_for('login'))
     return render_template('marketplace.html')
 
+
 @app.route('/clonar_plantilla/<plantilla_id>')
 def clonar_plantilla(plantilla_id):
-    """Clonar una plantilla del marketplace"""
-    if not session.get('logeado'): 
+    if not session.get('logeado'):
         return redirect(url_for('login'))
-    
+
     biblioteca = {
         'operativo_express': {
             'cargo': 'Filtro Express (Operativo)',
@@ -674,7 +571,6 @@ def clonar_plantilla(plantilla_id):
 
     emp_id_str = session.get('empresa_id')
     id_publico = f"JOB-{plantilla_id.upper()[:3]}-{int(time.time())}"
-
     nueva_vacante = {
         "id": str(uuid.uuid4()),
         "cargo": datos['cargo'],
@@ -684,7 +580,6 @@ def clonar_plantilla(plantilla_id):
         "activa": True,
         "created_at": datetime.utcnow().isoformat()
     }
-    
     try:
         supabase.table('vacantes').insert(nueva_vacante).execute()
         logger.info(f"✅ Plantilla clonada: {id_publico}")
@@ -694,7 +589,7 @@ def clonar_plantilla(plantilla_id):
         return f"Error: {e}", 500
 
 # ============================================
-# AUTH - LOGIN CON EMAIL/PASSWORD Y GOOGLE OAUTH
+# AUTH
 # ============================================
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -702,53 +597,41 @@ def login():
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
-        
         try:
-            res = supabase.auth.sign_in_with_password({
-                "email": email, 
-                "password": password
-            })
-            
+            res = supabase.auth.sign_in_with_password({"email": email, "password": password})
             if res.user:
                 usuario_result = supabase.table('usuarios_empresa').select('*').eq('id', res.user.id).execute()
-                
                 if usuario_result.data:
                     u_db = usuario_result.data[0]
-                    
                     empresa_result = supabase.table('empresas').select('*').eq('id', u_db['empresa_id']).execute()
                     nombre_empresa = empresa_result.data[0]['nombre_empresa'] if empresa_result.data else "Mi Empresa"
-                    
                     session.update({
                         'logeado': True,
                         'user_id': res.user.id,
                         'empresa_id': str(u_db['empresa_id']),
                         'nombre_empresa': nombre_empresa
                     })
-                    
                     logger.info(f"✅ Login: {email}")
                     return redirect(url_for('dashboard'))
                 else:
-                    return render_template('login.html', 
-                                         error="Usuario no vinculado.",
-                                         supabase_url=os.getenv('SUPABASE_URL'),
-                                         supabase_key=os.getenv('SUPABASE_KEY'))
-                    
-        except Exception as e: 
+                    return render_template('login.html',
+                                           error="Usuario no vinculado.",
+                                           supabase_url=os.getenv('SUPABASE_URL'),
+                                           supabase_key=os.getenv('SUPABASE_KEY'))
+        except Exception as e:
             logger.error(f"❌ Login error: {e}")
-            return render_template('login.html', 
-                                 error="Credenciales incorrectas.",
-                                 supabase_url=os.getenv('SUPABASE_URL'),
-                                 supabase_key=os.getenv('SUPABASE_KEY'))
-
-    return render_template('login.html', 
-                         error=None,
-                         supabase_url=os.getenv('SUPABASE_URL'),
-                         supabase_key=os.getenv('SUPABASE_KEY'))
+            return render_template('login.html',
+                                   error="Credenciales incorrectas.",
+                                   supabase_url=os.getenv('SUPABASE_URL'),
+                                   supabase_key=os.getenv('SUPABASE_KEY'))
+    return render_template('login.html',
+                           error=None,
+                           supabase_url=os.getenv('SUPABASE_URL'),
+                           supabase_key=os.getenv('SUPABASE_KEY'))
 
 
 @app.route('/auth/google/callback')
 def google_callback():
-    """Maneja el callback de Google OAuth usando JavaScript"""
     try:
         callback_html = '''
         <!DOCTYPE html>
@@ -757,31 +640,10 @@ def google_callback():
             <title>Autenticando...</title>
             <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
             <style>
-                body {
-                    font-family: 'Inter', sans-serif;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    height: 100vh;
-                    margin: 0;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                }
-                .loader {
-                    text-align: center;
-                    color: white;
-                }
-                .spinner {
-                    border: 4px solid rgba(255,255,255,0.3);
-                    border-radius: 50%;
-                    border-top-color: white;
-                    width: 50px;
-                    height: 50px;
-                    animation: spin 1s linear infinite;
-                    margin: 0 auto 20px;
-                }
-                @keyframes spin {
-                    to { transform: rotate(360deg); }
-                }
+                body { font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+                .loader { text-align: center; color: white; }
+                .spinner { border: 4px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+                @keyframes spin { to { transform: rotate(360deg); } }
             </style>
         </head>
         <body>
@@ -790,31 +652,18 @@ def google_callback():
                 <h2>Iniciando sesión...</h2>
                 <p>Espera un momento</p>
             </div>
-            
-    
-
             <script>
                 const SUPABASE_URL = '{{ supabase_url }}';
                 const SUPABASE_KEY = '{{ supabase_key }}';
-                
-                // CAMBIO AQUÍ: Cambia 'const supabase' por 'const supabaseClient'
                 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-                
                 async function handleCallback() {
                     try {
-                        // CAMBIO AQUÍ: Usa 'supabaseClient'
                         const { data: { session }, error } = await supabaseClient.auth.getSession();
-                        
                         if (error) throw error;
-                        
                         if (session && session.user) {
-                            console.log('Usuario autenticado:', session.user.email);
-                            
                             const response = await fetch('/auth/google/sync', {
                                 method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
+                                headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
                                     user_id: session.user.id,
                                     email: session.user.email,
@@ -822,35 +671,20 @@ def google_callback():
                                     access_token: session.access_token
                                 })
                             });
-                            
                             const result = await response.json();
-                            
-                            if (result.success) {
-                                window.location.href = '/dashboard';
-                            } else {
-                                alert('Error al sincronizar usuario: ' + result.error);
-                                window.location.href = '/login';
-                            }
-                        } else {
-                            throw new Error('No se pudo obtener la sesión');
-                        }
-                    } catch (error) {
-                        console.error('Error en callback:', error);
-                        alert('Error al iniciar sesión: ' + error.message);
-                        window.location.href = '/login';
-                    }
+                            if (result.success) { window.location.href = '/dashboard'; }
+                            else { alert('Error: ' + result.error); window.location.href = '/login'; }
+                        } else { throw new Error('No se pudo obtener la sesión'); }
+                    } catch (error) { alert('Error: ' + error.message); window.location.href = '/login'; }
                 }
-                
                 handleCallback();
             </script>
         </body>
         </html>
         '''
-        
         return render_template_string(callback_html,
-                                    supabase_url=os.getenv('SUPABASE_URL'),
-                                    supabase_key=os.getenv('SUPABASE_KEY'))
-        
+                                      supabase_url=os.getenv('SUPABASE_URL'),
+                                      supabase_key=os.getenv('SUPABASE_KEY'))
     except Exception as e:
         logger.error(f"❌ Error en callback: {e}")
         return redirect(url_for('login'))
@@ -858,24 +692,18 @@ def google_callback():
 
 @app.route('/auth/google/sync', methods=['POST'])
 def google_sync():
-    """Crea o actualiza el usuario en la base de datos después de autenticarse con Google"""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
         email = data.get('email')
         full_name = data.get('full_name')
-        
         if not user_id or not email:
             return jsonify({"success": False, "error": "Datos incompletos"}), 400
-        
+
         usuario_result = supabase.table('usuarios_empresa').select('*').eq('id', user_id).execute()
-        
         if not usuario_result.data:
-            logger.info(f"🆕 Creando nuevo usuario Google: {email}")
-            
             empresa_uuid = str(uuid.uuid4())
             nombre_base = email.split('@')[0].replace('.', ' ').title()
-            
             nueva_empresa = {
                 "id": empresa_uuid,
                 "nombre_empresa": f"{nombre_base} Company",
@@ -885,7 +713,6 @@ def google_sync():
                 "created_at": datetime.utcnow().isoformat()
             }
             supabase.table('empresas').insert(nueva_empresa).execute()
-            
             nuevo_usuario = {
                 "id": user_id,
                 "email": email,
@@ -894,41 +721,35 @@ def google_sync():
                 "rol_en_empresa": 'admin'
             }
             supabase.table('usuarios_empresa').insert(nuevo_usuario).execute()
-            
             id_v_publico = f"JOB-{int(time.time())}"
-            preguntas_base = [
-                {"id": "q1", "texto": "¿Tienes experiencia previa en ventas?", "tipo": "si_no", "peso": 20, "knockout": True, "reglas": {"ideal": "si"}},
-                {"id": "q2", "texto": "¿Cuentas con vehículo propio?", "tipo": "si_no", "peso": 15, "knockout": False, "reglas": {"ideal": "si"}},
-                {"id": "q3", "texto": "Describe tu logro comercial", "tipo": "abierta", "peso": 0, "knockout": False, "reglas": {}},
-            ]
             primera_vacante = {
                 "id": str(uuid.uuid4()),
                 "cargo": "Asesor Comercial",
                 "id_vacante_publico": id_v_publico,
                 "empresa_id": empresa_uuid,
-                "preguntas": preguntas_base,
+                "preguntas": [
+                    {"id": "q1", "texto": "¿Tienes experiencia previa en ventas?", "tipo": "si_no", "peso": 20, "knockout": True, "reglas": {"ideal": "si"}},
+                    {"id": "q2", "texto": "¿Cuentas con vehículo propio?", "tipo": "si_no", "peso": 15, "knockout": False, "reglas": {"ideal": "si"}},
+                    {"id": "q3", "texto": "Describe tu logro comercial", "tipo": "abierta", "peso": 0, "knockout": False, "reglas": {}},
+                ],
                 "activa": True,
                 "created_at": datetime.utcnow().isoformat()
             }
             supabase.table('vacantes').insert(primera_vacante).execute()
-            
             u_db = {"empresa_id": empresa_uuid, "nombre_completo": full_name}
         else:
             u_db = usuario_result.data[0]
-        
+
         empresa_result = supabase.table('empresas').select('*').eq('id', u_db['empresa_id']).execute()
         nombre_empresa = empresa_result.data[0]['nombre_empresa'] if empresa_result.data else "Mi Empresa"
-        
         session.update({
             'logeado': True,
             'user_id': user_id,
             'empresa_id': str(u_db['empresa_id']),
             'nombre_empresa': nombre_empresa
         })
-        
         logger.info(f"✅ Usuario Google sincronizado: {email}")
         return jsonify({"success": True})
-        
     except Exception as e:
         logger.error(f"❌ Error sincronizando Google: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
@@ -945,14 +766,11 @@ def registro():
         industria = request.form.get('industria')
         tamano_empresa = request.form.get('tamano') or "1-10"
         cargo_inicial = request.form.get('cargo_inicial')
-
         try:
             auth_res = supabase.auth.sign_up({"email": email, "password": password})
-            
             if auth_res.user:
                 user_id = auth_res.user.id
                 empresa_uuid = str(uuid.uuid4())
-                
                 nueva_empresa = {
                     "id": empresa_uuid,
                     "nombre_empresa": nombre_empresa,
@@ -962,7 +780,6 @@ def registro():
                     "created_at": datetime.utcnow().isoformat()
                 }
                 supabase.table('empresas').insert(nueva_empresa).execute()
-
                 nuevo_usuario = {
                     "id": user_id,
                     "email": email,
@@ -971,122 +788,94 @@ def registro():
                     "rol_en_empresa": 'admin'
                 }
                 supabase.table('usuarios_empresa').insert(nuevo_usuario).execute()
-
                 cargo_display = cargo_inicial if cargo_inicial else "Asesor Comercial"
                 id_v_publico = f"JOB-{int(time.time())}"
-                
-                preguntas_base = [
-                    {"id": "q1", "texto": "¿Tienes experiencia previa en ventas?", "tipo": "si_no", "peso": 20, "knockout": True, "reglas": {"ideal": "si"}},
-                    {"id": "q2", "texto": "¿Cuentas con vehículo propio?", "tipo": "si_no", "peso": 15, "knockout": False, "reglas": {"ideal": "si"}},
-                    {"id": "q3", "texto": "¿Disponibilidad para viajar?", "tipo": "si_no", "peso": 10, "knockout": False, "reglas": {"ideal": "si"}},
-                    {"id": "q4", "texto": "Describe tu logro comercial más relevante", "tipo": "abierta", "peso": 0, "knockout": False, "reglas": {}},
-                    {"id": "q5", "texto": "¿Cuándo puedes iniciar?", "tipo": "abierta", "peso": 0, "knockout": False, "reglas": {}}
-                ]
-                
                 primera_vacante = {
                     "id": str(uuid.uuid4()),
                     "cargo": cargo_display,
                     "id_vacante_publico": id_v_publico,
                     "empresa_id": empresa_uuid,
-                    "preguntas": preguntas_base,
+                    "preguntas": [
+                        {"id": "q1", "texto": "¿Tienes experiencia previa en ventas?", "tipo": "si_no", "peso": 20, "knockout": True, "reglas": {"ideal": "si"}},
+                        {"id": "q2", "texto": "¿Cuentas con vehículo propio?", "tipo": "si_no", "peso": 15, "knockout": False, "reglas": {"ideal": "si"}},
+                        {"id": "q3", "texto": "¿Disponibilidad para viajar?", "tipo": "si_no", "peso": 10, "knockout": False, "reglas": {"ideal": "si"}},
+                        {"id": "q4", "texto": "Describe tu logro comercial más relevante", "tipo": "abierta", "peso": 0, "knockout": False, "reglas": {}},
+                        {"id": "q5", "texto": "¿Cuándo puedes iniciar?", "tipo": "abierta", "peso": 0, "knockout": False, "reglas": {}}
+                    ],
                     "activa": True,
                     "created_at": datetime.utcnow().isoformat()
                 }
                 supabase.table('vacantes').insert(primera_vacante).execute()
-                
                 session.update({
                     'logeado': True,
                     'user_id': user_id,
                     'empresa_id': empresa_uuid,
                     'nombre_empresa': nombre_empresa
                 })
-                
                 logger.info(f"🚀 Registro: {nombre_empresa}")
                 return redirect(url_for('dashboard'))
-
         except Exception as e:
             logger.error(f"❌ Registro error: {e}")
             return f"Error: {e}", 400
-
     return render_template('registro.html')
+
 
 @app.route('/eliminar_candidato/<id>', methods=['POST'])
 def eliminar_candidato(id):
-    """Eliminar un candidato"""
-    if not session.get('logeado'): 
+    if not session.get('logeado'):
         return jsonify({"success": False, "error": "No autorizado"}), 401
-    
     emp_id_str = session.get('empresa_id')
-    
     try:
         candidato_result = supabase.table('entrevistas').select('*').eq('id', id).execute()
-        
         if not candidato_result.data:
             return jsonify({"success": False, "error": "Candidato no encontrado"}), 404
-        
         candidato = candidato_result.data[0]
-        
         if candidato['empresa_id'] != emp_id_str:
             return jsonify({"success": False, "error": "No autorizado"}), 403
-        
         supabase.table('entrevistas').delete().eq('id', id).execute()
         logger.info(f"✅ Candidato eliminado: {id}")
         return jsonify({"success": True})
-        
     except Exception as e:
         logger.error(f"Error eliminando candidato: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
+
 
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('login'))
 
+
 @app.route('/api/habilidades', methods=['GET'])
 def get_habilidades():
     if not session.get('logeado'):
         return jsonify({"error": "No autorizado"}), 401
-    
     try:
-        # Traemos la lista maestra que cargamos en la Fase 1
         result = supabase.table('habilidades').select('*').execute()
         return jsonify(result.data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/candidato/<id_entrevista>', methods=['GET'])
-def get_detalle_candidato(id_entrevista):
-    if not session.get('logeado'):
-        return jsonify({"error": "No autorizado"}), 401
 
-    try:
-        # Traemos la entrevista con los nuevos campos de habilidades que creamos en la Fase 3
-        result = supabase.table('entrevistas').select('*').eq('id', id_entrevista).single().execute()
-        return jsonify(result.data)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+# ============================================
+# API CANDIDATO - ÚNICA RUTA (sin duplicados)
+# ============================================
 
 @app.route('/api/candidato/<id>')
 def api_candidato(id):
     """API para obtener datos completos del candidato"""
     if not session.get('logeado'):
         return jsonify({"error": "No autorizado"}), 401
-    
     try:
         candidato_result = supabase.table('entrevistas').select('*').eq('id', id).execute()
-        
         if not candidato_result.data:
             return jsonify({"error": "Candidato no encontrado"}), 404
-        
         candidato = candidato_result.data[0]
-        
         emp_id_str = session.get('empresa_id')
         if candidato['empresa_id'] != emp_id_str:
             return jsonify({"error": "No autorizado"}), 403
-        
         vacante_result = supabase.table('vacantes').select('*').eq('id', candidato['vacante_id']).execute()
         cargo = vacante_result.data[0]['cargo'] if vacante_result.data else "N/A"
-        
         try:
             analisis = json.loads(candidato['analisis_ia'])
         except:
@@ -1096,7 +885,6 @@ def api_candidato(id):
                 "riesgos": [],
                 "recomendacion": ""
             }
-        
         return jsonify({
             "nombre": candidato['nombre_candidato'],
             "identificacion": candidato['identificacion'],
@@ -1112,34 +900,26 @@ def api_candidato(id):
         logger.error(f"Error: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 @app.route('/comparar')
 def comparar():
-    """Ruta para la vista de comparación de candidatos."""
     if not session.get('logeado'):
         return redirect(url_for('login'))
-        
     id1 = request.args.get('c1')
     id2 = request.args.get('c2')
-    
-    # Si no hay IDs, mostramos la página de selección (opcional) o redirigimos
     if not id1 or not id2:
         return redirect(url_for('candidatos'))
-
     try:
-        # Obtenemos los datos de ambos candidatos
         c1 = supabase.table('entrevistas').select('*, vacantes(cargo)').eq('id', id1).single().execute()
         c2 = supabase.table('entrevistas').select('*, vacantes(cargo)').eq('id', id2).single().execute()
-        
-        # Parseamos sus análisis para que el template los lea fácil
         for c in [c1.data, c2.data]:
             if c.get('analisis_ia'):
                 c['analisis_ia_obj'] = json.loads(c['analisis_ia'])
-
         return render_template('comparar.html', c1=c1.data, c2=c2.data)
-        
     except Exception as e:
         logger.error(f"❌ Error en comparador: {e}")
         return redirect(url_for('candidatos'))
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
