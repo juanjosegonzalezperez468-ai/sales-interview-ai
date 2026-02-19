@@ -233,27 +233,26 @@
                         </div>
 
                         {% if total_c == 0 %}
-                        <div class="px-6 py-16 text-center">
-                            <div class="inline-block p-6 bg-blue-50 rounded-full mb-6">
-                                <svg class="w-16 h-16 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                                </svg>
+                            <div class="px-6 py-16 text-center">
+                                <h3>¡Workspace activado!</h3>
+                                <p>Aún no tienes candidatos...</p>
+                                <a href="/nueva_vacante">Configurar mi primera vacante</a>
                             </div>
-                            <h3 class="text-2xl font-bold text-gray-900 mb-3">¡Workspace activado!</h3>
-                            <p class="text-gray-600 mb-6 max-w-md mx-auto">
-                                Aún no tienes candidatos. Crea una vacante con IA <br>
-                                para que el sistema empiece a evaluar por ti.
-                            </p>
-                            
-                            <a href="/nueva_vacante" class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition">
-                                Configurar mi primera vacante
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                                </svg>
-                            </a>
-                        </div>
-                        {% endif %}
-                
+
+                        {% else %}
+                            <div class="overflow-x-auto">
+                                <table class="w-full">
+                                    <thead> ... </thead>
+                                    <tbody>
+                                        {% for c in candidatos %}
+                                        <tr> ... </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                        {% endif %} ```
+                        
                     <!-- Tabla de candidatos -->
                     <div class="overflow-x-auto">
                         <table class="w-full">
