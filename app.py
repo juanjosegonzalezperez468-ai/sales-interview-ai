@@ -1326,6 +1326,12 @@ def admin_estadisticas():
         logger.error(f"Error en admin_estadisticas: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
+# Agregar esto después de las rutas principales, antes del if __name__
+@app.route('/health')
+def health():
+    """Health check para Render"""
+    return jsonify({"status": "healthy", "timestamp": datetime.utcnow().isoformat()}), 200
+
 
 # ============================================
 # INICIO DE LA APLICACIÓN
