@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes | Sales AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .sidebar-galaxy {
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+        }
+        .sidebar-galaxy::before {
+            content: '';
+            position: absolute;
+            width: 100%; height: 100%;
+            background-image:
+                radial-gradient(1px 1px at 20% 30%, white, transparent),
+                radial-gradient(1px 1px at 60% 70%, white, transparent),
+                radial-gradient(1px 1px at 50% 50%, white, transparent);
+            background-size: 200px 200px;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .stat-card { transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-2px); }
+    </style>
+</head>
+<body class="bg-gray-50">
+<div class="flex h-screen overflow-hidden">
+
+    <!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+    <aside class="w-64 sidebar-galaxy text-white flex flex-col relative z-10">
+        <div class="p-6 flex items-center gap-3">
+            <img src="{{ url_for('static', filename='img/logo-salesai.webp') }}" alt="Sales AI"
+                 class="h-10 w-auto"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <div class="hidden items-center gap-2">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-sm font-bold">S</div>
+                <span class="text-lg font-bold">Sales AI</span>
+            </div>
+        </div>
+
+        <nav class="flex-1 px-3 py-4 space-y-1">
+            <a href="{{ url_for('gestionar_vacantes') }}"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+                <span>Vacantes</span>
+            </a>
+            <a href="{{ url_for('candidatos') }}"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                </svg>
+                <span>Candidatos</span>
+            </a>
+            <a href="/reportes"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-blue-600/20 border-l-4 border-blue-500 text-white font-medium">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+                <span>Reportes</span>
+            </a>
+            <a href="/calculadora/"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                </svg>
+                <span>Calculadora ROI</span>
+            </a>
+            <a href="/marketplace"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                </svg>
+                <span>Plantillas</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-white/10 space-y-3">
+            <div class="flex items-center gap-2 text-sm text-gray-400 px-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+                <span>{{ nombre_empresa }}</span>
+            </div>
+            <div class="flex items-center gap-3 px-2 py-2 rounded-lg bg-white/5">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-sm font-bold">
+                    {{ usuario.nombre_completo[0] if usuario else 'A' }}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-white truncate">{{ usuario.nombre_completo if usuario else 'Admin' }}</p>
+                    <p class="text-xs text-gray-400">Admin</p>
+                </div>
+                <a href="/logout" class="text-gray-400 hover:text-white transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </aside>
+    <!-- ═══════════════════ FIN SIDEBAR ═══════════════════ -->
+
+    <!-- ═══════════════════ CONTENIDO ═══════════════════ -->
+    <main class="flex-1 overflow-y-auto custom-scrollbar">
+
+        <!-- Header -->
+        <header class="bg-white border-b border-gray-200 px-8 py-5 sticky top-0 z-10">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Reportes de Reclutamiento</h1>
+                    <p class="text-sm text-gray-400 mt-0.5">Datos reales de tu pipeline · {{ nombre_empresa }}</p>
+                </div>
+                <a href="{{ url_for('dashboard') }}"
+                   class="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition">
+                    ← Dashboard
+                </a>
+            </div>
+        </header>
+
+        <div class="p-8 space-y-8">
+
+            {% if total_c == 0 %}
+            <!-- Estado vacío -->
+            <div class="bg-white rounded-2xl p-16 text-center border border-gray-100">
+                <div class="inline-block p-6 bg-blue-50 rounded-full mb-4">
+                    <svg class="w-12 h-12 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Sin datos aún</h3>
+                <p class="text-gray-500">Los reportes aparecen cuando tengas candidatos evaluados.</p>
+            </div>
+
+            {% else %}
+
+            <!-- ══════════════════════════════════════════
+                 SECCIÓN 1 — MÉTRICAS GLOBALES
+            ══════════════════════════════════════════ -->
+            <section>
+                <h2 class="text-sm font-black uppercase text-gray-400 tracking-widest mb-4">Métricas Globales</h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+                    <div class="stat-card bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                        <p class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-2">Candidatos</p>
+                        <p class="text-4xl font-black text-gray-900">{{ total_c }}</p>
+                        <p class="text-xs text-gray-400 mt-1">evaluados con IA</p>
+                    </div>
+
+                    <div class="stat-card bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                        <p class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-2">Score Promedio</p>
+                        <p class="text-4xl font-black
+                            {{ 'text-emerald-600' if score_promedio >= 75 else 'text-yellow-500' if score_promedio >= 50 else 'text-red-500' }}">
+                            {{ score_promedio }}%
+                        </p>
+                        <p class="text-xs text-gray-400 mt-1">de todos los candidatos</p>
+                    </div>
+
+                    <div class="stat-card bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                        <p class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-2">Tasa Aprobación</p>
+                        <p class="text-4xl font-black
+                            {{ 'text-emerald-600' if tasa_aprobacion >= 50 else 'text-yellow-500' if tasa_aprobacion >= 25 else 'text-red-500' }}">
+                            {{ tasa_aprobacion }}%
+                        </p>
+                        <p class="text-xs text-gray-400 mt-1">RECOMENDADO por IA</p>
+                    </div>
+
+                    <div class="stat-card bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                        <p class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-2">Vacantes Activas</p>
+                        <p class="text-4xl font-black text-blue-600">{{ total_v }}</p>
+                        <p class="text-xs text-gray-400 mt-1">con proceso abierto</p>
+                    </div>
+                </div>
+
+                <!-- Sub-métricas veredictos -->
+                <div class="grid grid-cols-3 gap-4 mt-4">
+                    <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-black text-lg">
+                            {{ recomendados }}
+                        </div>
+                        <div>
+                            <p class="font-bold text-emerald-800 text-sm">Recomendados</p>
+                            <p class="text-xs text-emerald-500">por el sistema IA</p>
+                        </div>
+                    </div>
+                    <div class="bg-yellow-50 border border-yellow-100 rounded-xl p-4 flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-700 font-black text-lg">
+                            {{ a_revisar }}
+                        </div>
+                        <div>
+                            <p class="font-bold text-yellow-800 text-sm">A Revisar</p>
+                            <p class="text-xs text-yellow-500">requieren validación</p>
+                        </div>
+                    </div>
+                    <div class="bg-red-50 border border-red-100 rounded-xl p-4 flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-700 font-black text-lg">
+                            {{ no_recomendados }}
+                        </div>
+                        <div>
+                            <p class="font-bold text-red-800 text-sm">No Recomendados</p>
+                            <p class="text-xs text-red-400">filtrados por IA</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ══════════════════════════════════════════
+                 SECCIÓN 2 — EMBUDO DE DECISIÓN
+            ══════════════════════════════════════════ -->
+            <section>
+                <h2 class="text-sm font-black uppercase text-gray-400 tracking-widest mb-4">Embudo de Decisión</h2>
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+
+                        <!-- Embudo visual -->
+                        <div class="space-y-3">
+                            {% set etapas = [
+                                ('Evaluados con IA', total_c, 'bg-blue-500'),
+                                ('Recomendados', recomendados, 'bg-emerald-500'),
+                                ('Finalistas', finalistas, 'bg-purple-500'),
+                                ('Contratados', contratados, 'bg-yellow-500'),
+                            ] %}
+                            {% for label, val, color in etapas %}
+                            {% set pct = (val / total_c * 100) | round | int if total_c > 0 else 0 %}
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-sm font-bold text-gray-700">{{ label }}</span>
+                                    <span class="text-sm font-black text-gray-900">{{ val }}
+                                        <span class="text-xs text-gray-400 font-normal">({{ pct }}%)</span>
+                                    </span>
+                                </div>
+                                <div class="h-3 bg-gray-100 rounded-full overflow-hidden">
+                                    <div class="{{ color }} h-full rounded-full transition-all duration-700"
+                                         style="width: {{ pct }}%"></div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Donut chart -->
+                        <div class="flex flex-col items-center">
+                            <div style="height: 220px; width: 220px;">
+                                <canvas id="chartEmbudo"></canvas>
+                            </div>
+                            <div class="flex flex-wrap justify-center gap-3 mt-3">
+                                <span class="flex items-center gap-1 text-xs text-gray-600"><span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>Evaluados</span>
+                                <span class="flex items-center gap-1 text-xs text-gray-600"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>Recomendados</span>
+                                <span class="flex items-center gap-1 text-xs text-gray-600"><span class="w-2 h-2 rounded-full bg-purple-500 inline-block"></span>Finalistas</span>
+                                <span class="flex items-center gap-1 text-xs text-gray-600"><span class="w-2 h-2 rounded-full bg-yellow-400 inline-block"></span>Contratados</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Estados de decisión -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6 pt-5 border-t border-gray-100">
+                        <div class="text-center">
+                            <p class="text-2xl font-black text-emerald-600">{{ finalistas }}</p>
+                            <p class="text-xs text-gray-500 mt-0.5">⭐ Finalistas</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-2xl font-black text-blue-600">{{ contratados }}</p>
+                            <p class="text-xs text-gray-500 mt-0.5">🏆 Contratados</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-2xl font-black text-red-500">{{ descartados }}</p>
+                            <p class="text-xs text-gray-500 mt-0.5">✕ Descartados</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-2xl font-black text-gray-400">{{ sin_estado }}</p>
+                            <p class="text-xs text-gray-500 mt-0.5">— Sin decisión</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ══════════════════════════════════════════
+                 SECCIÓN 3 — RENDIMIENTO POR VACANTE
+            ══════════════════════════════════════════ -->
+            {% if rendimiento_por_vacante %}
+            <section>
+                <h2 class="text-sm font-black uppercase text-gray-400 tracking-widest mb-4">Rendimiento por Vacante</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                    <!-- Tabla -->
+                    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                        <table class="w-full">
+                            <thead class="bg-gray-50 border-b border-gray-100">
+                                <tr>
+                                    <th class="px-5 py-3 text-left text-[10px] font-black uppercase text-gray-400 tracking-widest">Cargo</th>
+                                    <th class="px-5 py-3 text-center text-[10px] font-black uppercase text-gray-400 tracking-widest">Cands.</th>
+                                    <th class="px-5 py-3 text-center text-[10px] font-black uppercase text-gray-400 tracking-widest">Score Prom.</th>
+                                    <th class="px-5 py-3 text-center text-[10px] font-black uppercase text-gray-400 tracking-widest">% Aptos</th>
+                                    <th class="px-5 py-3 text-center text-[10px] font-black uppercase text-gray-400 tracking-widest">🏆</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-50">
+                                {% for v in rendimiento_por_vacante %}
+                                <tr class="hover:bg-gray-50 transition">
+                                    <td class="px-5 py-3 text-sm font-bold text-gray-800">{{ v.cargo }}</td>
+                                    <td class="px-5 py-3 text-center text-sm text-gray-600">{{ v.total }}</td>
+                                    <td class="px-5 py-3 text-center">
+                                        <span class="text-sm font-black
+                                            {{ 'text-emerald-600' if v.score_promedio >= 75 else 'text-yellow-500' if v.score_promedio >= 50 else 'text-red-500' }}">
+                                            {{ v.score_promedio }}%
+                                        </span>
+                                    </td>
+                                    <td class="px-5 py-3 text-center">
+                                        <span class="text-sm font-bold
+                                            {{ 'text-emerald-600' if v.tasa_aprobacion >= 50 else 'text-yellow-500' }}">
+                                            {{ v.tasa_aprobacion }}%
+                                        </span>
+                                    </td>
+                                    <td class="px-5 py-3 text-center text-sm font-bold text-blue-600">{{ v.contratados }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Gráfica comparativa -->
+                    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                        <p class="text-xs font-black uppercase text-gray-400 tracking-widest mb-4">Score promedio por vacante</p>
+                        <div style="height: 220px;">
+                            <canvas id="chartVacantes"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            {% endif %}
+
+            <!-- ══════════════════════════════════════════
+                 SECCIÓN 4 — EVOLUCIÓN EN EL TIEMPO
+            ══════════════════════════════════════════ -->
+            {% if evolucion | length > 0 %}
+            <section>
+                <h2 class="text-sm font-black uppercase text-gray-400 tracking-widest mb-4">Evolución en el Tiempo</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                    <!-- Candidatos por mes -->
+                    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                        <p class="text-xs font-black uppercase text-gray-400 tracking-widest mb-4">Candidatos evaluados por mes</p>
+                        <div style="height: 220px;">
+                            <canvas id="chartEvolucionVolumen"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Score promedio por mes -->
+                    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                        <p class="text-xs font-black uppercase text-gray-400 tracking-widest mb-4">Score promedio mensual</p>
+                        <div style="height: 220px;">
+                            <canvas id="chartEvolucionScore"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla detalle por mes -->
+                {% if evolucion | length > 1 %}
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mt-4">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 border-b border-gray-100">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-[10px] font-black uppercase text-gray-400 tracking-widest">Mes</th>
+                                <th class="px-6 py-3 text-center text-[10px] font-black uppercase text-gray-400 tracking-widest">Candidatos</th>
+                                <th class="px-6 py-3 text-center text-[10px] font-black uppercase text-gray-400 tracking-widest">Score Promedio</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">
+                            {% for e in evolucion | reverse %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-3 text-sm font-bold text-gray-700">{{ e.mes }}</td>
+                                <td class="px-6 py-3 text-center text-sm text-gray-600">{{ e.total }}</td>
+                                <td class="px-6 py-3 text-center">
+                                    <span class="text-sm font-black
+                                        {{ 'text-emerald-600' if e.score_promedio >= 75 else 'text-yellow-500' if e.score_promedio >= 50 else 'text-red-500' }}">
+                                        {{ e.score_promedio }}%
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </section>
+            {% endif %}
+
+            {% endif %}{# fin if total_c #}
+
+        </div>{# fin p-8 #}
+    </main>
+</div>
+
+<!-- ═══════════════════ SCRIPTS CHARTS ═══════════════════ -->
+<script>
+    const embudoData    = {{ embudo | safe }};
+    const evLabels      = {{ evolucion_labels | safe }};
+    const evTotales     = {{ evolucion_totales | safe }};
+    const evScores      = {{ evolucion_scores | safe }};
+    const vacLabels     = {{ vacante_labels | safe }};
+    const vacScores     = {{ vacante_scores | safe }};
+    const vacTasas      = {{ vacante_tasas | safe }};
+
+    const chartDefaults = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } }
+    };
+
+    // ── Donut embudo ──────────────────────────────────────
+    const ctxEmbudo = document.getElementById('chartEmbudo');
+    if (ctxEmbudo) {
+        new Chart(ctxEmbudo, {
+            type: 'doughnut',
+            data: {
+                labels: ['Evaluados', 'Recomendados', 'Finalistas', 'Contratados'],
+                datasets: [{
+                    data: embudoData,
+                    backgroundColor: ['#3b82f6', '#10b981', '#a855f7', '#eab308'],
+                    borderWidth: 0,
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}` } }
+                },
+                cutout: '68%'
+            }
+        });
+    }
+
+    // ── Barras vacantes ───────────────────────────────────
+    const ctxVac = document.getElementById('chartVacantes');
+    if (ctxVac && vacLabels.length > 0) {
+        new Chart(ctxVac, {
+            type: 'bar',
+            data: {
+                labels: vacLabels,
+                datasets: [{
+                    label: 'Score promedio',
+                    data: vacScores,
+                    backgroundColor: vacScores.map(s =>
+                        s >= 75 ? 'rgba(16,185,129,0.8)' :
+                        s >= 50 ? 'rgba(245,158,11,0.8)' :
+                                  'rgba(239,68,68,0.8)'
+                    ),
+                    borderRadius: 8,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                ...chartDefaults,
+                scales: {
+                    y: { min: 0, max: 100, ticks: { callback: v => v + '%', font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.05)' } },
+                    x: { ticks: { font: { size: 11 } }, grid: { display: false } }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: ctx => ` Score: ${ctx.parsed.y}%` } }
+                }
+            }
+        });
+    }
+
+    // ── Línea volumen por mes ─────────────────────────────
+    const ctxVolumen = document.getElementById('chartEvolucionVolumen');
+    if (ctxVolumen && evLabels.length > 0) {
+        new Chart(ctxVolumen, {
+            type: 'bar',
+            data: {
+                labels: evLabels,
+                datasets: [{
+                    label: 'Candidatos',
+                    data: evTotales,
+                    backgroundColor: 'rgba(59,130,246,0.7)',
+                    borderRadius: 6,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                ...chartDefaults,
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.05)' } },
+                    x: { ticks: { font: { size: 11 } }, grid: { display: false } }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y} candidatos` } }
+                }
+            }
+        });
+    }
+
+    // ── Línea score por mes ───────────────────────────────
+    const ctxScore = document.getElementById('chartEvolucionScore');
+    if (ctxScore && evLabels.length > 0) {
+        new Chart(ctxScore, {
+            type: 'line',
+            data: {
+                labels: evLabels,
+                datasets: [{
+                    label: 'Score promedio',
+                    data: evScores,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16,185,129,0.08)',
+                    borderWidth: 2.5,
+                    pointBackgroundColor: '#10b981',
+                    pointRadius: 5,
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                ...chartDefaults,
+                scales: {
+                    y: { min: 0, max: 100, ticks: { callback: v => v + '%', font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.05)' } },
+                    x: { ticks: { font: { size: 11 } }, grid: { display: false } }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: ctx => ` Score: ${ctx.parsed.y}%` } }
+                }
+            }
+        });
+    }
+</script>
+</body>
+</html>
