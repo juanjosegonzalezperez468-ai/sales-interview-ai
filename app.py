@@ -35,38 +35,78 @@ supabase: Client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_
 # MOTOR DE EVALUACIÓN - LÓGICA
 # ============================================
 
-def generar_resumen_profesional(cargo, score_final, detalle, hubo_ko, motivo_ko, metricas_radar):
-    if hubo_ko:
-        resumen = f"Candidato descartado automáticamente. {motivo_ko}. No cumple con requisitos críticos (Knock-out) para el cargo de {cargo}."
-    elif score_final >= 75:
-        resumen = f"Candidato con perfil sobresaliente para {cargo}. Presenta un alto índice de compatibilidad técnica y cultural. Se recomienda entrevista prioritaria."
-    elif score_final >= 40:
-        resumen = f"Candidato con potencial moderado para {cargo}. Posee las bases requeridas pero presenta brechas en competencias clave que deben ser validadas."
-    else:
-        resumen = f"Candidato por debajo del perfil mínimo esperado para {cargo}. Los resultados sugieren falta de alineación con los requisitos del puesto."
+def generar_resumen_profesional(cargo, score_final, detalle, hubo_ko, motivo_ko, metricas_radar, skill_stack=None):
+    """
+    Genera análisis estructurado usando el skill_stack real del rol.
+    PASO 4: habilidad crítica >= 80% → Fortaleza | <= 60% → Alerta
+    """
 
-    fortalezas = []
+    # ── 1. entity_skill_score: score real por habilidad ──────────────────────
+    entity_skill_score = {}
     for item in detalle:
-        if item.get('puntos', 0) >= item.get('peso', 1) and item.get('peso', 0) > 0:
-            nombre_hito = item.get('habilidad') if item.get('habilidad') else item['pregunta'][:40]
-            if f"✓ {nombre_hito}" not in fortalezas:
-                fortalezas.append(f"✓ {nombre_hito}")
+        hab   = item.get('habilidad', '')
+        peso  = float(item.get('peso', 0))
+        puntos = float(item.get('puntos', 0))
+        if not hab or peso == 0:
+            continue
+        if hab not in entity_skill_score:
+            entity_skill_score[hab] = {'obtenido': 0, 'posible': 0}
+        entity_skill_score[hab]['obtenido'] += puntos
+        entity_skill_score[hab]['posible']  += peso
+    for hab, vals in entity_skill_score.items():
+        vals['pct'] = round((vals['obtenido'] / vals['posible']) * 100) if vals['posible'] > 0 else 0
+
+    # ── 2. Resumen narrativo ──────────────────────────────────────────────────
+    if hubo_ko:
+        resumen = f"Candidato descartado automáticamente. {motivo_ko}. No cumple requisitos críticos (KO) para {cargo}."
+    elif score_final >= 75:
+        resumen = f"Candidato con perfil sobresaliente para {cargo}. Alto índice de compatibilidad con el stack de habilidades del rol. Se recomienda entrevista prioritaria."
+    elif score_final >= 40:
+        resumen = f"Candidato con potencial moderado para {cargo}. Cumple algunas habilidades críticas del rol pero presenta brechas que deben validarse."
+    else:
+        resumen = f"Candidato por debajo del perfil mínimo esperado para {cargo}. Baja alineación con las habilidades críticas del rol."
+
+    # ── 3. Fortalezas usando skill_stack real ─────────────────────────────────
+    fortalezas = []
+    habilidades_criticas = skill_stack or []
+
+    # Habilidades críticas del rol con >= 80%
+    for hab in habilidades_criticas:
+        if hab in entity_skill_score and entity_skill_score[hab]['pct'] >= 80:
+            fortalezas.append(f"{hab} ({entity_skill_score[hab]['pct']}% — habilidad crítica del rol)")
+
+    # Otras habilidades con puntaje completo
+    for item in detalle:
+        hab = item.get('habilidad', '')
+        if hab and hab not in habilidades_criticas:
+            if item.get('puntos', 0) >= item.get('peso', 1) and item.get('peso', 0) > 0:
+                if hab not in [f.split(' (')[0] for f in fortalezas]:
+                    fortalezas.append(hab)
+
     if not fortalezas:
-        fortalezas = ["Evaluación estandarizada completada"]
+        fortalezas = ["Evaluación completada — sin habilidades críticas con puntaje destacado"]
     fortalezas = fortalezas[:5]
 
+    # ── 4. Riesgos usando skill_stack real ────────────────────────────────────
     riesgos = []
     if hubo_ko:
-        riesgos.append(f"⚠ KO: {motivo_ko}")
-    for item in detalle:
-        if item.get('puntos', 0) == 0 and item.get('peso', 0) > 0:
-            nombre_falla = item.get('habilidad') if item.get('habilidad') else item['pregunta'][:40]
-            if f"✗ {nombre_falla}" not in riesgos:
-                riesgos.append(f"✗ {nombre_falla}")
-    if not riesgos:
-        riesgos = ["Sin riesgos críticos detectados"] if score_final >= 75 else ["Requiere validación de competencias blandas"]
-    riesgos = riesgos[:4]
+        riesgos.append(f"KO automático: {motivo_ko}")
 
+    # Habilidades críticas con <= 60%
+    for hab in habilidades_criticas:
+        if hab in entity_skill_score and entity_skill_score[hab]['pct'] <= 60:
+            riesgos.append(f"Bajo desempeño en {hab} ({entity_skill_score[hab]['pct']}% — habilidad crítica del rol)")
+
+    # Habilidades críticas sin preguntas asociadas (no medidas)
+    for hab in habilidades_criticas:
+        if hab not in entity_skill_score:
+            riesgos.append(f"{hab} no fue evaluada (habilidad crítica sin preguntas asociadas)")
+
+    if not riesgos:
+        riesgos = ["Sin alertas críticas detectadas"] if score_final >= 75 else ["Validar competencias blandas en entrevista"]
+    riesgos = riesgos[:5]
+
+    # ── 5. Recomendación ─────────────────────────────────────────────────────
     if hubo_ko:
         recomendacion = "❌ No continuar proceso"
     elif score_final >= 85:
@@ -78,13 +118,15 @@ def generar_resumen_profesional(cargo, score_final, detalle, hubo_ko, motivo_ko,
     else:
         recomendacion = "❌ Descartar candidato"
 
+    # ── 6. Objeto final (incluye entity_skill_score para el comparador) ───────
     resultado = {
         "resumen": resumen,
         "fortalezas": fortalezas,
         "riesgos": riesgos,
         "recomendacion": recomendacion,
         "radar": metricas_radar,
-        "metodo": "Motor de Competencias Sales AI"
+        "metodo": "Motor de Competencias Sales AI v2 — Skill Stack",
+        "entity_skill_score": {hab: vals['pct'] for hab, vals in entity_skill_score.items()}
     }
     return json.dumps(resultado, ensure_ascii=False)
 
@@ -223,13 +265,17 @@ def procesar():
             f"A:{calc_pct(scores_categorias['Ajuste'], max_categorias['Ajuste'])}%"
         )
 
+        # Pasar el skill_stack de la vacante para fortalezas/alertas reales
+        skill_stack_rol = v.get('habilidades_criticas') or []
+
         analisis_ia_texto = generar_resumen_profesional(
             cargo=v['cargo'],
             score_final=score_final,
             detalle=detalle,
             hubo_ko=hubo_ko,
             motivo_ko=motivo_descarte,
-            metricas_radar=metricas_radar
+            metricas_radar=metricas_radar,
+            skill_stack=skill_stack_rol
         )
 
         if hubo_ko:
