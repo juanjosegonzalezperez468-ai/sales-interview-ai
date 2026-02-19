@@ -5,8 +5,10 @@ import logging
 import uuid
 from datetime import datetime
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify, render_template_string
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, render_template_string, flash
 from supabase import create_client, Client
+from functools import wraps
+from datetime import datetime, timedelta
 
 from calculadora.routes import calculadora_bp
 from calculadora.epayco_checkout import epayco_bp
@@ -114,6 +116,39 @@ def generar_resumen_profesional(cargo, score_final, detalle, hubo_ko, motivo_ko,
         "entity_skill_score": {hab: vals['pct'] for hab, vals in entity_skill_score.items()}
     }
     return json.dumps(resultado, ensure_ascii=False)
+
+
+# ============================================
+# MIDDLEWARE ADMIN
+# ============================================
+
+def admin_required(f):
+    """Decorador para proteger rutas que requieren acceso de super admin"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logeado'):
+            return redirect(url_for('login'))
+        
+        user_id = session.get('user_id')
+        try:
+            response = supabase.table('usuarios_empresa').select('email').eq('id', user_id).execute()
+            if not response.data:
+                return redirect(url_for('dashboard'))
+            
+            user_email = response.data[0]['email']
+            admin_check = supabase.table('super_admins').select('*').eq('email', user_email).eq('activo', True).execute()
+            
+            if not admin_check.data:
+                return redirect(url_for('dashboard'))
+            
+            return f(*args, **kwargs)
+            
+        except Exception as e:
+            logger.error(f"Error verificando permisos de admin: {e}")
+            return redirect(url_for('dashboard'))
+    
+    return decorated_function
+
 
 # ============================================
 # RUTAS PÚBLICAS (LANDING PAGES)
@@ -1030,7 +1065,6 @@ def api_candidato(id):
                 "recomendacion": ""
             }
 
-        # ── Leer evaluación post-entrevista desde la misma tabla entrevistas ──
         evaluacion = None
         criterios_guardados = candidato.get('criterios_entrevista')
         if criterios_guardados:
@@ -1081,11 +1115,6 @@ def api_candidato(id):
 
 @app.route('/api/guardar_evaluacion', methods=['POST'])
 def guardar_evaluacion():
-    """
-    Guarda la evaluación post-entrevista en la tabla entrevistas.
-    Columnas requeridas: criterios_entrevista (JSONB), comentario_entrevista (TEXT),
-                         score_interview (NUMERIC), score_final_combinado (NUMERIC)
-    """
     if not session.get('logeado'):
         return jsonify({"error": "No autorizado"}), 401
     try:
@@ -1097,21 +1126,17 @@ def guardar_evaluacion():
         if not entrevista_id or not criterios:
             return jsonify({"error": "Datos incompletos"}), 400
 
-        # Técnica 40%: dominio + resolucion
         bloque_a = [criterios.get(k, 3) for k in ['dominio', 'resolucion']]
         score_a  = sum(bloque_a) / len(bloque_a) if bloque_a else 3
-        # Conductual 60%: comunicacion + pensamiento + cultura + seguridad
         bloque_b = [criterios.get(k, 3) for k in ['comunicacion', 'pensamiento', 'cultura', 'seguridad']]
         score_b  = sum(bloque_b) / len(bloque_b) if bloque_b else 3
         interview_score_raw = round(score_a * 0.4 + score_b * 0.6, 2)
-        # Escala 1-5 → 0-100
         score_interview = round((interview_score_raw - 1) / 4 * 100)
 
         cand = supabase.table('entrevistas').select('score').eq('id', entrevista_id).single().execute()
         score_pre = float(cand.data['score'] or 0) if cand.data else 0
         score_final_combinado = round(score_pre * 0.7 + score_interview * 0.3, 1)
 
-        # ── Guardar directamente en la tabla entrevistas ──
         supabase.table('entrevistas').update({
             "criterios_entrevista":  criterios,
             "comentario_entrevista": comentario,
@@ -1137,7 +1162,7 @@ def guardar_evaluacion():
 @app.route('/comparar')
 def comparar():
     if not session.get('logeado'):
-        return redirect(url_for('login'))
+        return redirect(url_for('candidatos'))
     id1 = request.args.get('c1')
     id2 = request.args.get('c2')
     if not id1 or not id2:
@@ -1150,7 +1175,6 @@ def comparar():
             if c.get('analisis_ia'):
                 c['analisis_ia_obj'] = json.loads(c['analisis_ia'])
 
-        # ── Leer evaluación directamente desde cada registro de entrevistas ──
         def get_eval(candidato_data):
             criterios = candidato_data.get('criterios_entrevista')
             if not criterios:
@@ -1191,6 +1215,121 @@ def comparar():
         logger.error(f"❌ Error en comparador: {e}")
         return redirect(url_for('candidatos'))
 
+
+# ============================================
+# RUTAS ADMIN
+# ============================================
+
+@app.route('/admin')
+@admin_required
+def admin_panel():
+    """Panel de administrador global"""
+    try:
+        metricas_response = supabase.table('vista_metricas_empresas').select('*').execute()
+        empresas = metricas_response.data if metricas_response.data else []
+        
+        total_empresas = len(empresas)
+        empresas_activas = sum(1 for e in empresas if e.get('activo'))
+        total_vacantes = sum(e.get('total_vacantes', 0) for e in empresas)
+        total_candidatos = sum(e.get('total_candidatos', 0) for e in empresas)
+        
+        empresas_con_vacante_24h = sum(1 for e in empresas if e.get('primera_vacante_24h'))
+        porcentaje_conversion = round((empresas_con_vacante_24h / total_empresas * 100), 2) if total_empresas > 0 else 0
+        
+        for empresa in empresas:
+            if empresa.get('fecha_registro'):
+                empresa['fecha_registro_formatted'] = datetime.fromisoformat(
+                    empresa['fecha_registro'].replace('Z', '+00:00')
+                ).strftime('%d/%m/%Y %H:%M')
+            
+            if empresa.get('ultima_actividad'):
+                empresa['ultima_actividad_formatted'] = datetime.fromisoformat(
+                    empresa['ultima_actividad'].replace('Z', '+00:00')
+                ).strftime('%d/%m/%Y %H:%M')
+            else:
+                empresa['ultima_actividad_formatted'] = 'Sin actividad'
+        
+        return render_template('admin/dashboard.html',
+                             empresas=empresas,
+                             total_empresas=total_empresas,
+                             empresas_activas=empresas_activas,
+                             total_vacantes=total_vacantes,
+                             total_candidatos=total_candidatos,
+                             porcentaje_conversion=porcentaje_conversion)
+        
+    except Exception as e:
+        logger.error(f"Error en admin_panel: {e}")
+        return redirect(url_for('dashboard'))
+
+
+@app.route('/admin/empresa/<empresa_id>')
+@admin_required
+def admin_empresa_detalle(empresa_id):
+    """Ver detalles completos de una empresa"""
+    try:
+        empresa_response = supabase.table('empresas').select('*').eq('id', empresa_id).execute()
+        if not empresa_response.data:
+            return redirect(url_for('admin_panel'))
+        
+        empresa = empresa_response.data[0]
+        usuarios_response = supabase.table('usuarios_empresa').select('*').eq('empresa_id', empresa_id).execute()
+        usuarios = usuarios_response.data if usuarios_response.data else []
+        vacantes_response = supabase.table('vacantes').select('*').eq('empresa_id', empresa_id).execute()
+        vacantes = vacantes_response.data if vacantes_response.data else []
+        candidatos_response = supabase.table('entrevistas').select('*').eq('empresa_id', empresa_id).order('fecha', desc=True).execute()
+        candidatos = candidatos_response.data if candidatos_response.data else []
+        
+        return render_template('admin/empresa_detalle.html',
+                             empresa=empresa,
+                             usuarios=usuarios,
+                             vacantes=vacantes,
+                             candidatos=candidatos)
+        
+    except Exception as e:
+        logger.error(f"Error en admin_empresa_detalle: {e}")
+        return redirect(url_for('admin_panel'))
+
+
+@app.route('/admin/api/estadisticas')
+@admin_required
+def admin_estadisticas():
+    """API para obtener estadísticas agregadas"""
+    try:
+        metricas_response = supabase.table('vista_metricas_empresas').select('*').execute()
+        empresas = metricas_response.data if metricas_response.data else []
+        
+        hoy = datetime.now()
+        stats_mensuales = {}
+        
+        for i in range(6):
+            mes = (hoy - timedelta(days=30*i)).strftime('%Y-%m')
+            stats_mensuales[mes] = {
+                'nuevas_empresas': 0,
+                'nuevos_candidatos': 0
+            }
+        
+        for empresa in empresas:
+            if empresa.get('fecha_registro'):
+                mes = empresa['fecha_registro'][:7]
+                if mes in stats_mensuales:
+                    stats_mensuales[mes]['nuevas_empresas'] += 1
+        
+        return jsonify({
+            'success': True,
+            'stats_mensuales': stats_mensuales,
+            'total_empresas': len(empresas),
+            'empresas_activas': sum(1 for e in empresas if e.get('activo')),
+            'tasa_activacion': round(sum(1 for e in empresas if e.get('activo')) / len(empresas) * 100, 2) if empresas else 0
+        })
+        
+    except Exception as e:
+        logger.error(f"Error en admin_estadisticas: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+# ============================================
+# INICIO DE LA APLICACIÓN
+# ============================================
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
