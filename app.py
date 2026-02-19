@@ -388,7 +388,8 @@ def dashboard():
                 "tag": e['tag'],
                 "fecha": e.get('fecha', 'N/A')[:10] if e.get('fecha') else "N/A",
                 "analisis_ia": e.get('analisis_ia'),
-                "respuestas_detalle": e.get('respuestas_detalle')
+                "respuestas_detalle": e.get('respuestas_detalle'),
+                "estado": e.get('estado', None)
             })
 
         return render_template("dashboard.html",
@@ -941,10 +942,14 @@ def api_candidato(id):
         score_final_combinado = None
         if evaluacion and evaluacion.get('criterios'):
             criterios = evaluacion['criterios']
-            scores_vals = [v for v in criterios.values() if isinstance(v, (int, float))]
-            if scores_vals:
-                score_interview = round(sum(scores_vals) / len(scores_vals) * 10)  # escala 1-10 → 0-100
-                score_final_combinado = round(score_pre * 0.7 + score_interview * 0.3, 1)
+            # Recalcular con pesos 40/60, escala 1-5
+            bloque_a = [criterios.get(k, 3) for k in ['dominio', 'resolucion']]
+            bloque_b = [criterios.get(k, 3) for k in ['comunicacion', 'pensamiento', 'cultura', 'seguridad']]
+            score_a  = sum(bloque_a) / len(bloque_a) if bloque_a else 3
+            score_b  = sum(bloque_b) / len(bloque_b) if bloque_b else 3
+            interview_score_raw = score_a * 0.4 + score_b * 0.6
+            score_interview = round((interview_score_raw - 1) / 4 * 100)
+            score_final_combinado = round(score_pre * 0.7 + score_interview * 0.3, 1)
 
         return jsonify({
             "nombre": candidato['nombre_candidato'],
@@ -981,9 +986,17 @@ def guardar_evaluacion():
         if not entrevista_id or not criterios:
             return jsonify({"error": "Datos incompletos"}), 400
 
-        # Calcular interview_score: promedio de criterios (escala 1-10) → porcentaje
-        scores_vals    = [v for v in criterios.values() if isinstance(v, (int, float))]
-        score_interview = round(sum(scores_vals) / len(scores_vals) * 10) if scores_vals else 0
+        # Calcular interview_score con pesos: Técnica 40% | Conductual 60% (escala 1-5)
+        # Bloque A (40%): dominio + resolucion
+        bloque_a = [criterios.get(k, 3) for k in ['dominio', 'resolucion']]
+        score_a  = sum(bloque_a) / len(bloque_a) if bloque_a else 3
+        # Bloque B (60%): comunicacion + pensamiento + cultura + seguridad
+        bloque_b = [criterios.get(k, 3) for k in ['comunicacion', 'pensamiento', 'cultura', 'seguridad']]
+        score_b  = sum(bloque_b) / len(bloque_b) if bloque_b else 3
+        # Promedio ponderado → escala 1-5
+        interview_score_raw = round(score_a * 0.4 + score_b * 0.6, 2)
+        # Convertir a porcentaje (1-5 → 0-100)
+        score_interview = round((interview_score_raw - 1) / 4 * 100)
 
         # Obtener score_pre del candidato
         cand = supabase.table('entrevistas').select('score').eq('id', entrevista_id).single().execute()

@@ -230,15 +230,36 @@
 
             <!-- Tabla de candidatos -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between gap-4 flex-wrap">
                     <h2 class="text-xl font-bold text-gray-900">Últimos Candidatos Evaluados</h2>
-                    <a href="/nueva_vacante"
-                       class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                        </svg>
-                        Crear Vacante
-                    </a>
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <!-- Filtros de estado -->
+                        <div class="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+                            <button onclick="filtrarEstado('todos')" id="filtro-todos"
+                                    class="filtro-btn px-3 py-1.5 rounded-lg text-xs font-bold transition bg-white text-gray-700 shadow-sm">
+                                Todos
+                            </button>
+                            <button onclick="filtrarEstado('Finalista')" id="filtro-Finalista"
+                                    class="filtro-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-gray-500 hover:text-gray-700">
+                                ⭐ Finalista
+                            </button>
+                            <button onclick="filtrarEstado('Contratado')" id="filtro-Contratado"
+                                    class="filtro-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-gray-500 hover:text-gray-700">
+                                🏆 Contratado
+                            </button>
+                            <button onclick="filtrarEstado('Descartado')" id="filtro-Descartado"
+                                    class="filtro-btn px-3 py-1.5 rounded-lg text-xs font-bold transition text-gray-500 hover:text-gray-700">
+                                ✕ Descartado
+                            </button>
+                        </div>
+                        <a href="/nueva_vacante"
+                           class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            Crear Vacante
+                        </a>
+                    </div>
                 </div>
 
                 {% if total_c == 0 %}
@@ -262,12 +283,14 @@
                                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Cargo</th>
                                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Score IA</th>
                                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Veredicto</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Estado</th>
                                 <th class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Acciones</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
                             {% for candidato in entrevistas[:10] %}
-                            <tr class="hover:bg-gray-50 transition">
+                            <tr class="fila-candidato hover:bg-gray-50 transition"
+                                data-estado="{{ candidato.estado or '' }}">
 
                                 <!-- FIX 2: campo correcto es candidato.nombre (no nombre_candidato) -->
                                 <td class="px-6 py-4">
@@ -298,6 +321,19 @@
                                         <span class="px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-medium">Revisar</span>
                                     {% else %}
                                         <span class="px-2 py-1 rounded-full bg-red-100 text-red-800 text-xs font-medium">Descartado</span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- Celda Estado -->
+                                <td class="px-6 py-4">
+                                    {% if candidato.estado == 'Finalista' %}
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">⭐ Finalista</span>
+                                    {% elif candidato.estado == 'Contratado' %}
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">🏆 Contratado</span>
+                                    {% elif candidato.estado == 'Descartado' %}
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-100 text-red-700 text-xs font-bold">✕ Descartado</span>
+                                    {% else %}
+                                        <span class="text-xs text-gray-300 italic">—</span>
                                     {% endif %}
                                 </td>
 
@@ -1182,6 +1218,33 @@
         } catch (err) {
             console.error('Error actualizando estado:', err);
         }
+    }
+
+
+    // ══════════════════════════════════════════════════════
+    // FILTRO POR ESTADO EN TABLA
+    // ══════════════════════════════════════════════════════
+    function filtrarEstado(estado) {
+        // Actualizar botones activos
+        document.querySelectorAll('.filtro-btn').forEach(btn => {
+            btn.classList.remove('bg-white', 'text-gray-700', 'shadow-sm');
+            btn.classList.add('text-gray-500');
+        });
+        const btnActivo = document.getElementById('filtro-' + estado);
+        if (btnActivo) {
+            btnActivo.classList.add('bg-white', 'text-gray-700', 'shadow-sm');
+            btnActivo.classList.remove('text-gray-500');
+        }
+
+        // Filtrar filas
+        document.querySelectorAll('.fila-candidato').forEach(fila => {
+            const estadoFila = fila.dataset.estado || '';
+            if (estado === 'todos' || estadoFila === estado) {
+                fila.style.display = '';
+            } else {
+                fila.style.display = 'none';
+            }
+        });
     }
 
     document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(); });
