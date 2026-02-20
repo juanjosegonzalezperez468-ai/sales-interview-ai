@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tu Diagnóstico de Reclutamiento - Sales AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body class="bg-gray-50">
+
+    <!-- HEADER -->
+    <header class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-sm font-bold">S</div>
+                    <span class="text-xl font-bold text-gray-900">Sales AI</span>
+                </div>
+                <a href="/" class="text-gray-600 hover:text-gray-900 text-sm font-medium">← Volver al inicio</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- HERO -->
+    <section class="bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12 lg:py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-4xl mx-auto">
+                <h1 class="text-4xl lg:text-5xl font-extrabold text-gray-900 mb-4 leading-tight">
+                    Tu Diagnóstico de
+                    <span class="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Reclutamiento</span>
+                </h1>
+                <p class="text-xl text-gray-600 mb-2">{{ diagnostico.leads.empresa }}</p>
+                <p class="text-sm text-gray-500">Generado el {{ diagnostico.created_at[:10] }}</p>
+            </div>
+        </div>
+    </section>
+
+
+
+    <!-- MÉTRICAS PRINCIPALES -->
+    <section class="py-12 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-blue-400 transition hover:shadow-lg">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-gray-500 text-sm font-medium">Costo Mensual Oculto</span>
+                        <span class="text-3xl">💰</span>
+                    </div>
+                    <div class="text-3xl font-bold text-gray-900 mb-1">${{ "{:,.0f}".format(diagnostico.costo_operativo_mensual) }}</div>
+                    <p class="text-sm text-gray-600">USD/mes en revisión manual</p>
+                </div>
+                <div class="p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-purple-400 transition hover:shadow-lg">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-gray-500 text-sm font-medium">Horas Desperdiciadas</span>
+                        <span class="text-3xl">⏱️</span>
+                    </div>
+                    <div class="text-3xl font-bold text-gray-900 mb-1">{{ diagnostico.horas_mensuales|round|int }} h</div>
+                    <p class="text-sm text-gray-600">por mes en filtrado manual</p>
+                </div>
+                <div class="p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-green-400 transition hover:shadow-lg">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-gray-500 text-sm font-medium">Nivel de Eficiencia</span>
+                        <span class="text-3xl">🎯</span>
+                    </div>
+                    <div class="text-3xl font-bold mb-1 {% if diagnostico.eficiencia_total >= 75 %}text-green-600{% elif diagnostico.eficiencia_total >= 50 %}text-yellow-600{% else %}text-red-600{% endif %}">
+                        {{ diagnostico.eficiencia_total|round|int }}%
+                    </div>
+                    <p class="text-sm text-gray-600">vs benchmark de industria</p>
+                </div>
+                <div class="p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-red-400 transition hover:shadow-lg">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-gray-500 text-sm font-medium">Costo por Errores</span>
+                        <span class="text-3xl">🚨</span>
+                    </div>
+                    <div class="text-3xl font-bold text-red-600 mb-1">${{ "{:,.0f}".format(diagnostico.costo_anual_errores) }}</div>
+                    <p class="text-sm text-gray-600">USD/año en malas contrataciones</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- COMPARACIÓN ANTES VS DESPUÉS -->
+    <section class="py-16 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Así se vería tu proceso optimizado</h2>
+                <p class="text-xl text-gray-600">Comparación lado a lado de tu proceso actual vs con Sales AI</p>
+            </div>
+            <div class="bg-white rounded-2xl shadow-xl p-8 lg:p-12">
+                <div class="grid lg:grid-cols-2 gap-12">
+                    <div>
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center text-2xl">❌</div>
+                            <h3 class="text-2xl font-bold text-gray-900">Proceso Actual</h3>
+                        </div>
+                        <div class="space-y-5">
+                            <div>
+                                <div class="flex justify-between text-sm mb-2 font-medium">
+                                    <span class="text-gray-700">Tiempo de revisión</span>
+                                    <span class="text-gray-900">{{ diagnostico.horas_mensuales|round|int }} h/mes</span>
+                                </div>
+                                <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-red-500 rounded-full" style="width: 100%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-2 font-medium">
+                                    <span class="text-gray-700">Costo operativo</span>
+                                    <span class="text-gray-900">${{ "{:,.0f}".format(diagnostico.costo_operativo_mensual) }}/mes</span>
+                                </div>
+                                <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-red-500 rounded-full" style="width: 100%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-2 font-medium">
+                                    <span class="text-gray-700">Tasa de error</span>
+                                    <span class="text-gray-900">{{ (diagnostico.tasa_error_decimal * 100)|round|int }}%</span>
+                                </div>
+                                <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-red-500 rounded-full" style="width: {{ (diagnostico.tasa_error_decimal * 100)|round|int }}%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-2 font-medium">
+                                    <span class="text-gray-700">Capacidad mensual</span>
+                                    <span class="text-gray-900">{{ diagnostico.total_cvs_mes }} CVs</span>
+                                </div>
+                                <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-red-500 rounded-full" style="width: 43%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center text-2xl">✅</div>
+                            <h3 class="text-2xl font-bold text-gray-900">Con Sales AI</h3>
+                        </div>
+                        <div class="space-y-5">
+                            <div>
+                                <div class="flex justify-between text-sm mb-2 font-medium">
+                                    <span class="text-gray-700">Tiempo de revisión</span>
+                                    <span class="text-green-600">{{ diagnostico.horas_optimizadas|round|int }} h/mes (-70%)</span>
+                                </div>
+                                <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-green-500 rounded-full" style="width: 30%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-2 font-medium">
+                                    <span class="text-gray-700">Costo operativo</span>
+                                    <span class="text-green-600">${{ "{:,.0f}".format(diagnostico.costo_optimizado_mensual) }}/mes (-70%)</span>
+                                </div>
+                                <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-green-500 rounded-full" style="width: 30%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-2 font-medium">
+                                    <span class="text-gray-700">Tasa de error</span>
+                                    <span class="text-green-600">{{ (diagnostico.tasa_error_optimizada * 100)|round|int }}% (-60%)</span>
+                                </div>
+                                <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-green-500 rounded-full" style="width: {{ (diagnostico.tasa_error_optimizada * 100)|round|int }}%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-2 font-medium">
+                                    <span class="text-gray-700">Capacidad mensual</span>
+                                    <span class="text-green-600">{{ diagnostico.capacidad_aumentada }} CVs (+233%)</span>
+                                </div>
+                                <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-green-500 rounded-full" style="width: 100%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-12 p-8 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border-2 border-green-200">
+                    <div class="grid md:grid-cols-2 gap-8 items-center">
+                        <div>
+                            <p class="text-sm text-gray-600 mb-2">💎 Ahorro potencial anual</p>
+                            <p class="text-5xl font-bold text-green-600 mb-2">${{ "{:,.0f}".format(diagnostico.ahorro_anual) }}</p>
+                            <p class="text-sm text-gray-600">USD anuales recuperados</p>
+                        </div>
+                        <div class="text-left md:text-right">
+                            <p class="text-sm text-gray-600 mb-2">Ahorro mensual</p>
+                            <p class="text-4xl font-bold text-green-600 mb-2">${{ "{:,.0f}".format(diagnostico.ahorro_mensual) }}</p>
+                            <p class="text-sm text-gray-600">USD/mes recuperados</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- BENCHMARK Y CUELLO DE BOTELLA -->
+    <section class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-8">
+                <div class="p-8 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl">
+                    <div class="w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center text-white text-2xl mb-4">📊</div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-6">Comparación con Benchmark</h3>
+                    <div class="mb-8"><canvas id="benchmarkChart" width="400" height="300"></canvas></div>
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-3 p-4 bg-white rounded-lg">
+                            <span class="text-2xl">⏱️</span>
+                            <div>
+                                <p class="font-semibold text-sm text-gray-700 mb-1">Tiempo por CV</p>
+                                <p class="text-sm text-gray-600">{{ mensajes.tiempo }}</p>
+                            </div>
+                        </div>
+                        {% if diagnostico.diferencia_vs_benchmark_error > 50 %}
+                        <div class="flex items-start gap-3 p-4 bg-red-50 rounded-lg">
+                            <span class="text-2xl">🚨</span>
+                            <div>
+                                <p class="font-semibold text-sm text-gray-700 mb-1">Tasa de error</p>
+                                <p class="text-sm text-gray-600">{{ diagnostico.diferencia_vs_benchmark_error|round|int }}% por encima del benchmark</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="p-8 bg-gradient-to-br from-red-50 to-red-100 rounded-2xl">
+                    <div class="w-14 h-14 bg-red-600 rounded-xl flex items-center justify-center text-white text-2xl mb-4">🚨</div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-3">Principal Cuello de Botella</h3>
+                    <div class="p-6 bg-white rounded-xl border-2 border-red-200 mb-6">
+                        <p class="text-lg font-semibold text-red-900 mb-2">{{ diagnostico.cuello_botella }}</p>
+                        <p class="text-sm text-red-700">Este es tu mayor problema según el diagnóstico.</p>
+                    </div>
+                    <h4 class="font-semibold text-gray-900 mb-4 text-lg">💡 Cómo Sales AI lo resuelve:</h4>
+                    <ul class="space-y-3">
+                        <li class="flex items-start gap-2">
+                            <svg class="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                            <span class="text-sm text-gray-700">Filtrado automático reduce 70% el tiempo de revisión</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <svg class="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                            <span class="text-sm text-gray-700">Scoring instantáneo de cada candidato</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <svg class="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                            <span class="text-sm text-gray-700">Decisiones basadas en datos objetivos</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PRECIOS -->
+    <section class="py-20 bg-gray-50">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+
+            <div class="text-center mb-12">
+                <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">¿Qué sigue ahora?</p>
+                <h2 class="text-3xl lg:text-4xl font-bold text-gray-900 mb-3">
+                    Activa Sales AI. Empieza a recuperar<br>tu dinero esta semana.
+                </h2>
+                <p class="text-gray-500 text-lg">7 días gratis. Cancela cuando quieras. Sin permanencia.</p>
+            </div>
+
+            <!-- TRES PLANES -->
+            <div class="grid md:grid-cols-3 gap-6 mb-10">
+
+                <!-- STARTER -->
+                <div class="bg-white rounded-2xl border-2 border-gray-200 p-8 hover:border-blue-200 hover:shadow-lg transition-all">
+                    <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Starter</p>
+                    <div class="mb-1">
+                        <span class="text-4xl font-extrabold text-gray-900">$79</span>
+                        <span class="text-gray-400 text-sm">/mes</span>
+                    </div>
+                    <p class="text-gray-400 text-sm mb-6">después del trial gratis</p>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center gap-2 text-sm text-gray-700">
+                            <svg class="w-4 h-4 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            3 vacantes activas
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-700">
+                            <svg class="w-4 h-4 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            150 candidatos/mes
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-700">
+                            <svg class="w-4 h-4 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            Scoring automático
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-300 line-through">
+                            <svg class="w-4 h-4 text-gray-200 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            Análisis avanzado
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-300 line-through">
+                            <svg class="w-4 h-4 text-gray-200 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            Soporte prioritario
+                        </li>
+                    </ul>
+                    <a href="/registro?plan=starter&email={{ diagnostico.calculadora_leads.email }}"
+                       class="block w-full text-center border-2 border-gray-200 text-gray-700 font-bold py-3 px-6 rounded-xl hover:border-blue-400 hover:text-blue-600 transition">
+                        Empezar gratis →
+                    </a>
+                </div>
+
+                <!-- PRO (RECOMENDADO) -->
+                <div class="bg-white rounded-2xl border-2 border-blue-500 p-8 shadow-xl shadow-blue-100 relative">
+                    <div class="absolute -top-4 left-1/2 -translate-x-1/2">
+                        <span class="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-wide">
+                            ⭐ Recomendado para ti
+                        </span>
+                    </div>
+                    <p class="text-xs font-bold uppercase tracking-widest text-blue-600 mb-4">Pro</p>
+                    <div class="mb-1">
+                        <span class="text-4xl font-extrabold text-gray-900">$99</span>
+                        <span class="text-gray-400 text-sm">/mes</span>
+                    </div>
+                    <p class="text-gray-400 text-sm mb-6">después del trial gratis</p>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center gap-2 text-sm font-medium text-gray-900">
+                            <svg class="w-4 h-4 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            10 vacantes activas
+                        </li>
+                        <li class="flex items-center gap-2 text-sm font-medium text-gray-900">
+                            <svg class="w-4 h-4 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            Candidatos ilimitados
+                        </li>
+                        <li class="flex items-center gap-2 text-sm font-medium text-gray-900">
+                            <svg class="w-4 h-4 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            Scoring + IA avanzada
+                        </li>
+                        <li class="flex items-center gap-2 text-sm font-medium text-gray-900">
+                            <svg class="w-4 h-4 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            Dashboard de análisis
+                        </li>
+                        <li class="flex items-center gap-2 text-sm font-medium text-gray-900">
+                            <svg class="w-4 h-4 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            Soporte prioritario
+                        </li>
+                    </ul>
+                    <a href="/registro?plan=pro&email={{ diagnostico.calculadora_leads.email }}"
+                       class="block w-full text-center bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 px-6 rounded-xl transition shadow-lg shadow-blue-200">
+                        Activar 7 días gratis →
+                    </a>
+                </div>
+
+                <!-- ENTERPRISE -->
+                <div class="bg-white rounded-2xl border-2 border-gray-200 p-8 hover:border-purple-200 hover:shadow-lg transition-all">
+                    <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Enterprise</p>
+                    <div class="mb-1">
+                        <span class="text-4xl font-extrabold text-gray-900">$149</span>
+                        <span class="text-gray-400 text-sm">/mes</span>
+                    </div>
+                    <p class="text-gray-400 text-sm mb-6">después del trial gratis</p>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center gap-2 text-sm text-gray-700">
+                            <svg class="w-4 h-4 text-purple-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            Vacantes ilimitadas
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-700">
+                            <svg class="w-4 h-4 text-purple-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            Multi-empresa / equipo
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-700">
+                            <svg class="w-4 h-4 text-purple-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            API + integraciones
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-700">
+                            <svg class="w-4 h-4 text-purple-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            Onboarding dedicado
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-700">
+                            <svg class="w-4 h-4 text-purple-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            SLA garantizado
+                        </li>
+                    </ul>
+                    <a href="/registro?plan=enterprise&email={{ diagnostico.calculadora_leads.email }}"
+                       class="block w-full text-center border-2 border-gray-200 text-gray-700 font-bold py-3 px-6 rounded-xl hover:border-purple-400 hover:text-purple-600 transition">
+                        Contactar ventas →
+                    </a>
+                </div>
+
+            </div>
+
+            <!-- ROI MICRO-COPY -->
+            <div class="max-w-xl mx-auto text-center">
+                <div class="p-5 bg-emerald-50 border border-emerald-200 rounded-2xl">
+                    <p class="text-emerald-700 font-bold text-base mb-1">
+                        💡 El plan Pro se paga solo en pocos días de uso
+                    </p>
+                    <p class="text-emerald-600 text-sm">
+                        Basado en tu ahorro estimado de ${{ "{:,.0f}".format(diagnostico.ahorro_mensual) }}/mes
+                    </p>
+                </div>
+                <div class="mt-6 flex flex-wrap items-center justify-center gap-6 text-xs text-gray-400">
+                    <span class="flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        Sin spam
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                        100% gratuito los primeros 7 días
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                        Activo en 5 minutos
+                    </span>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+        <!-- METODOLOGÍA -->
+    <section class="py-16 bg-gray-50">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h3 class="text-2xl font-bold text-gray-900 mb-8">📚 Metodología respaldada por investigación</h3>
+            <div class="grid md:grid-cols-2 gap-6 text-left">
+                {% for fuente, desc in [
+                    ('Harvard Business Review', 'Costo de mala contratación'),
+                    ('SHRM', 'Tiempos y costos de contratación'),
+                    ('LinkedIn Global Talent Trends', 'Benchmarks de industria'),
+                    ('Glassdoor Economic Research', 'ROI de contratación'),
+                ] %}
+                <div class="flex items-start gap-3">
+                    <svg class="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    <div>
+                        <p class="font-medium text-gray-900">{{ fuente }}</p>
+                        <p class="text-sm text-gray-600">{{ desc }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="bg-gray-900 text-gray-400 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p>&copy; 2026 Sales AI. Todos los derechos reservados.</p>
+            <div class="mt-4 flex items-center justify-center gap-6 text-sm">
+                <a href="#" class="hover:text-white">Privacidad</a>
+                <a href="#" class="hover:text-white">Términos</a>
+                <a href="#" class="hover:text-white">Contacto</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- MODAL DEMO -->
+    <div id="modalDemo" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-8">
+            <h3 class="text-2xl font-bold text-gray-900 mb-4">Agendar Demo Personalizada</h3>
+            <form id="formDemo" class="space-y-4">
+                <input type="hidden" id="diagnostico_id" value="{{ diagnostico.id }}">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <input type="email" id="demo_email" value="{{ diagnostico.leads.email }}" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono (opcional)</label>
+                    <input type="tel" id="demo_telefono"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Preferencia de horario</label>
+                    <select id="demo_horario" required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="">Selecciona...</option>
+                        <option value="mañana">Mañana (8am - 12pm)</option>
+                        <option value="tarde">Tarde (12pm - 5pm)</option>
+                        <option value="flexible">Flexible</option>
+                    </select>
+                </div>
+                <div class="flex gap-3">
+                    <button type="button" onclick="cerrarModalDemo()"
+                            class="flex-1 bg-gray-200 text-gray-700 font-semibold py-3 rounded-lg hover:bg-gray-300 transition">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                            class="flex-1 bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition">
+                        Confirmar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const diagnostico_id = "{{ diagnostico.id }}";
+        const diagnostico_data = {
+            tiempo_cv:  {{ diagnostico.tiempo_por_cv_min }},
+            tasa_error: {{ (diagnostico.tasa_error_decimal * 100)|round|int }},
+            personas:   {{ diagnostico.personas_proceso_num }}
+        };
+
+        const ctx = document.getElementById('benchmarkChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Tiempo/CV (min)', 'Tasa Error (%)', 'Personas'],
+                datasets: [{
+                    label: 'Tu proceso',
+                    data: [diagnostico_data.tiempo_cv, diagnostico_data.tasa_error, diagnostico_data.personas],
+                    backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                    borderColor: 'rgb(239, 68, 68)', borderWidth: 2
+                }, {
+                    label: 'Benchmark',
+                    data: [7, 12, 2],
+                    backgroundColor: 'rgba(34, 197, 94, 0.7)',
+                    borderColor: 'rgb(34, 197, 94)', borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        function trackAccion(accion, metadata = {}) {
+            fetch('/calculadora/api/tracking', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ diagnostico_id, tipo_interaccion: accion, datos: metadata })
+            });
+        }
+
+        function mostrarFormularioDemo() {
+            document.getElementById('modalDemo').classList.remove('hidden');
+            trackAccion('click_agendar');
+        }
+        function cerrarModalDemo() { document.getElementById('modalDemo').classList.add('hidden'); }
+
+        document.getElementById('formDemo').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const response = await fetch('/calculadora/api/demo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    diagnostico_id,
+                    email: document.getElementById('demo_email').value,
+                    telefono: document.getElementById('demo_telefono').value,
+                    preferencia_horario: document.getElementById('demo_horario').value
+                })
+            });
+            if (response.ok) { alert('¡Demo agendada! Te contactaremos pronto.'); cerrarModalDemo(); }
+        });
+
+        function descargarPDF() { trackAccion('descargar_pdf'); window.print(); }
+        function enviarPorEmail() {
+            const email = "{{ diagnostico.leads.email }}";
+            const subject = encodeURIComponent("Tu diagnóstico de reclutamiento - Sales AI");
+            const body = encodeURIComponent("Aquí está tu diagnóstico: " + window.location.href);
+            window.location.href = "mailto:" + email + "?subject=" + subject + "&body=" + body;
+            trackAccion('envia_email');
+        }
+
+        trackAccion('vio_resultados');
+    </script>
+</body>
+</html>

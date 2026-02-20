@@ -367,23 +367,21 @@ def api_demo():
 
 @calculadora_bp.route('/api/checkout', methods=['POST'])
 def api_checkout():
-    """
-    DESACTIVADO — Ahora todo es gratis (Lead Magnet).
-    Redirige al registro/trial en lugar de ePayco.
-    """
+    """DESACTIVADO - Ahora todo es gratis (Lead Magnet)"""
     try:
         data = request.get_json()
         if not data:
             return jsonify({'success': False, 'error': 'Body vacío'}), 400
-
         diagnostico_id = data.get('diagnostico_id')
         if not diagnostico_id:
             return jsonify({'success': False, 'error': 'diagnostico_id requerido'}), 400
-
         return jsonify({
-            'success':      True,
+            'success': True,
             'redirect_url': f'/registro?from=calculadora&diagnostico_id={diagnostico_id}'
         }), 200
+    except Exception as e:
+        logger.error(f"Error en api_checkout: {e}")
+        return jsonify({'success': False, 'error': 'Error interno'}), 500
 
     except Exception as e:
         logger.error(f"Error en api_checkout: {e}")

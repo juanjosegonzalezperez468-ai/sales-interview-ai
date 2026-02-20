@@ -11,7 +11,7 @@ from functools import wraps
 from datetime import datetime, timedelta
 
 from calculadora.routes import calculadora_bp
-from calculadora.epayco_checkout import epayco_bp
+#from calculadora.epayco_checkout import epayco_bp
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
