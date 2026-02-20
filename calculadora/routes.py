@@ -416,7 +416,7 @@ def api_demo():
 # ==============================================================================
 # ✨ NUEVAS RUTAS EPAYCO — CHECKOUT Y PAGOS
 # ==============================================================================
-from calculadora.epayco_checkout import crear_suscripcion_epayco, PLANES
+from calculadora.epayco_checkout import epayco_bp
 
 # ==============================================================================
 # EPAYCO — CHECKOUT
