@@ -122,29 +122,51 @@ def generar_resumen_profesional(cargo, score_final, detalle, hubo_ko, motivo_ko,
 # MIDDLEWARE ADMIN
 # ============================================
 
+# ============================================
+# MIDDLEWARE ADMIN (CON LOGS DE DEBUG)
+# ============================================
+
 def admin_required(f):
     """Decorador para proteger rutas que requieren acceso de super admin"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        # 1. Verificar sesión
         if not session.get('logeado'):
+            logger.warning("❌ ADMIN: Usuario no logueado")
+            flash('Debes iniciar sesión primero', 'error')
             return redirect(url_for('login'))
         
         user_id = session.get('user_id')
+        logger.info(f"🔍 ADMIN: Verificando acceso para user_id: {user_id}")
+        
         try:
+            # 2. Obtener email del usuario
             response = supabase.table('usuarios_empresa').select('email').eq('id', user_id).execute()
+            
             if not response.data:
+                logger.error(f"❌ ADMIN: No se encontró usuario con id: {user_id}")
+                flash('Usuario no encontrado', 'error')
                 return redirect(url_for('dashboard'))
             
             user_email = response.data[0]['email']
+            logger.info(f"📧 ADMIN: Email del usuario: {user_email}")
+            
+            # 3. Verificar si es super admin
             admin_check = supabase.table('super_admins').select('*').eq('email', user_email).eq('activo', True).execute()
             
+            logger.info(f"🔎 ADMIN: Resultado de búsqueda en super_admins: {admin_check.data}")
+            
             if not admin_check.data:
+                logger.warning(f"⛔ ADMIN: Email {user_email} NO está en super_admins o no está activo")
+                flash('No tienes permisos de administrador', 'warning')
                 return redirect(url_for('dashboard'))
             
+            logger.info(f"✅ ADMIN: Acceso concedido a {user_email}")
             return f(*args, **kwargs)
             
         except Exception as e:
-            logger.error(f"Error verificando permisos de admin: {e}")
+            logger.error(f"💥 ADMIN: Error verificando permisos: {e}")
+            flash('Error verificando permisos', 'error')
             return redirect(url_for('dashboard'))
     
     return decorated_function
