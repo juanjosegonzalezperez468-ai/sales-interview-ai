@@ -8,8 +8,6 @@ from calculadora.logic import calcular_metricas, generar_mensaje_benchmark
 from calculadora.api_calculadora import registrar_demo, registrar_interaccion
 from calculadora.epayco_checkout import epayco_bp
 
-
-
 # ── Blueprint ──────────────────────────────────────────────────────────────────
 calculadora_bp = Blueprint(
     'calculadora',
@@ -67,7 +65,7 @@ def lead_gate(diagnostico_id):
         return render_template('calculadora/calculadora_lead_gate.html', diagnostico_id=diagnostico_id)
         
     except Exception as e:
-        logger.error(f"Error en lead_gate: {str(e)}") # Este es el error que vemos en el log
+        logger.error(f"Error en lead_gate: {str(e)}")
         return redirect(url_for('calculadora.formulario'))
 
 
@@ -116,30 +114,6 @@ def resultados(diagnostico_id):
         return f"Error: {e}", 500
 
 
-@calculadora_bp.route('/pago-exitoso')
-def pago_exitoso():
-    """
-    ✨ NUEVO: Página de éxito después del pago con ePayco.
-    ePayco redirige aquí (url_response).
-
-    URL: /calculadora/pago-exitoso?diagnostico_id=xxx&ref=xxx
-    """
-    diagnostico_id = request.args.get('diagnostico_id')
-    ref_payco      = request.args.get('ref')
-    cancelado      = request.args.get('cancel')
-
-    # Si el usuario canceló, redirigir a resultados
-    if cancelado:
-        return redirect(f"/calculadora/resultados/{diagnostico_id}?cancel=1")
-
-    # Renderizar página de éxito
-    return render_template(
-        'pago_exitoso.html',
-        diagnostico_id=diagnostico_id,
-        ref_payco=ref_payco,
-    )
-
-
 # ==============================================================================
 # API ENDPOINTS
 # ==============================================================================
@@ -173,8 +147,6 @@ def api_submit():
                 return jsonify({'success': False, 'error': f'Campo requerido: {campo}'}), 400
 
         # ── 1. Crear o actualizar lead (SIN datos de contacto todavía) ──────
-        # Nota: el lead se crea con datos mínimos. Los datos completos
-        # (teléfono, empleados) llegan en el /api/lead-gate más adelante.
         lead_payload = {
             'nombre': data['nombre'],
             'email': data['email'],
@@ -222,7 +194,7 @@ def api_submit():
             'tiempo_por_cv':            data['tiempo_por_cv'],
             'personas_proceso':         data['personas_proceso'],
             'rango_salarial':           data['rango_salarial'],
-            'desbloqueado':             False,   # ← bloqueado hasta el gate
+            'desbloqueado':             False,
             'ip_address':               request.remote_addr,
             'user_agent':               request.headers.get('User-Agent'),
             **metricas,
@@ -250,7 +222,7 @@ def api_submit():
         return jsonify({
             'success':      True,
             'diagnostico_id': diagnostico_id,
-            'redirect_url': f'/calculadora/gate/{diagnostico_id}'   # ← GATE primero
+            'redirect_url': f'/calculadora/gate/{diagnostico_id}'
         }), 201
 
     except Exception as e:
@@ -414,11 +386,6 @@ def api_demo():
 
 
 # ==============================================================================
-# ✨ NUEVAS RUTAS EPAYCO — CHECKOUT Y PAGOS
-# ==============================================================================
-from calculadora.epayco_checkout import epayco_bp
-
-# ==============================================================================
 # EPAYCO — CHECKOUT
 # ==============================================================================
 
@@ -464,6 +431,10 @@ def pago_exitoso():
         ref_payco=ref_payco
     )
 
+
+# ==============================================================================
+# HEALTH CHECK
+# ==============================================================================
 
 @calculadora_bp.route('/health')
 def health():
