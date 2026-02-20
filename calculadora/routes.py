@@ -6,7 +6,7 @@ import os
 from supabase import create_client, Client
 from calculadora.logic import calcular_metricas, generar_mensaje_benchmark
 from calculadora.api_calculadora import registrar_demo, registrar_interaccion
-from calculadora.epayco_checkout import epayco_bp
+# from calculadora.epayco_checkout import epayco_bp  # DESACTIVADO - Lead Magnet
 
 # ── Blueprint ──────────────────────────────────────────────────────────────────
 calculadora_bp = Blueprint(
@@ -49,7 +49,6 @@ def lead_gate(diagnostico_id):
     URL: /calculadora/gate/<diagnostico_id>
     """
     try:
-        # Verificar que el diagnóstico existe
         result = supabase.table('calculadora_diagnosticos') \
             .select('id, desbloqueado') \
             .eq('id', diagnostico_id) \
@@ -58,12 +57,11 @@ def lead_gate(diagnostico_id):
         if not result.data:
             return redirect(url_for('calculadora.formulario'))
 
-        # Si ya desbloqueó antes, ir directo a resultados
         if result.data[0].get('desbloqueado'):
             return redirect(url_for('calculadora.resultados', diagnostico_id=diagnostico_id))
 
         return render_template('calculadora/calculadora_lead_gate.html', diagnostico_id=diagnostico_id)
-        
+
     except Exception as e:
         logger.error(f"Error en lead_gate: {str(e)}")
         return redirect(url_for('calculadora.formulario'))
@@ -88,11 +86,9 @@ def resultados(diagnostico_id):
 
         data = result.data[0]
 
-        # Seguridad: si no desbloqueó, mandarlo al gate
         if not data.get('desbloqueado'):
             return redirect(url_for('calculadora.lead_gate', diagnostico_id=diagnostico_id))
 
-        # Marcar como visto
         supabase.table('calculadora_diagnosticos') \
             .update({'visto_resultados': True}) \
             .eq('id', diagnostico_id) \
@@ -123,19 +119,15 @@ def api_submit():
     """
     Procesa el formulario de 8 preguntas.
     Crea lead + diagnóstico en Supabase.
-    Responde con redirect_url al Lead Gate (NO a resultados directamente).
+    Responde con redirect_url al Lead Gate.
 
     POST /calculadora/api/submit
-    Body: { nombre, email, empresa, cargo, vacantes_activas,
-            candidatos_por_vacante, principal_dolor, frecuencia_error,
-            tiempo_por_cv, personas_proceso, rango_salarial }
     """
     try:
         data = request.get_json()
         if not data:
             return jsonify({'success': False, 'error': 'Body vacío'}), 400
 
-        # ── Validar campos ──────────────────────────────────────────────────
         campos_requeridos = [
             'nombre', 'email', 'empresa', 'cargo',
             'vacantes_activas', 'candidatos_por_vacante',
@@ -146,15 +138,14 @@ def api_submit():
             if not data.get(campo):
                 return jsonify({'success': False, 'error': f'Campo requerido: {campo}'}), 400
 
-        # ── 1. Crear o actualizar lead (SIN datos de contacto todavía) ──────
         lead_payload = {
-            'nombre': data['nombre'],
-            'email': data['email'],
-            'empresa': data['empresa'],
-            'cargo': data['cargo'],
-            'origen_lead': 'calculadora',
-            'utm_source': data.get('utm_source'),
-            'utm_campaign': data.get('utm_campaign'),
+            'nombre':        data['nombre'],
+            'email':         data['email'],
+            'empresa':       data['empresa'],
+            'cargo':         data['cargo'],
+            'origen_lead':   'calculadora',
+            'utm_source':    data.get('utm_source'),
+            'utm_campaign':  data.get('utm_campaign'),
         }
 
         existing = supabase.table('calculadora_leads') \
@@ -174,7 +165,6 @@ def api_submit():
 
         logger.info(f"Lead procesado: {data['email']} → {lead_id}")
 
-        # ── 2. Calcular métricas ────────────────────────────────────────────
         metricas = calcular_metricas({
             'vacantes_activas':       data['vacantes_activas'],
             'candidatos_por_vacante': data['candidatos_por_vacante'],
@@ -184,19 +174,18 @@ def api_submit():
             'frecuencia_error':       data['frecuencia_error'],
         })
 
-        # ── 3. Crear diagnóstico ────────────────────────────────────────────
         diagnostico_payload = {
-            'lead_id':                  lead_id,
-            'vacantes_activas':         data['vacantes_activas'],
-            'candidatos_por_vacante':   data['candidatos_por_vacante'],
-            'principal_dolor':          data['principal_dolor'],
-            'frecuencia_error':         data['frecuencia_error'],
-            'tiempo_por_cv':            data['tiempo_por_cv'],
-            'personas_proceso':         data['personas_proceso'],
-            'rango_salarial':           data['rango_salarial'],
-            'desbloqueado':             False,
-            'ip_address':               request.remote_addr,
-            'user_agent':               request.headers.get('User-Agent'),
+            'lead_id':                lead_id,
+            'vacantes_activas':       data['vacantes_activas'],
+            'candidatos_por_vacante': data['candidatos_por_vacante'],
+            'principal_dolor':        data['principal_dolor'],
+            'frecuencia_error':       data['frecuencia_error'],
+            'tiempo_por_cv':          data['tiempo_por_cv'],
+            'personas_proceso':       data['personas_proceso'],
+            'rango_salarial':         data['rango_salarial'],
+            'desbloqueado':           False,
+            'ip_address':             request.remote_addr,
+            'user_agent':             request.headers.get('User-Agent'),
             **metricas,
         }
 
@@ -207,22 +196,20 @@ def api_submit():
 
         logger.info(f"Diagnóstico creado: {diagnostico_id}")
 
-        # ── 4. Registrar interacción ────────────────────────────────────────
         supabase.table('calculadora_interacciones').insert({
-            'lead_id':          lead_id,
-            'diagnostico_id':   diagnostico_id,
-            'accion':           'formulario_completado',
+            'lead_id':        lead_id,
+            'diagnostico_id': diagnostico_id,
+            'accion':         'formulario_completado',
             'metadata': {
                 'costo_mensual': metricas['costo_operativo_mensual'],
                 'ahorro_anual':  metricas['ahorro_anual'],
             }
         }).execute()
 
-        # ── Respuesta → redirigir al GATE, no a resultados ─────────────────
         return jsonify({
-            'success':      True,
+            'success':        True,
             'diagnostico_id': diagnostico_id,
-            'redirect_url': f'/calculadora/gate/{diagnostico_id}'
+            'redirect_url':   f'/calculadora/gate/{diagnostico_id}'
         }), 201
 
     except Exception as e:
@@ -236,10 +223,6 @@ def api_lead_gate():
     Recibe los datos del Lead Gate y desbloquea los resultados.
 
     POST /calculadora/api/lead-gate
-    Body: {
-        diagnostico_id, nombre, cargo, empresa, email,
-        telefono, empleados
-    }
     """
     try:
         data = request.get_json()
@@ -250,7 +233,6 @@ def api_lead_gate():
         if not diagnostico_id:
             return jsonify({'success': False, 'error': 'diagnostico_id requerido'}), 400
 
-        # ── 1. Obtener diagnóstico ──────────────────────────────────────────
         diag = supabase.table('calculadora_diagnosticos') \
             .select('lead_id') \
             .eq('id', diagnostico_id) \
@@ -261,7 +243,6 @@ def api_lead_gate():
 
         lead_id = diag.data[0]['lead_id']
 
-        # ── 2. Actualizar lead con datos completos ──────────────────────────
         supabase.table('calculadora_leads').update({
             'nombre':    data.get('nombre'),
             'cargo':     data.get('cargo'),
@@ -271,19 +252,17 @@ def api_lead_gate():
             'empleados': data.get('empleados'),
         }).eq('id', lead_id).execute()
 
-        # ── 3. Desbloquear diagnóstico ──────────────────────────────────────
         supabase.table('calculadora_diagnosticos').update({
-            'desbloqueado':      True,
-            'desbloqueado_at':   datetime.now().isoformat(),
+            'desbloqueado':    True,
+            'desbloqueado_at': datetime.now().isoformat(),
         }).eq('id', diagnostico_id).execute()
 
-        # ── 4. Registrar interacción ────────────────────────────────────────
         supabase.table('calculadora_interacciones').insert({
             'lead_id':        lead_id,
             'diagnostico_id': diagnostico_id,
             'accion':         'lead_gate_completado',
             'metadata': {
-                'empleados': data.get('empleados'),
+                'empleados':      data.get('empleados'),
                 'tiene_telefono': bool(data.get('telefono')),
             }
         }).execute()
@@ -306,7 +285,6 @@ def api_tracking():
     Registra interacciones del usuario en el dashboard de resultados.
 
     POST /calculadora/api/tracking
-    Body: { diagnostico_id, tipo_interaccion, datos }
     """
     try:
         data = request.get_json()
@@ -330,7 +308,6 @@ def api_tracking():
             'metadata':       data.get('datos') or data.get('metadata'),
         }).execute()
 
-        # Actualizar flags relevantes
         flags = {}
         accion = data.get('tipo_interaccion') or data.get('accion', '')
         if accion == 'descargar_pdf':
@@ -363,7 +340,6 @@ def api_demo():
     Registra una solicitud de demo desde la página de resultados.
 
     POST /calculadora/api/demo
-    Body: { diagnostico_id, email, telefono, preferencia_horario }
     """
     try:
         data = request.get_json()
@@ -386,13 +362,14 @@ def api_demo():
 
 
 # ==============================================================================
-# EPAYCO — CHECKOUT
+# EPAYCO — DESACTIVADO (MODO LEAD MAGNET)
 # ==============================================================================
 
 @calculadora_bp.route('/api/checkout', methods=['POST'])
 def api_checkout():
     """
-    Redirige al checkout de ePayco.
+    DESACTIVADO — Ahora todo es gratis (Lead Magnet).
+    Redirige al registro/trial en lugar de ePayco.
     """
     try:
         data = request.get_json()
@@ -400,36 +377,17 @@ def api_checkout():
             return jsonify({'success': False, 'error': 'Body vacío'}), 400
 
         diagnostico_id = data.get('diagnostico_id')
-        
         if not diagnostico_id:
             return jsonify({'success': False, 'error': 'diagnostico_id requerido'}), 400
 
-        # Redirigir al checkout de ePayco
-        checkout_url = f"/epayco/checkout/{diagnostico_id}"
-        
         return jsonify({
-            'success': True,
-            'redirect_url': checkout_url
+            'success':      True,
+            'redirect_url': f'/registro?from=calculadora&diagnostico_id={diagnostico_id}'
         }), 200
 
     except Exception as e:
         logger.error(f"Error en api_checkout: {e}")
         return jsonify({'success': False, 'error': 'Error interno'}), 500
-
-
-@calculadora_bp.route('/pago-exitoso')
-def pago_exitoso():
-    """
-    Página de éxito post-pago.
-    """
-    diagnostico_id = request.args.get('diagnostico_id')
-    ref_payco      = request.args.get('ref_payco')
-
-    return render_template(
-        'calculadora/calculadora_pago_exitoso.html',
-        diagnostico_id=diagnostico_id,
-        ref_payco=ref_payco
-    )
 
 
 # ==============================================================================

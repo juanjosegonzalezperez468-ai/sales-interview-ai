@@ -27,9 +27,9 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = 86400
 
 app.register_blueprint(calculadora_bp, url_prefix='/calculadora')
-app.register_blueprint(epayco_bp, url_prefix='/epayco')
+#app.register_blueprint(epayco_bp, url_prefix='/epayco')
 logger.info("✅ Módulo de calculadora registrado en /calculadora")
-logger.info("✅ Módulo de ePayco registrado en /epayco")
+#logger.info("✅ Módulo de ePayco registrado en /epayco")
 
 supabase: Client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_KEY'))
 
