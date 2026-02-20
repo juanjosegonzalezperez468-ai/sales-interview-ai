@@ -7,67 +7,56 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
-        /* --- ESTILOS CRM Y PESTAÑAS --- */
         .crm-tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 1.5rem;
-            border-bottom: 2px solid var(--gray-200);
-            padding-bottom: 0px;
+            display: flex; gap: 10px; margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--gray-200); padding-bottom: 0px;
         }
-
         .tab-btn {
-            padding: 1rem 1.5rem;
-            border: none;
-            background: none;
-            cursor: pointer;
-            font-weight: 600;
-            color: var(--gray-500);
-            border-bottom: 3px solid transparent;
-            transition: all 0.3s ease;
-            font-size: 0.95rem;
+            padding: 1rem 1.5rem; border: none; background: none; cursor: pointer;
+            font-weight: 600; color: var(--gray-500); border-bottom: 3px solid transparent;
+            transition: all 0.3s ease; font-size: 0.95rem;
         }
-
         .tab-btn:hover { color: var(--primary-blue); background: var(--gray-100); }
-
-        .tab-btn.active {
-            color: var(--primary-blue);
-            border-bottom-color: var(--primary-blue);
-        }
+        .tab-btn.active { color: var(--primary-blue); border-bottom-color: var(--primary-blue); }
 
         .crm-select {
-            padding: 8px 12px;
-            border-radius: 10px;
-            border: 1px solid var(--gray-200);
-            font-weight: 600;
-            font-size: 0.85rem;
-            cursor: pointer;
-            outline: none;
-            transition: all 0.2s;
+            padding: 8px 12px; border-radius: 10px; border: 1px solid var(--gray-200);
+            font-weight: 600; font-size: 0.85rem; cursor: pointer; outline: none; transition: all 0.2s;
         }
-
-        /* Colores dinámicos para los estados */
-        .status-evaluado { background-color: #f3f4f6; color: #374151; }
-        .status-meet { background-color: #fef3c7; color: #92400e; }
-        .status-contratado { background-color: #d1fae5; color: #065f46; }
+        .status-evaluado  { background-color: #f3f4f6; color: #374151; }
+        .status-meet      { background-color: #fef3c7; color: #92400e; }
+        .status-contratado{ background-color: #d1fae5; color: #065f46; }
         .status-rechazado { background-color: #fee2e2; color: #991b1b; }
 
-        /* Estilos Modal */
         .modal {
-            display: none; position: fixed; z-index: 1000; left: 0; top: 0; 
-            width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+            width: 100%; height: 100%; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px);
         }
         .modal-content {
-            background: white; margin: 5% auto; padding: 2.5rem; width: 70%; max-width: 900px; 
+            background: white; margin: 5% auto; padding: 2.5rem; width: 70%; max-width: 900px;
             border-radius: 20px; position: relative; max-height: 85vh; overflow-y: auto;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); animation: slideUp 0.3s ease-out;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); animation: slideUp 0.3s ease-out;
         }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .close-btn { position: absolute; right: 25px; top: 15px; font-size: 32px; font-weight: bold; color: var(--gray-400); cursor: pointer; }
 
-        .score-high { color: #065f46; background: #d1fae5; border: 1px solid #a7f3d0; }
+        .score-high   { color: #065f46; background: #d1fae5; border: 1px solid #a7f3d0; }
         .score-medium { color: #92400e; background: #fef3c7; border: 1px solid #fde68a; }
-        .score-low { color: #991b1b; background: #fee2e2; border: 1px solid #fecaca; }
+        .score-low    { color: #991b1b; background: #fee2e2; border: 1px solid #fecaca; }
+
+        /* Comparador */
+        .check-comparar { width: 16px; height: 16px; cursor: pointer; accent-color: #4f46e5; }
+        .candidato-row.seleccionada { background: #eef2ff !important; }
+        #btn-comparar-crm {
+            display: none; align-items: center; gap: 8px;
+            padding: 10px 20px; background: #4f46e5; color: white;
+            border: none; border-radius: 12px; font-weight: 700; font-size: 0.9rem;
+            cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(79,70,229,0.3);
+        }
+        #btn-comparar-crm:hover { background: #4338ca; transform: translateY(-1px); }
+        #hint-comparar {
+            font-size: 0.8rem; color: var(--gray-400); font-style: italic;
+        }
     </style>
 </head>
 <body style="background-color: var(--gray-50);">
@@ -92,7 +81,7 @@
     </header>
 
     <main class="container" style="margin-top: var(--spacing-xl); margin-bottom: var(--spacing-2xl);">
-        
+
         <div class="crm-tabs">
             <button onclick="filtrarPorPestaña('TODOS', this)" class="tab-btn active">Todos</button>
             <button onclick="filtrarPorPestaña('Evaluado', this)" class="tab-btn">1. Leads (IA)</button>
@@ -100,13 +89,24 @@
             <button onclick="filtrarPorPestaña('FINALIZADOS', this)" class="tab-btn">3. Cierre</button>
         </div>
 
-        <div class="filters-bar" style="background: white; padding: 1.25rem; border-radius: 16px; margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: center; box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200);">
-            <div style="flex: 1; position: relative;">
-                <input type="text" id="searchInput" onkeyup="aplicarFiltros()" placeholder="🔍 Buscar por nombre, identificación o vacante..." 
-                       style="width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--gray-200); border-radius: 10px; font-size: 0.95rem;">
+        <!-- Barra de filtros + comparador -->
+        <div style="background: white; padding: 1.25rem; border-radius: 16px; margin-bottom: 1.5rem;
+                    display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;
+                    box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200);">
+            <div style="flex: 1; position: relative; min-width: 200px;">
+                <input type="text" id="searchInput" onkeyup="aplicarFiltros()"
+                       placeholder="🔍 Buscar por nombre, identificación o vacante..."
+                       style="width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--gray-200);
+                              border-radius: 10px; font-size: 0.95rem;">
             </div>
-            <div style="color: var(--gray-400); font-size: 0.85rem; font-weight: 500;">
-                <span id="contadorCandidatos">{{ candidatos|length }}</span> candidatos mostrados
+
+            <!-- Contador + comparador -->
+            <span id="hint-comparar">Selecciona 2 candidatos para comparar</span>
+            <button id="btn-comparar-crm" onclick="irComparador()">
+                ⚖️ Comparar seleccionados
+            </button>
+            <div style="color: var(--gray-400); font-size: 0.85rem; font-weight: 500; white-space: nowrap;">
+                <span id="contadorCandidatos">{{ candidatos|length }}</span> candidatos
             </div>
         </div>
 
@@ -114,6 +114,7 @@
             <table id="candidatosTable" style="width: 100%; border-collapse: collapse; text-align: left;">
                 <thead>
                     <tr style="background: var(--gray-50); border-bottom: 2px solid var(--gray-200);">
+                        <th style="padding: 1.25rem 0.75rem; width: 40px;"></th>
                         <th style="padding: 1.25rem; color: var(--gray-700); font-weight: 600;">CANDIDATO / VACANTE</th>
                         <th style="padding: 1.25rem; color: var(--gray-700); font-weight: 600;">SCORE IA</th>
                         <th style="padding: 1.25rem; color: var(--gray-700); font-weight: 600;">ESTADO PROCESO</th>
@@ -122,48 +123,61 @@
                 </thead>
                 <tbody id="tablaBody">
                     {% for c in candidatos %}
-                    <tr class="candidato-row" 
-                        data-estado="{{ c.estado if c.estado and c.estado != 'None' else 'Evaluado' }}" 
+                    <tr class="candidato-row"
+                        data-estado="{{ c.estado if c.estado and c.estado != 'None' else 'Evaluado' }}"
                         style="border-bottom: 1px solid var(--gray-100); transition: 0.2s;">
+
+                        <!-- Checkbox comparador -->
+                        <td style="padding: 1.25rem 0.75rem; text-align: center;">
+                            <input type="checkbox"
+                                   class="check-comparar"
+                                   data-id="{{ c.id }}"
+                                   data-nombre="{{ c.nombre_candidato }}"
+                                   onchange="actualizarComparador(this, this.closest('tr'))">
+                        </td>
+
                         <td style="padding: 1.25rem;">
-                            <div class="nombre-candidato" style="font-weight: 600; color: var(--gray-900); font-size: 1rem;">{{ c.nombre_candidato }}</div>
+                            <div class="nombre-candidato" style="font-weight: 600; color: var(--gray-900); font-size: 1rem;">
+                                {{ c.nombre_candidato }}
+                            </div>
                             <div style="font-size: 0.8rem; color: #2563eb; font-weight: bold; margin-top: 2px;">
                                 📌 {{ c.vacante if c.vacante and c.vacante != 'None' else 'General' }}
                             </div>
                             <div style="font-size: 0.8rem; color: var(--gray-500);">ID: {{ c.identificacion }}</div>
                         </td>
-                        
+
                         <td style="padding: 1.25rem;">
-                            <span class="score-mini {% if c.score|int >= 75 %}score-high{% elif c.score|int >= 50 %}score-medium{% else %}score-low{% endif %}" style="padding: 4px 10px; border-radius: 8px; font-weight: 700;">
+                            <span class="score-mini {% if c.score|int >= 75 %}score-high{% elif c.score|int >= 50 %}score-medium{% else %}score-low{% endif %}"
+                                  style="padding: 4px 10px; border-radius: 8px; font-weight: 700;">
                                 {{ c.score if c.score is not none else 0 }}%
                             </span>
                         </td>
 
                         <td style="padding: 1.25rem;">
-                            <select onchange="cambiarEstado('{{ c.id }}', this)" 
-                                    class="crm-select 
+                            <select onchange="cambiarEstado('{{ c.id }}', this)"
+                                    class="crm-select
                                     {% if c.estado == 'Agendado Meet' %}status-meet
                                     {% elif c.estado == 'Contratado' %}status-contratado
                                     {% elif c.estado == 'Rechazado' %}status-rechazado
                                     {% else %}status-evaluado{% endif %}">
-                                <option value="Evaluado" {% if c.estado == 'Evaluado' or not c.estado or c.estado == 'None' %}selected{% endif %}>🆕 Evaluado por IA</option>
+                                <option value="Evaluado"      {% if c.estado == 'Evaluado' or not c.estado or c.estado == 'None' %}selected{% endif %}>🆕 Evaluado por IA</option>
                                 <option value="Agendado Meet" {% if c.estado == 'Agendado Meet' %}selected{% endif %}>📅 Agendado Meet</option>
-                                <option value="Contratado" {% if c.estado == 'Contratado' %}selected{% endif %}>✅ Contratado</option>
-                                <option value="Rechazado" {% if c.estado == 'Rechazado' %}selected{% endif %}>❌ Rechazado</option>
+                                <option value="Contratado"    {% if c.estado == 'Contratado' %}selected{% endif %}>✅ Contratado</option>
+                                <option value="Rechazado"     {% if c.estado == 'Rechazado' %}selected{% endif %}>❌ Rechazado</option>
                             </select>
                         </td>
 
-                        <td style="padding: 1.25rem; display: flex; gap: 0.5rem;">
-                            <button onclick="verDetalle('{{ c.nombre_candidato }}', '{{ c.fortalezas }}', '{{ c.debilidades }}', '{{ c.analisis_ia }}', '{{ c.score }}')" 
+                        <td style="padding: 1.25rem; display: flex; gap: 0.5rem; align-items: center;">
+                            <button onclick="verDetalle('{{ c.nombre_candidato }}', '{{ c.fortalezas }}', '{{ c.debilidades }}', '{{ c.analisis_ia }}', '{{ c.score }}')"
                                     class="btn-secondary" style="padding: 0.5rem 0.8rem; font-size: 0.8rem;">
                                 👁️ Detalle
                             </button>
-
                             {% if c.telefono %}
-                                <a href="https://wa.me/{{ c.telefono }}?text=Hola%20{{ c.nombre_candidato }},%20nos%20gustaría%20agendar%20una%20entrevista%20por%20Meet..." target="_blank" 
-                                   class="btn-primary" style="text-decoration: none; padding: 0.5rem 0.8rem; font-size: 0.8rem;">
-                                    WhatsApp
-                                </a>
+                            <a href="https://wa.me/{{ c.telefono }}?text=Hola%20{{ c.nombre_candidato }},%20nos%20gustaría%20agendar%20una%20entrevista%20por%20Meet..."
+                               target="_blank" class="btn-primary"
+                               style="text-decoration: none; padding: 0.5rem 0.8rem; font-size: 0.8rem;">
+                                WhatsApp
+                            </a>
                             {% endif %}
                         </td>
                     </tr>
@@ -173,6 +187,7 @@
         </div>
     </main>
 
+    <!-- Modal detalle -->
     <div id="detalleModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="cerrarModal()">&times;</span>
@@ -197,85 +212,110 @@
     </div>
 
     <script>
+        // ── Pestañas ──────────────────────────────────────────
         function filtrarPorPestaña(estadoRecibido, btn) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            const rows = document.querySelectorAll('.candidato-row');
             let visibles = 0;
-            rows.forEach(row => {
+            document.querySelectorAll('.candidato-row').forEach(row => {
                 let rowEstado = row.getAttribute('data-estado') || 'Evaluado';
-                if (rowEstado === 'None' || rowEstado === '' || rowEstado === 'null') rowEstado = 'Evaluado';
+                if (['None','','null'].includes(rowEstado)) rowEstado = 'Evaluado';
                 let mostrar = false;
                 if (estadoRecibido === 'TODOS') mostrar = true;
-                else if (estadoRecibido === 'FINALIZADOS') {
-                    if (rowEstado === 'Contratado' || rowEstado === 'Rechazado') mostrar = true;
-                } else if (estadoRecibido === 'Evaluado') {
-                    const select = row.querySelector('.crm-select');
-                    if (rowEstado === 'Evaluado' || select.value === 'Evaluado') mostrar = true;
-                } else {
-                    if (rowEstado === estadoRecibido) mostrar = true;
-                }
-                row.style.display = mostrar ? "" : "none";
+                else if (estadoRecibido === 'FINALIZADOS') mostrar = ['Contratado','Rechazado'].includes(rowEstado);
+                else mostrar = rowEstado === estadoRecibido;
+                row.style.display = mostrar ? '' : 'none';
                 if (mostrar) visibles++;
             });
             document.getElementById('contadorCandidatos').innerText = visibles;
         }
 
+        // ── Búsqueda ──────────────────────────────────────────
         function aplicarFiltros() {
-            const searchText = document.getElementById('searchInput').value.toLowerCase();
-            const rows = document.querySelectorAll('.candidato-row');
+            const q = document.getElementById('searchInput').value.toLowerCase();
             let visibles = 0;
-            rows.forEach(row => {
-                const contenido = row.innerText.toLowerCase(); // Busca en nombre, ID y Vacante
-                const isTabVisible = row.getAttribute('style') && row.getAttribute('style').indexOf('display: none') === -1;
-                if (contenido.includes(searchText)) {
-                    row.style.display = "";
-                    visibles++;
-                } else {
-                    row.style.display = "none";
-                }
+            document.querySelectorAll('.candidato-row').forEach(row => {
+                const match = row.innerText.toLowerCase().includes(q);
+                row.style.display = match ? '' : 'none';
+                if (match) visibles++;
             });
             document.getElementById('contadorCandidatos').innerText = visibles;
         }
 
-        function cambiarEstado(id, elemento) {
-            const nuevoEstado = elemento.value;
-            const row = elemento.closest('.candidato-row');
-            row.setAttribute('data-estado', nuevoEstado);
-            elemento.classList.remove('status-evaluado', 'status-meet', 'status-contratado', 'status-rechazado');
-            if (nuevoEstado === 'Agendado Meet') elemento.classList.add('status-meet');
-            else if (nuevoEstado === 'Contratado') elemento.classList.add('status-contratado');
-            else if (nuevoEstado === 'Rechazado') elemento.classList.add('status-rechazado');
-            else elemento.classList.add('status-evaluado');
-
+        // ── Estado ───────────────────────────────────────────
+        function cambiarEstado(id, el) {
+            const nuevoEstado = el.value;
+            el.closest('.candidato-row').setAttribute('data-estado', nuevoEstado);
+            el.classList.remove('status-evaluado','status-meet','status-contratado','status-rechazado');
+            const map = { 'Agendado Meet':'status-meet','Contratado':'status-contratado','Rechazado':'status-rechazado' };
+            el.classList.add(map[nuevoEstado] || 'status-evaluado');
             fetch('/actualizar_estado', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: id, estado: nuevoEstado })
-            }).then(response => {
-                if (response.ok) {
-                    const pestañaActiva = document.querySelector('.tab-btn.active');
-                    if (pestañaActiva && pestañaActiva.innerText !== 'Todos') {
-                        pestañaActiva.click(); 
-                    }
+                body: JSON.stringify({ id, estado: nuevoEstado })
+            }).then(r => {
+                if (r.ok) {
+                    const activa = document.querySelector('.tab-btn.active');
+                    if (activa && activa.innerText !== 'Todos') activa.click();
                 }
             });
         }
 
+        // ── Modal detalle ─────────────────────────────────────
         function verDetalle(nombre, fortalezas, debilidades, analisis, score) {
-            document.getElementById('modalNombre').innerText = nombre;
-            document.getElementById('modalFortalezas').innerText = fortalezas || "N/A";
-            document.getElementById('modalDebilidades').innerText = debilidades || "N/A";
-            document.getElementById('modalAnalisis').innerText = analisis || "N/A";
+            document.getElementById('modalNombre').innerText     = nombre;
+            document.getElementById('modalFortalezas').innerText = fortalezas || 'N/A';
+            document.getElementById('modalDebilidades').innerText= debilidades || 'N/A';
+            document.getElementById('modalAnalisis').innerText   = analisis   || 'N/A';
             const scoreDiv = document.getElementById('modalScoreValue');
-            scoreDiv.innerText = "Score IA: " + score + "%";
+            scoreDiv.innerText = 'Score IA: ' + score + '%';
             const s = parseInt(score);
-            scoreDiv.style.background = s >= 75 ? "#d1fae5" : (s >= 50 ? "#fef3c7" : "#fee2e2");
-            scoreDiv.style.color = s >= 75 ? "#065f46" : (s >= 50 ? "#92400e" : "#991b1b");
-            document.getElementById('detalleModal').style.display = "block";
+            scoreDiv.style.background = s >= 75 ? '#d1fae5' : s >= 50 ? '#fef3c7' : '#fee2e2';
+            scoreDiv.style.color      = s >= 75 ? '#065f46' : s >= 50 ? '#92400e' : '#991b1b';
+            document.getElementById('detalleModal').style.display = 'block';
+        }
+        function cerrarModal() { document.getElementById('detalleModal').style.display = 'none'; }
+
+        // ── COMPARADOR ────────────────────────────────────────
+        const seleccionados = {};
+
+        function actualizarComparador(checkbox, row) {
+            const id     = checkbox.dataset.id;
+            const nombre = checkbox.dataset.nombre;
+
+            if (checkbox.checked) {
+                if (Object.keys(seleccionados).length >= 2) {
+                    checkbox.checked = false;
+                    return;
+                }
+                seleccionados[id] = nombre;
+                row.classList.add('seleccionada');
+            } else {
+                delete seleccionados[id];
+                row.classList.remove('seleccionada');
+            }
+
+            const count = Object.keys(seleccionados).length;
+            const btn   = document.getElementById('btn-comparar-crm');
+            const hint  = document.getElementById('hint-comparar');
+
+            if (count === 2) {
+                btn.style.display  = 'inline-flex';
+                hint.style.display = 'none';
+            } else {
+                btn.style.display  = 'none';
+                hint.style.display = 'inline';
+                hint.innerText     = count === 1
+                    ? 'Selecciona 1 candidato más para comparar'
+                    : 'Selecciona 2 candidatos para comparar';
+            }
         }
 
-        function cerrarModal() { document.getElementById('detalleModal').style.display = "none"; }
+        function irComparador() {
+            const ids = Object.keys(seleccionados);
+            if (ids.length !== 2) return;
+            window.location.href = `/comparar?c1=${ids[0]}&c2=${ids[1]}`;
+        }
     </script>
 </body>
 </html>
