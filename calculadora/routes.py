@@ -7,7 +7,7 @@ from supabase import create_client, Client
 from calculadora.logic import calcular_metricas, generar_mensaje_benchmark
 from calculadora.api_calculadora import registrar_demo, registrar_interaccion
 from calculadora.epayco_checkout import epayco_bp
-from calculadora.epayco_checkout import crear_suscripcion_epayco, PLANES
+
 
 
 # ── Blueprint ──────────────────────────────────────────────────────────────────
@@ -425,42 +425,25 @@ from calculadora.epayco_checkout import crear_suscripcion_epayco, PLANES
 @calculadora_bp.route('/api/checkout', methods=['POST'])
 def api_checkout():
     """
-    Crea suscripción en ePayco y devuelve datos para el checkout.
+    Redirige al checkout de ePayco.
     """
     try:
         data = request.get_json()
         if not data:
             return jsonify({'success': False, 'error': 'Body vacío'}), 400
 
-        plan           = data.get('plan', 'pro')
         diagnostico_id = data.get('diagnostico_id')
-        email          = data.get('email')
-        nombre         = data.get('nombre')
+        
+        if not diagnostico_id:
+            return jsonify({'success': False, 'error': 'diagnostico_id requerido'}), 400
 
-        if not all([plan, diagnostico_id, email, nombre]):
-            return jsonify({'success': False, 'error': 'Faltan campos requeridos'}), 400
-
-        resultado = crear_suscripcion_epayco(
-            plan=plan,
-            email=email,
-            diagnostico_id=diagnostico_id,
-            nombre=nombre
-        )
-
-        if resultado['success']:
-            # Registrar intención de pago
-            supabase.table('calculadora_interacciones').insert({
-                'diagnostico_id': diagnostico_id,
-                'accion':         'inicio_checkout',
-                'metadata':       {'plan': plan}
-            }).execute()
-
-            return jsonify({
-                'success':      True,
-                'checkout_data': resultado['checkout_data']
-            }), 200
-        else:
-            return jsonify(resultado), 500
+        # Redirigir al checkout de ePayco
+        checkout_url = f"/epayco/checkout/{diagnostico_id}"
+        
+        return jsonify({
+            'success': True,
+            'redirect_url': checkout_url
+        }), 200
 
     except Exception as e:
         logger.error(f"Error en api_checkout: {e}")

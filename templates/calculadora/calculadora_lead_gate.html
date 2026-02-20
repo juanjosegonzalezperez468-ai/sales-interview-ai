@@ -738,56 +738,25 @@
                 })
             });
 
-            // Deshabilitar botón
-            const btn = document.querySelector('.btn-cta');
-            btn.textContent = '⏳ Procesando...';
-            btn.disabled = true;
-
             try {
-                // Llamar al backend para crear suscripción en ePayco
                 const response = await fetch('/calculadora/api/checkout', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        plan: selectedPlan,
-                        diagnostico_id: diagnostico_id,
-                        email: leadData.email,
-                        nombre: leadData.nombre
+                        diagnostico_id: diagnostico_id
                     })
                 });
 
                 const result = await response.json();
 
                 if (result.success) {
-                    // Abrir checkout de ePayco
-                    const checkoutData = result.checkout_data;
-                    
-                    // ePayco Checkout widget
-                    var handler = ePayco.checkout.configure({
-                        key: checkoutData.public_key,
-                        test: checkoutData.test === 'true'
-                    });
-
-                    handler.open({
-                        name:         checkoutData.name,
-                        description:  checkoutData.description,
-                        amount:       checkoutData.amount,
-                        currency:     checkoutData.currency,
-                        response:     checkoutData.response,
-                        confirmation: checkoutData.confirmation,
-                        extra1:       checkoutData.extra1,
-                        extra2:       checkoutData.extra2,
-                        external:     'false',
-                    });
+                    // Redirigir al checkout de ePayco
+                    window.location.href = result.redirect_url;
                 } else {
-                    btn.textContent = 'Activar 7 días gratis — Sin tarjeta';
-                    btn.disabled = false;
                     alert('Error: ' + (result.error || 'Intenta de nuevo'));
                 }
             } catch (err) {
                 console.error(err);
-                btn.textContent = 'Activar 7 días gratis — Sin tarjeta';
-                btn.disabled = false;
                 alert('Error de conexión. Intenta de nuevo.');
             }
         }
