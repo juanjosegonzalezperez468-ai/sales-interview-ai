@@ -7,6 +7,8 @@ from supabase import create_client, Client
 from calculadora.logic import calcular_metricas, generar_mensaje_benchmark
 from calculadora.api_calculadora import registrar_demo, registrar_interaccion
 from calculadora.epayco_checkout import epayco_bp
+from calculadora.epayco_checkout import crear_suscripcion_epayco, PLANES
+
 
 # ── Blueprint ──────────────────────────────────────────────────────────────────
 calculadora_bp = Blueprint(
@@ -414,7 +416,70 @@ def api_demo():
 # ==============================================================================
 # ✨ NUEVAS RUTAS EPAYCO — CHECKOUT Y PAGOS
 # ==============================================================================
+from calculadora.epayco_checkout import crear_suscripcion_epayco, PLANES
 
+# ==============================================================================
+# EPAYCO — CHECKOUT
+# ==============================================================================
+
+@calculadora_bp.route('/api/checkout', methods=['POST'])
+def api_checkout():
+    """
+    Crea suscripción en ePayco y devuelve datos para el checkout.
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'Body vacío'}), 400
+
+        plan           = data.get('plan', 'pro')
+        diagnostico_id = data.get('diagnostico_id')
+        email          = data.get('email')
+        nombre         = data.get('nombre')
+
+        if not all([plan, diagnostico_id, email, nombre]):
+            return jsonify({'success': False, 'error': 'Faltan campos requeridos'}), 400
+
+        resultado = crear_suscripcion_epayco(
+            plan=plan,
+            email=email,
+            diagnostico_id=diagnostico_id,
+            nombre=nombre
+        )
+
+        if resultado['success']:
+            # Registrar intención de pago
+            supabase.table('calculadora_interacciones').insert({
+                'diagnostico_id': diagnostico_id,
+                'accion':         'inicio_checkout',
+                'metadata':       {'plan': plan}
+            }).execute()
+
+            return jsonify({
+                'success':      True,
+                'checkout_data': resultado['checkout_data']
+            }), 200
+        else:
+            return jsonify(resultado), 500
+
+    except Exception as e:
+        logger.error(f"Error en api_checkout: {e}")
+        return jsonify({'success': False, 'error': 'Error interno'}), 500
+
+
+@calculadora_bp.route('/pago-exitoso')
+def pago_exitoso():
+    """
+    Página de éxito post-pago.
+    """
+    diagnostico_id = request.args.get('diagnostico_id')
+    ref_payco      = request.args.get('ref_payco')
+
+    return render_template(
+        'calculadora/calculadora_pago_exitoso.html',
+        diagnostico_id=diagnostico_id,
+        ref_payco=ref_payco
+    )
 
 
 @calculadora_bp.route('/health')
