@@ -6,130 +6,124 @@
     <title>Tu Diagnóstico de Reclutamiento - Sales AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <meta name="description" content="Tu diagnóstico personalizado de costos ocultos de reclutamiento - Sales AI">
 </head>
 <body class="bg-gray-50">
-    
-    <!-- HEADER (MISMO DEL LANDING) -->
+
+    <!-- HEADER -->
     <header class="bg-white border-b border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-sm font-bold">
-                        S
-                    </div>
+                    <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-sm font-bold">S</div>
                     <span class="text-xl font-bold text-gray-900">Sales AI</span>
                 </div>
-                <a href="/" class="text-gray-600 hover:text-gray-900 text-sm font-medium">
-                    ← Volver al inicio
-                </a>
+                <a href="/" class="text-gray-600 hover:text-gray-900 text-sm font-medium">← Volver al inicio</a>
             </div>
         </div>
     </header>
 
-    <!-- HERO SECTION CON BADGE -->
+    <!-- HERO -->
     <section class="bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12 lg:py-16">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center max-w-4xl mx-auto">
-                <!-- Título -->
                 <h1 class="text-4xl lg:text-5xl font-extrabold text-gray-900 mb-4 leading-tight">
                     Tu Diagnóstico de
-                    <span class="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                        Reclutamiento
-                    </span>
+                    <span class="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Reclutamiento</span>
                 </h1>
-                
                 <p class="text-xl text-gray-600 mb-2">{{ diagnostico.leads.empresa }}</p>
                 <p class="text-sm text-gray-500">Generado el {{ diagnostico.created_at[:10] }}</p>
             </div>
         </div>
     </section>
 
-    <!-- MÉTRICAS PRINCIPALES (4 CARDS) -->
+    <!-- ══════════════════════════════════════════
+         BANNER DE REPORTE PREMIUM (NUEVO)
+         Solo se muestra si el usuario NO ha pagado
+    ══════════════════════════════════════════ -->
+    {% if not pago_aprobado %}
+    <section class="py-6 bg-gradient-to-r from-indigo-600 to-purple-600">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="text-white">
+                    <p class="text-sm font-semibold text-indigo-200 mb-0.5">🔒 Reporte Premium disponible</p>
+                    <p class="text-lg font-bold">Obtén el PDF completo + plan de implementación de 90 días</p>
+                </div>
+                <a href="/epayco/checkout/{{ diagnostico.id }}"
+                   class="flex-shrink-0 bg-white text-indigo-700 font-bold px-6 py-3 rounded-xl
+                          hover:bg-indigo-50 transition shadow-lg text-sm whitespace-nowrap">
+                    Desbloquear por $29 USD →
+                </a>
+            </div>
+        </div>
+    </section>
+    {% else %}
+    <section class="py-4 bg-green-600">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+            <p class="text-white font-semibold">✅ Reporte completo desbloqueado</p>
+            <a href="/epayco/reporte/{{ diagnostico.id }}"
+               class="bg-white text-green-700 font-bold px-5 py-2 rounded-xl hover:bg-green-50 transition text-sm">
+                Ver reporte completo →
+            </a>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- MÉTRICAS PRINCIPALES -->
     <section class="py-12 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                
-                <!-- Métrica 1: Costo Mensual -->
                 <div class="p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-blue-400 transition hover:shadow-lg">
                     <div class="flex items-center justify-between mb-3">
                         <span class="text-gray-500 text-sm font-medium">Costo Mensual Oculto</span>
                         <span class="text-3xl">💰</span>
                     </div>
-                    <div class="text-3xl font-bold text-gray-900 mb-1">
-                        ${{ "{:,.0f}".format(diagnostico.costo_operativo_mensual) }}
-                    </div>
+                    <div class="text-3xl font-bold text-gray-900 mb-1">${{ "{:,.0f}".format(diagnostico.costo_operativo_mensual) }}</div>
                     <p class="text-sm text-gray-600">USD/mes en revisión manual</p>
                 </div>
-
-                <!-- Métrica 2: Horas -->
                 <div class="p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-purple-400 transition hover:shadow-lg">
                     <div class="flex items-center justify-between mb-3">
                         <span class="text-gray-500 text-sm font-medium">Horas Desperdiciadas</span>
                         <span class="text-3xl">⏱️</span>
                     </div>
-                    <div class="text-3xl font-bold text-gray-900 mb-1">
-                        {{ diagnostico.horas_mensuales|round|int }} h
-                    </div>
+                    <div class="text-3xl font-bold text-gray-900 mb-1">{{ diagnostico.horas_mensuales|round|int }} h</div>
                     <p class="text-sm text-gray-600">por mes en filtrado manual</p>
                 </div>
-
-                <!-- Métrica 3: Eficiencia -->
                 <div class="p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-green-400 transition hover:shadow-lg">
                     <div class="flex items-center justify-between mb-3">
                         <span class="text-gray-500 text-sm font-medium">Nivel de Eficiencia</span>
                         <span class="text-3xl">🎯</span>
                     </div>
-                    <div class="text-3xl font-bold mb-1
-                        {% if diagnostico.eficiencia_total >= 75 %}text-green-600
-                        {% elif diagnostico.eficiencia_total >= 50 %}text-yellow-600
-                        {% else %}text-red-600{% endif %}">
+                    <div class="text-3xl font-bold mb-1 {% if diagnostico.eficiencia_total >= 75 %}text-green-600{% elif diagnostico.eficiencia_total >= 50 %}text-yellow-600{% else %}text-red-600{% endif %}">
                         {{ diagnostico.eficiencia_total|round|int }}%
                     </div>
                     <p class="text-sm text-gray-600">vs benchmark de industria</p>
                 </div>
-
-                <!-- Métrica 4: Costo Errores -->
                 <div class="p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-red-400 transition hover:shadow-lg">
                     <div class="flex items-center justify-between mb-3">
                         <span class="text-gray-500 text-sm font-medium">Costo por Errores</span>
                         <span class="text-3xl">🚨</span>
                     </div>
-                    <div class="text-3xl font-bold text-red-600 mb-1">
-                        ${{ "{:,.0f}".format(diagnostico.costo_anual_errores) }}
-                    </div>
+                    <div class="text-3xl font-bold text-red-600 mb-1">${{ "{:,.0f}".format(diagnostico.costo_anual_errores) }}</div>
                     <p class="text-sm text-gray-600">USD/año en malas contrataciones</p>
                 </div>
-
             </div>
         </div>
     </section>
 
-    <!-- COMPARACIÓN ANTES VS DESPUÉS (ESTILO LANDING) -->
+    <!-- COMPARACIÓN ANTES VS DESPUÉS -->
     <section class="py-16 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <!-- Título -->
             <div class="text-center mb-12">
-                <h2 class="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-                    Así se vería tu proceso optimizado
-                </h2>
-                <p class="text-xl text-gray-600">
-                    Comparación lado a lado de tu proceso actual vs con Sales AI
-                </p>
+                <h2 class="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Así se vería tu proceso optimizado</h2>
+                <p class="text-xl text-gray-600">Comparación lado a lado de tu proceso actual vs con Sales AI</p>
             </div>
-
             <div class="bg-white rounded-2xl shadow-xl p-8 lg:p-12">
                 <div class="grid lg:grid-cols-2 gap-12">
-                    
-                    <!-- ANTES -->
                     <div>
                         <div class="flex items-center gap-3 mb-6">
-                            <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center text-2xl">
-                                ❌
-                            </div>
+                            <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center text-2xl">❌</div>
                             <h3 class="text-2xl font-bold text-gray-900">Proceso Actual</h3>
                         </div>
-                        
                         <div class="space-y-5">
                             <div>
                                 <div class="flex justify-between text-sm mb-2 font-medium">
@@ -140,7 +134,6 @@
                                     <div class="h-full bg-red-500 rounded-full" style="width: 100%"></div>
                                 </div>
                             </div>
-
                             <div>
                                 <div class="flex justify-between text-sm mb-2 font-medium">
                                     <span class="text-gray-700">Costo operativo</span>
@@ -150,7 +143,6 @@
                                     <div class="h-full bg-red-500 rounded-full" style="width: 100%"></div>
                                 </div>
                             </div>
-
                             <div>
                                 <div class="flex justify-between text-sm mb-2 font-medium">
                                     <span class="text-gray-700">Tasa de error</span>
@@ -160,7 +152,6 @@
                                     <div class="h-full bg-red-500 rounded-full" style="width: {{ (diagnostico.tasa_error_decimal * 100)|round|int }}%"></div>
                                 </div>
                             </div>
-
                             <div>
                                 <div class="flex justify-between text-sm mb-2 font-medium">
                                     <span class="text-gray-700">Capacidad mensual</span>
@@ -172,16 +163,11 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- DESPUÉS -->
                     <div>
                         <div class="flex items-center gap-3 mb-6">
-                            <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center text-2xl">
-                                ✅
-                            </div>
+                            <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center text-2xl">✅</div>
                             <h3 class="text-2xl font-bold text-gray-900">Con Sales AI</h3>
                         </div>
-                        
                         <div class="space-y-5">
                             <div>
                                 <div class="flex justify-between text-sm mb-2 font-medium">
@@ -189,45 +175,39 @@
                                     <span class="text-green-600">{{ diagnostico.horas_optimizadas|round|int }} h/mes (-70%)</span>
                                 </div>
                                 <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
-                                    <div class="h-full bg-green-500 rounded-full transition-all duration-1000" style="width: 30%"></div>
+                                    <div class="h-full bg-green-500 rounded-full" style="width: 30%"></div>
                                 </div>
                             </div>
-
                             <div>
                                 <div class="flex justify-between text-sm mb-2 font-medium">
                                     <span class="text-gray-700">Costo operativo</span>
                                     <span class="text-green-600">${{ "{:,.0f}".format(diagnostico.costo_optimizado_mensual) }}/mes (-70%)</span>
                                 </div>
                                 <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
-                                    <div class="h-full bg-green-500 rounded-full transition-all duration-1000" style="width: 30%"></div>
+                                    <div class="h-full bg-green-500 rounded-full" style="width: 30%"></div>
                                 </div>
                             </div>
-
                             <div>
                                 <div class="flex justify-between text-sm mb-2 font-medium">
                                     <span class="text-gray-700">Tasa de error</span>
                                     <span class="text-green-600">{{ (diagnostico.tasa_error_optimizada * 100)|round|int }}% (-60%)</span>
                                 </div>
                                 <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
-                                    <div class="h-full bg-green-500 rounded-full transition-all duration-1000" style="width: {{ (diagnostico.tasa_error_optimizada * 100)|round|int }}%"></div>
+                                    <div class="h-full bg-green-500 rounded-full" style="width: {{ (diagnostico.tasa_error_optimizada * 100)|round|int }}%"></div>
                                 </div>
                             </div>
-
                             <div>
                                 <div class="flex justify-between text-sm mb-2 font-medium">
                                     <span class="text-gray-700">Capacidad mensual</span>
                                     <span class="text-green-600">{{ diagnostico.capacidad_aumentada }} CVs (+233%)</span>
                                 </div>
                                 <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
-                                    <div class="h-full bg-green-500 rounded-full transition-all duration-1000" style="width: 100%"></div>
+                                    <div class="h-full bg-green-500 rounded-full" style="width: 100%"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
-
                 </div>
-
-                <!-- ROI DESTACADO (MISMO ESTILO QUE PAIN POINTS) -->
                 <div class="mt-12 p-8 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border-2 border-green-200">
                     <div class="grid md:grid-cols-2 gap-8 items-center">
                         <div>
@@ -246,24 +226,14 @@
         </div>
     </section>
 
-    <!-- BENCHMARK Y CUELLO DE BOTELLA (ESTILO LANDING) -->
+    <!-- BENCHMARK Y CUELLO DE BOTELLA -->
     <section class="py-16 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid lg:grid-cols-2 gap-8">
-                
-                <!-- BENCHMARK -->
                 <div class="p-8 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl">
-                    <div class="w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center text-white text-2xl mb-4">
-                        📊
-                    </div>
-                    <h3 class="text-2xl font-bold text-gray-900 mb-6">
-                        Comparación con Benchmark
-                    </h3>
-                    
-                    <div class="mb-8">
-                        <canvas id="benchmarkChart" width="400" height="300"></canvas>
-                    </div>
-
+                    <div class="w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center text-white text-2xl mb-4">📊</div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-6">Comparación con Benchmark</h3>
+                    <div class="mb-8"><canvas id="benchmarkChart" width="400" height="300"></canvas></div>
                     <div class="space-y-4">
                         <div class="flex items-start gap-3 p-4 bg-white rounded-lg">
                             <span class="text-2xl">⏱️</span>
@@ -272,7 +242,6 @@
                                 <p class="text-sm text-gray-600">{{ mensajes.tiempo }}</p>
                             </div>
                         </div>
-
                         {% if diagnostico.diferencia_vs_benchmark_error > 50 %}
                         <div class="flex items-start gap-3 p-4 bg-red-50 rounded-lg">
                             <span class="text-2xl">🚨</span>
@@ -284,85 +253,92 @@
                         {% endif %}
                     </div>
                 </div>
-
-                <!-- CUELLO DE BOTELLA -->
                 <div class="p-8 bg-gradient-to-br from-red-50 to-red-100 rounded-2xl">
-                    <div class="w-14 h-14 bg-red-600 rounded-xl flex items-center justify-center text-white text-2xl mb-4">
-                        🚨
-                    </div>
-                    <h3 class="text-2xl font-bold text-gray-900 mb-3">
-                        Principal Cuello de Botella
-                    </h3>
-                    
+                    <div class="w-14 h-14 bg-red-600 rounded-xl flex items-center justify-center text-white text-2xl mb-4">🚨</div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-3">Principal Cuello de Botella</h3>
                     <div class="p-6 bg-white rounded-xl border-2 border-red-200 mb-6">
                         <p class="text-lg font-semibold text-red-900 mb-2">{{ diagnostico.cuello_botella }}</p>
                         <p class="text-sm text-red-700">Este es tu mayor problema según el diagnóstico.</p>
                     </div>
-
                     <h4 class="font-semibold text-gray-900 mb-4 text-lg">💡 Cómo Sales AI lo resuelve:</h4>
-                    
                     <ul class="space-y-3">
                         <li class="flex items-start gap-2">
-                            <svg class="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                            </svg>
+                            <svg class="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
                             <span class="text-sm text-gray-700">Filtrado automático reduce 70% el tiempo de revisión</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <svg class="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                            </svg>
+                            <svg class="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
                             <span class="text-sm text-gray-700">Scoring instantáneo de cada candidato</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <svg class="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                            </svg>
+                            <svg class="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
                             <span class="text-sm text-gray-700">Decisiones basadas en datos objetivos</span>
                         </li>
                     </ul>
                 </div>
-
             </div>
         </div>
     </section>
 
-    <!-- CTA FINAL (MISMO ESTILO QUE LANDING) -->
+    <!-- ══════════════════════════════════════════
+         CTA FINAL — con opción de reporte premium
+    ══════════════════════════════════════════ -->
     <section class="py-20 bg-gradient-to-br from-blue-600 to-purple-600 text-white">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 class="text-3xl lg:text-4xl font-bold mb-4">
-                ¿Qué sigue ahora?
-            </h2>
-            <p class="text-xl text-blue-100 mb-10">
-                Elige la mejor opción para tu empresa:
-            </p>
+            <h2 class="text-3xl lg:text-4xl font-bold mb-4">¿Qué sigue ahora?</h2>
+            <p class="text-xl text-blue-100 mb-10">Elige la mejor opción para tu empresa:</p>
 
-            <div class="grid md:grid-cols-2 gap-6">
-                
-                <!-- Opción 1: Agendar Demo -->
+            <div class="grid md:grid-cols-3 gap-6">
+
+                <!-- Opción 1: Reporte Premium -->
+                {% if not pago_aprobado %}
+                <div class="p-6 bg-white/15 backdrop-blur-sm rounded-xl border-2 border-white/40 hover:bg-white/25 transition relative">
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <span class="bg-yellow-400 text-yellow-900 text-xs font-black px-3 py-1 rounded-full uppercase tracking-wide">Recomendado</span>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 mt-2">📄 Reporte Completo</h3>
+                    <p class="text-sm text-blue-100 mb-1">PDF + Plan de implementación 90 días</p>
+                    <p class="text-2xl font-black mb-4">$29 USD</p>
+                    <a href="/epayco/checkout/{{ diagnostico.id }}"
+                       class="block w-full bg-white text-blue-600 font-bold py-3 px-6 rounded-lg hover:bg-blue-50 transition">
+                        Desbloquear ahora →
+                    </a>
+                </div>
+                {% else %}
+                <div class="p-6 bg-green-500/20 backdrop-blur-sm rounded-xl border-2 border-green-300/40">
+                    <h3 class="text-xl font-bold mb-2">✅ Reporte Desbloqueado</h3>
+                    <p class="text-sm text-blue-100 mb-4">Ya tienes acceso completo</p>
+                    <a href="/epayco/reporte/{{ diagnostico.id }}"
+                       class="block w-full bg-white text-green-600 font-bold py-3 px-6 rounded-lg hover:bg-green-50 transition">
+                        Ver reporte →
+                    </a>
+                </div>
+                {% endif %}
+
+                <!-- Opción 2: Agendar Demo -->
                 <div class="p-6 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 hover:bg-white/20 transition">
-                    <h3 class="text-xl font-bold mb-2">📞 Análisis Personalizado (15 min)</h3>
-                    <p class="text-sm text-blue-100 mb-4">Hablamos de tu caso específico y te mostramos cómo implementar Sales AI</p>
-                    <button onclick="mostrarFormularioDemo()" class="w-full bg-white text-blue-600 font-bold py-3 px-6 rounded-lg hover:bg-blue-50 transition">
+                    <h3 class="text-xl font-bold mb-2">📞 Análisis Personalizado</h3>
+                    <p class="text-sm text-blue-100 mb-4">Llamada de 15 min con nuestro equipo</p>
+                    <button onclick="mostrarFormularioDemo()" class="w-full bg-white/20 text-white border border-white/30 font-bold py-3 px-6 rounded-lg hover:bg-white/30 transition">
                         Agendar llamada →
                     </button>
                 </div>
 
-                <!-- Opción 2: Empezar Gratis -->
+                <!-- Opción 3: Crear cuenta -->
                 <div class="p-6 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 hover:bg-white/20 transition">
-                    <h3 class="text-xl font-bold mb-2">⚡ Empezar Gratis Ahora</h3>
-                    <p class="text-sm text-blue-100 mb-4">Crea tu primera vacante y empieza a filtrar candidatos en minutos</p>
-                    <a href="/registro?email={{ diagnostico.leads.email }}&empresa={{ diagnostico.leads.empresa }}" class="block w-full bg-green-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-600 transition text-center">
+                    <h3 class="text-xl font-bold mb-2">⚡ Empezar Gratis</h3>
+                    <p class="text-sm text-blue-100 mb-4">Filtra candidatos en minutos</p>
+                    <a href="/registro?email={{ diagnostico.leads.email }}&empresa={{ diagnostico.leads.empresa }}"
+                       class="block w-full bg-green-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-600 transition text-center">
                         Crear mi cuenta →
                     </a>
                 </div>
 
             </div>
 
-            <!-- Micro-opciones -->
             <div class="mt-8 pt-8 border-t border-white/20 flex flex-wrap gap-6 justify-center">
                 <button onclick="descargarPDF()" class="text-sm text-white hover:text-blue-200 flex items-center gap-2">
-                    <span>📄</span> Descargar reporte en PDF
+                    <span>📄</span> Descargar resumen básico (PDF)
                 </button>
                 <button onclick="enviarPorEmail()" class="text-sm text-white hover:text-blue-200 flex items-center gap-2">
                     <span>📧</span> Enviar por email
@@ -371,58 +347,32 @@
         </div>
     </section>
 
-    <!-- METODOLOGÍA (MISMO ESTILO QUE LANDING) -->
+    <!-- METODOLOGÍA -->
     <section class="py-16 bg-gray-50">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h3 class="text-2xl font-bold text-gray-900 mb-8">
-                📚 Metodología respaldada por investigación
-            </h3>
-            
+            <h3 class="text-2xl font-bold text-gray-900 mb-8">📚 Metodología respaldada por investigación</h3>
             <div class="grid md:grid-cols-2 gap-6 text-left">
+                {% for fuente, desc in [
+                    ('Harvard Business Review', 'Costo de mala contratación'),
+                    ('SHRM', 'Tiempos y costos de contratación'),
+                    ('LinkedIn Global Talent Trends', 'Benchmarks de industria'),
+                    ('Glassdoor Economic Research', 'ROI de contratación'),
+                ] %}
                 <div class="flex items-start gap-3">
                     <svg class="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                     </svg>
                     <div>
-                        <p class="font-medium text-gray-900">Harvard Business Review</p>
-                        <p class="text-sm text-gray-600">Costo de mala contratación</p>
+                        <p class="font-medium text-gray-900">{{ fuente }}</p>
+                        <p class="text-sm text-gray-600">{{ desc }}</p>
                     </div>
                 </div>
-
-                <div class="flex items-start gap-3">
-                    <svg class="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                    </svg>
-                    <div>
-                        <p class="font-medium text-gray-900">SHRM</p>
-                        <p class="text-sm text-gray-600">Tiempos y costos de contratación</p>
-                    </div>
-                </div>
-
-                <div class="flex items-start gap-3">
-                    <svg class="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                    </svg>
-                    <div>
-                        <p class="font-medium text-gray-900">LinkedIn Global Talent Trends</p>
-                        <p class="text-sm text-gray-600">Benchmarks de industria</p>
-                    </div>
-                </div>
-
-                <div class="flex items-start gap-3">
-                    <svg class="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                    </svg>
-                    <div>
-                        <p class="font-medium text-gray-900">Glassdoor Economic Research</p>
-                        <p class="text-sm text-gray-600">ROI de contratación</p>
-                    </div>
-                </div>
+                {% endfor %}
             </div>
         </div>
     </section>
 
-    <!-- FOOTER (MISMO DEL LANDING) -->
+    <!-- FOOTER -->
     <footer class="bg-gray-900 text-gray-400 py-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <p>&copy; 2026 Sales AI. Todos los derechos reservados.</p>
@@ -440,30 +390,26 @@
             <h3 class="text-2xl font-bold text-gray-900 mb-4">Agendar Demo Personalizada</h3>
             <form id="formDemo" class="space-y-4">
                 <input type="hidden" id="diagnostico_id" value="{{ diagnostico.id }}">
-                
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
                     <input type="email" id="demo_email" value="{{ diagnostico.leads.email }}" required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                 </div>
-
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono (opcional)</label>
                     <input type="tel" id="demo_telefono"
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                 </div>
-
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Preferencia de horario</label>
                     <select id="demo_horario" required
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                         <option value="">Selecciona...</option>
                         <option value="mañana">Mañana (8am - 12pm)</option>
                         <option value="tarde">Tarde (12pm - 5pm)</option>
                         <option value="flexible">Flexible</option>
                     </select>
                 </div>
-
                 <div class="flex gap-3">
                     <button type="button" onclick="cerrarModalDemo()"
                             class="flex-1 bg-gray-200 text-gray-700 font-semibold py-3 rounded-lg hover:bg-gray-300 transition">
@@ -479,15 +425,13 @@
     </div>
 
     <script>
-        // Datos del diagnóstico
         const diagnostico_id = "{{ diagnostico.id }}";
         const diagnostico_data = {
-            tiempo_cv: {{ diagnostico.tiempo_por_cv_min }},
+            tiempo_cv:  {{ diagnostico.tiempo_por_cv_min }},
             tasa_error: {{ (diagnostico.tasa_error_decimal * 100)|round|int }},
-            personas: {{ diagnostico.personas_proceso_num }}
+            personas:   {{ diagnostico.personas_proceso_num }}
         };
 
-        // Gráfico de benchmark
         const ctx = document.getElementById('benchmarkChart').getContext('2d');
         new Chart(ctx, {
             type: 'bar',
@@ -497,90 +441,60 @@
                     label: 'Tu proceso',
                     data: [diagnostico_data.tiempo_cv, diagnostico_data.tasa_error, diagnostico_data.personas],
                     backgroundColor: 'rgba(239, 68, 68, 0.7)',
-                    borderColor: 'rgb(239, 68, 68)',
-                    borderWidth: 2
+                    borderColor: 'rgb(239, 68, 68)', borderWidth: 2
                 }, {
                     label: 'Benchmark',
                     data: [7, 12, 2],
                     backgroundColor: 'rgba(34, 197, 94, 0.7)',
-                    borderColor: 'rgb(34, 197, 94)',
-                    borderWidth: 2
+                    borderColor: 'rgb(34, 197, 94)', borderWidth: 2
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'bottom' }
-                },
-                scales: {
-                    y: { beginAtZero: true }
-                }
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } },
+                scales: { y: { beginAtZero: true } }
             }
         });
 
-        // Funciones de tracking
         function trackAccion(accion, metadata = {}) {
             fetch('/calculadora/api/tracking', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    diagnostico_id: diagnostico_id,
-                    tipo_interaccion: accion,
-                    datos: metadata
-                })
+                body: JSON.stringify({ diagnostico_id, tipo_interaccion: accion, datos: metadata })
             });
         }
 
-        // Modal demo
         function mostrarFormularioDemo() {
             document.getElementById('modalDemo').classList.remove('hidden');
             trackAccion('click_agendar');
         }
-
-        function cerrarModalDemo() {
-            document.getElementById('modalDemo').classList.add('hidden');
-        }
+        function cerrarModalDemo() { document.getElementById('modalDemo').classList.add('hidden'); }
 
         document.getElementById('formDemo').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const response = await fetch('/calculadora/api/demo', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    diagnostico_id: diagnostico_id,
+                    diagnostico_id,
                     email: document.getElementById('demo_email').value,
                     telefono: document.getElementById('demo_telefono').value,
                     preferencia_horario: document.getElementById('demo_horario').value
                 })
             });
-
-            if (response.ok) {
-                alert('¡Demo agendada! Te contactaremos pronto.');
-                cerrarModalDemo();
-                trackAccion('agenda_demo');
-            }
+            if (response.ok) { alert('¡Demo agendada! Te contactaremos pronto.'); cerrarModalDemo(); }
         });
 
-        // Descargar PDF
-        function descargarPDF() {
-            trackAccion('descargar_pdf');
-            window.print();
-        }
-
-        // Enviar por email
+        function descargarPDF() { trackAccion('descargar_pdf'); window.print(); }
         function enviarPorEmail() {
             const email = "{{ diagnostico.leads.email }}";
             const subject = encodeURIComponent("Tu diagnóstico de reclutamiento - Sales AI");
-            const body = encodeURIComponent(`Aquí está tu diagnóstico: ${window.location.href}`);
-            window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+            const body = encodeURIComponent("Aquí está tu diagnóstico: " + window.location.href);
+            window.location.href = "mailto:" + email + "?subject=" + subject + "&body=" + body;
             trackAccion('envia_email');
         }
 
-        // Track vista de página
         trackAccion('vio_resultados');
     </script>
-
 </body>
 </html>

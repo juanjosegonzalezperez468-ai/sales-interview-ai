@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desbloquear Reporte Completo - Sales AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://checkout.epayco.co/checkout.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-sm font-bold">S</div>
+                <span class="text-xl font-bold text-gray-900">Sales AI</span>
+            </div>
+            <a href="/calculadora/resultados/{{ diagnostico.id }}" class="text-sm text-gray-500 hover:text-gray-700">
+                ← Volver al diagnóstico
+            </a>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 py-12">
+        <div class="grid lg:grid-cols-2 gap-8">
+
+            <!-- COLUMNA IZQ: Qué incluye -->
+            <div>
+                <div class="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold mb-4">
+                    🔒 Reporte Premium
+                </div>
+                <h1 class="text-3xl font-extrabold text-gray-900 mb-3 leading-tight">
+                    Desbloquea tu Reporte Completo
+                </h1>
+                <p class="text-gray-600 mb-8">
+                    Acceso inmediato al PDF descargable y plan de implementación personalizado para
+                    <strong>{{ lead.empresa }}</strong>.
+                </p>
+
+                <!-- Lo que incluye -->
+                <div class="space-y-4 mb-8">
+                    <h3 class="font-bold text-gray-800 text-sm uppercase tracking-widest">¿Qué obtienes?</h3>
+
+                    <div class="flex items-start gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-xl flex-shrink-0">📄</div>
+                        <div>
+                            <p class="font-bold text-gray-900">PDF del diagnóstico completo</p>
+                            <p class="text-sm text-gray-500">Todas las métricas, benchmarks y análisis descargable y presentable a tu equipo</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+                        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-xl flex-shrink-0">🗺️</div>
+                        <div>
+                            <p class="font-bold text-gray-900">Plan de implementación personalizado</p>
+                            <p class="text-sm text-gray-500">Hoja de ruta de 90 días adaptada a tu empresa, equipo y cuello de botella detectado</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+                        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center text-xl flex-shrink-0">📧</div>
+                        <div>
+                            <p class="font-bold text-gray-900">Enviado a tu correo</p>
+                            <p class="text-sm text-gray-500">Recibes todo en <strong>{{ lead.email }}</strong> en menos de 5 minutos</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Métricas rápidas del diagnóstico -->
+                <div class="p-5 bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl border border-blue-100">
+                    <p class="text-xs font-black uppercase text-blue-500 tracking-widest mb-3">Tu diagnóstico</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <p class="text-2xl font-black text-gray-900">${{ "{:,.0f}".format(diagnostico.ahorro_anual) }}</p>
+                            <p class="text-xs text-gray-500">ahorro anual potencial</p>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-black text-gray-900">{{ diagnostico.eficiencia_total|round|int }}%</p>
+                            <p class="text-xs text-gray-500">nivel de eficiencia actual</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLUMNA DER: Formulario de pago -->
+            <div>
+                <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+
+                    <!-- Precio -->
+                    <div class="text-center mb-6">
+                        <p class="text-sm text-gray-500 mb-1">Precio único, sin suscripción</p>
+                        <p class="text-5xl font-black text-gray-900">$29</p>
+                        <p class="text-sm text-gray-400 mt-1">USD · Pago seguro con ePayco</p>
+                    </div>
+
+                    <!-- Garantía -->
+                    <div class="flex items-center gap-2 bg-green-50 text-green-700 px-4 py-2 rounded-lg text-sm font-medium mb-6">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        Acceso inmediato al pagar
+                    </div>
+
+                    <!-- Botón ePayco -->
+                    <button id="btn-pagar"
+                            onclick="pagarConEpayco()"
+                            class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800
+                                   text-white font-bold py-4 px-6 rounded-xl text-lg transition-all
+                                   shadow-lg shadow-blue-200 active:scale-95 flex items-center justify-center gap-3">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                        </svg>
+                        Pagar $29 USD ahora
+                    </button>
+
+                    <!-- Métodos de pago -->
+                    <p class="text-center text-xs text-gray-400 mt-4">
+                        Tarjeta débito / crédito · PSE · Efecty · Nequi
+                    </p>
+
+                    <!-- Seguridad -->
+                    <div class="mt-6 pt-6 border-t border-gray-100 flex items-center justify-center gap-4 text-xs text-gray-400">
+                        <span class="flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
+                            </svg>
+                            SSL seguro
+                        </span>
+                        <span>·</span>
+                        <span>Procesado por ePayco</span>
+                        <span>·</span>
+                        <span>Colombia</span>
+                    </div>
+                </div>
+
+                <!-- Pregunta frecuente -->
+                <div class="mt-4 p-4 bg-white rounded-xl border border-gray-100 text-sm text-gray-600">
+                    <p class="font-semibold text-gray-800 mb-1">¿Cuándo recibo el reporte?</p>
+                    <p>Inmediatamente después de confirmar el pago. Podrás descargarlo en pantalla y lo recibirás por email en menos de 5 minutos.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const REF_INTERNA    = "{{ ref_interna }}";
+        const DIAGNOSTICO_ID = "{{ diagnostico.id }}";
+        const EMAIL          = "{{ lead.email }}";
+        const EMPRESA        = "{{ lead.empresa }}";
+        const PUBLIC_KEY     = "{{ epayco_public_key }}";
+        const ES_TEST        = {{ epayco_test }};
+        const URL_RESPUESTA  = "{{ url_respuesta }}";
+        const URL_CONFIRM    = "{{ url_confirmacion }}";
+
+        function pagarConEpayco() {
+            const handler = ePayco.checkout.configure({
+                key: PUBLIC_KEY,
+                test: ES_TEST,
+            });
+
+            handler.open({
+                // Producto
+                name:        'Reporte Completo Sales AI',
+                description: `Diagnóstico de reclutamiento - ${EMPRESA}`,
+                invoice:     REF_INTERNA,
+                currency:    'cop',
+                amount:      '{{ precio_cop }}',
+                tax_base:    '0',
+                tax:         '0',
+                country:     'co',
+                lang:        'es',
+
+                // Cliente
+                email_billing: EMAIL,
+
+                // URLs
+                response:     URL_RESPUESTA,
+                confirmation: URL_CONFIRM,
+
+                // Extra (para recuperar ref_interna en webhook)
+                extra1: REF_INTERNA,
+                extra2: DIAGNOSTICO_ID,
+
+                // Métodos habilitados
+                external: 'false',
+                acepted:  'S',
+            });
+        }
+    </script>
+</body>
+</html>

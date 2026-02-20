@@ -1,306 +1,284 @@
+"""
+Blueprint de pagos con ePayco
+Rutas:
+  GET  /epayco/checkout/<diagnostico_id>  → página de pago
+  POST /epayco/webhook                    → confirmación ePayco
+  GET  /epayco/verificar/<ref_payco>      → verificación manual
+  GET  /epayco/reporte/<diagnostico_id>   → reporte desbloqueado
+"""
+
 import os
+import hashlib
+import hmac
+import json
+import uuid
 import logging
 import requests
-import hashlib
-from flask import Blueprint, request, jsonify, render_template
-from supabase import create_client, Client
 from datetime import datetime
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for, abort
+from supabase import create_client
+from dotenv import load_dotenv
 
+load_dotenv()
 logger = logging.getLogger(__name__)
 
-# ── Configuración ePayco (TUS CREDENCIALES REALES) ────────────────────────────
-EPAYCO_PUBLIC_KEY    = os.getenv('EPAYCO_PUBLIC_KEY', '919c2b11b69b390481d2bcadddaab51c')
-EPAYCO_PRIVATE_KEY   = os.getenv('EPAYCO_PRIVATE_KEY', '2ce1e122119c275559caefc67ccb280dI')  # ← PÉGALA AQUÍ
-EPAYCO_CUSTOMER_ID   = os.getenv('EPAYCO_CUSTOMER_ID', '1573995')
-EPAYCO_TEST_MODE     = os.getenv('EPAYCO_TEST_MODE', 'false').lower() == 'true'
-BASE_URL             = os.getenv('BASE_URL', 'https://salesai.com.co')
+epayco_bp = Blueprint('epayco', __name__)
 
-# ── Supabase ──────────────────────────────────────────────────────────────────
-supabase: Client = create_client(
-    os.getenv('SUPABASE_URL'),
-    os.getenv('SUPABASE_KEY')
-)
+# ── Supabase ──────────────────────────────────────────────
+supabase = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_KEY'))
 
-# ── Planes (Precios en USD para ePayco) ───────────────────────────────────────
-PLANES = {
-    'starter': {
-        'nombre':       'Sales AI Starter',
-        'precio_usd':   79,
-        'precio_cop':   289000,  # Referencia visual
-        'descripcion':  '3 vacantes · 150 candidatos/mes · Scoring automático',
-    },
-    'pro': {
-        'nombre':       'Sales AI Pro',
-        'precio_usd':   99,
-        'precio_cop':   363000,
-        'descripcion':  '10 vacantes · Candidatos ilimitados · IA avanzada',
-    },
-    'enterprise': {
-        'nombre':       'Sales AI Enterprise',
-        'precio_usd':   149,
-        'precio_cop':   547000,
-        'descripcion':  'Vacantes ilimitadas · Multi-empresa · API',
-    },
-}
+# ── Credenciales ePayco ───────────────────────────────────
+EPAYCO_P_CUST_ID  = os.getenv('EPAYCO_P_CUST_ID_CLIENTE')
+EPAYCO_P_KEY      = os.getenv('EPAYCO_P_KEY')
+EPAYCO_PUBLIC_KEY = os.getenv('EPAYCO_PUBLIC_KEY', '')
+EPAYCO_TEST       = os.getenv('EPAYCO_TEST', 'true').lower() == 'true'
 
-# ── Blueprint ─────────────────────────────────────────────────────────────────
-epayco_bp = Blueprint('epayco_bp', __name__)
+PRECIO_USD = 29.00
+PRECIO_COP = int(os.getenv('PRECIO_COP', '120000'))  # Precio en COP para ePayco
 
 
-# ==============================================================================
-# GENERAR DATOS PARA EPAYCO CHECKOUT (Web Checkout Modal)
-# ==============================================================================
+# ════════════════════════════════════════════════════════════
+# HELPERS
+# ════════════════════════════════════════════════════════════
 
-def crear_checkout_epayco(plan: str, email: str, diagnostico_id: str, nombre: str = None):
-    """
-    Genera la configuración para el ePayco Web Checkout.
-    
-    ePayco usa un checkout modal en tu página (no redirige como Stripe).
-    El frontend llama checkout.js con estos parámetros.
-    
-    Args:
-        plan:           'starter' | 'pro' | 'enterprise'
-        email:          Email del cliente
-        diagnostico_id: UUID del diagnóstico
-        nombre:         Nombre completo del cliente
-    
-    Returns:
-        dict con 'success' y 'checkout_data' para pasar al JS
-    """
-    if plan not in PLANES:
-        return {'success': False, 'error': f'Plan inválido: {plan}'}
-    
-    plan_data = PLANES[plan]
-    
-    # Generar referencia única
-    timestamp = int(datetime.now().timestamp())
-    ref_payco = f"SALESAI-{plan.upper()}-{diagnostico_id[:8]}-{timestamp}"
-    
-    # Extraer nombre y apellido
-    partes_nombre = (nombre or email.split('@')[0]).split(' ', 1)
-    nombres = partes_nombre[0]
-    apellidos = partes_nombre[1] if len(partes_nombre) > 1 else ''
-    
-    checkout_config = {
-        # Identificación del comercio
-        'key':      EPAYCO_PUBLIC_KEY,
-        'test':     'true' if EPAYCO_TEST_MODE else 'false',
-        
-        # Datos del producto
-        'name':         plan_data['nombre'],
-        'description':  plan_data['descripcion'],
-        'invoice':      ref_payco,
-        'currency':     'usd',  # ePayco acepta USD para suscripciones
-        'amount':       str(plan_data['precio_usd']),
-        'tax_base':     '0',
-        'tax':          '0',
-        'country':      'co',
-        'lang':         'es',
-        
-        # Datos del cliente (pre-llenados)
-        'name_billing':  nombres,
-        'surname_billing': apellidos,
-        'email_billing': email,
-        
-        # URLs de confirmación
-        'url_confirmation': f"{BASE_URL}/epayco/webhook",
-        'url_response':     f"{BASE_URL}/calculadora/pago-exitoso?diagnostico_id={diagnostico_id}&ref={ref_payco}",
-        'method_confirmation': 'POST',
-        
-        # Metadata (para identificar en webhook)
-        'extra1': diagnostico_id,
-        'extra2': plan,
-        'extra3': email,
-    }
-    
-    logger.info(f"✅ Checkout ePayco generado: plan={plan} email={email} ref={ref_payco}")
-    
-    return {
-        'success': True,
-        'checkout_data': checkout_config,
-        'ref_payco': ref_payco,
-    }
-
-
-# ==============================================================================
-# WEBHOOK — ePayco llama aquí después de cada transacción
-# ==============================================================================
-
-@epayco_bp.route('/epayco/webhook', methods=['POST'])
-def webhook():
-    """
-    Webhook de ePayco — Confirmación de pagos
-    
-    Configura esta URL en: app.epayco.co → Configuración → URL de confirmación
-    URL: https://salesai.com.co/epayco/webhook
-    
-    ePayco envía datos via POST (form-data, no JSON):
-    - x_cust_id_cliente:     tu customer ID (1573995)
-    - x_ref_payco:          referencia única del pago
-    - x_transaction_id:     ID de transacción
-    - x_amount:             monto pagado
-    - x_currency_code:      moneda (USD)
-    - x_transaction_state:  'Aceptada' | 'Rechazada' | 'Pendiente'
-    - x_signature:          firma de seguridad
-    - x_extra1, x_extra2, x_extra3: tus metadatos
-    """
+def get_diagnostico(diagnostico_id: str):
+    """Obtiene diagnóstico con su lead asociado."""
     try:
-        # ePayco envía form-data, no JSON
-        data = request.form.to_dict()
-        logger.info(f"📩 Webhook ePayco recibido: ref={data.get('x_ref_payco')} estado={data.get('x_transaction_state')}")
-        
-        # ── VALIDAR FIRMA (SEGURIDAD) ────────────────────────────────────────
-        firma_recibida = data.get('x_signature', '')
-        if not _validar_firma_epayco(data, firma_recibida):
-            logger.error("❌ Firma de webhook inválida — posible intento de fraude")
-            return jsonify({'error': 'Invalid signature'}), 400
-        
-        # ── PROCESAR SEGÚN ESTADO ─────────────────────────────────────────────
-        estado = data.get('x_transaction_state', '').lower()
-        cod_estado = data.get('x_cod_transaction_state', '')  # 1=Aceptada, 2=Rechazada, 3=Pendiente
-        
-        if estado == 'aceptada' or cod_estado == '1':
-            _activar_cuenta_usuario(data)
-        
-        elif estado == 'rechazada' or cod_estado == '2':
-            _on_pago_rechazado(data)
-        
-        elif estado == 'pendiente' or cod_estado == '3':
-            _on_pago_pendiente(data)
-        
-        return jsonify({'received': True}), 200
-        
+        res = supabase.table('calculadora_diagnosticos')\
+            .select('*, calculadora_leads(*)')\
+            .eq('id', diagnostico_id)\
+            .single()\
+            .execute()
+        return res.data
     except Exception as e:
-        logger.error(f"❌ Error en webhook ePayco: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
+        logger.error(f"❌ get_diagnostico: {e}")
+        return None
 
 
-def _validar_firma_epayco(data: dict, firma_recibida: str) -> bool:
+def get_pago_por_diagnostico(diagnostico_id: str):
+    """Retorna el pago aprobado de un diagnóstico, si existe."""
+    try:
+        res = supabase.table('calculadora_pagos')\
+            .select('*')\
+            .eq('diagnostico_id', diagnostico_id)\
+            .eq('estado', 'aprobado')\
+            .execute()
+        return res.data[0] if res.data else None
+    except:
+        return None
+
+
+def generar_ref_interna(diagnostico_id: str) -> str:
+    """Genera referencia única interna para el pago."""
+    corto = diagnostico_id[:8].upper()
+    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+    return f"SALESAI-{corto}-{timestamp}"
+
+
+def verificar_firma_epayco(data: dict) -> bool:
     """
-    Valida la firma SHA256 de ePayco para seguridad.
-    
-    Fórmula de ePayco:
-    SHA256(p_cust_id_cliente + "^" + p_key + "^" + x_ref_payco + "^" + 
-           x_transaction_id + "^" + x_amount + "^" + x_currency_code)
+    Verifica la firma del webhook de ePayco.
+    Firma = SHA256(P_CUST_ID_CLIENTE + P_KEY + x_ref_payco + x_transaction_id + x_amount + x_currency_code)
     """
     try:
-        cadena_firma = (
-            f"{EPAYCO_CUSTOMER_ID}^"
-            f"{EPAYCO_PUBLIC_KEY}^"
-            f"{data.get('x_ref_payco', '')}^"
-            f"{data.get('x_transaction_id', '')}^"
-            f"{data.get('x_amount', '')}^"
-            f"{data.get('x_currency_code', '')}"
+        cadena = (
+            str(EPAYCO_P_CUST_ID) +
+            str(EPAYCO_P_KEY) +
+            str(data.get('x_ref_payco', '')) +
+            str(data.get('x_transaction_id', '')) +
+            str(data.get('x_amount', '')) +
+            str(data.get('x_currency_code', ''))
         )
-        
-        firma_calculada = hashlib.sha256(cadena_firma.encode()).hexdigest()
-        
-        es_valida = firma_calculada == firma_recibida
-        
-        if not es_valida:
-            logger.warning(f"Firma esperada: {firma_calculada}")
-            logger.warning(f"Firma recibida: {firma_recibida}")
-        
-        return es_valida
-        
+        firma_calculada = hashlib.sha256(cadena.encode('utf-8')).hexdigest()
+        firma_recibida  = data.get('x_signature', '')
+        return hmac.compare_digest(firma_calculada, firma_recibida)
     except Exception as e:
-        logger.error(f"Error validando firma: {e}")
+        logger.error(f"❌ verificar_firma_epayco: {e}")
         return False
 
 
-def _activar_cuenta_usuario(data: dict):
+def crear_pago_pendiente(diagnostico_id: str, lead_id: str, ref_interna: str):
+    """Crea registro de pago en estado pendiente."""
+    try:
+        res = supabase.table('calculadora_pagos').insert({
+            'diagnostico_id': diagnostico_id,
+            'lead_id': lead_id,
+            'ref_interna': ref_interna,
+            'estado': 'pendiente',
+            'monto': PRECIO_USD,
+            'moneda': 'USD',
+        }).execute()
+        return res.data[0] if res.data else None
+    except Exception as e:
+        logger.error(f"❌ crear_pago_pendiente: {e}")
+        return None
+
+
+def marcar_pago_aprobado(ref_interna: str, ref_payco: str, payload: dict):
+    """Actualiza el pago a aprobado con datos de ePayco."""
+    try:
+        supabase.table('calculadora_pagos').update({
+            'estado': 'aprobado',
+            'ref_payco': ref_payco,
+            'codigo_respuesta': str(payload.get('x_response_code', '')),
+            'respuesta_epayco': payload,
+            'fecha_pago': datetime.now().isoformat(),
+        }).eq('ref_interna', ref_interna).execute()
+    except Exception as e:
+        logger.error(f"❌ marcar_pago_aprobado: {e}")
+
+
+def marcar_pago_rechazado(ref_interna: str, ref_payco: str, payload: dict, estado='rechazado'):
+    try:
+        supabase.table('calculadora_pagos').update({
+            'estado': estado,
+            'ref_payco': ref_payco,
+            'codigo_respuesta': str(payload.get('x_response_code', '')),
+            'respuesta_epayco': payload,
+        }).eq('ref_interna', ref_interna).execute()
+    except Exception as e:
+        logger.error(f"❌ marcar_pago_rechazado: {e}")
+
+
+# ════════════════════════════════════════════════════════════
+# RUTAS
+# ════════════════════════════════════════════════════════════
+
+@epayco_bp.route('/checkout/<diagnostico_id>')
+def checkout(diagnostico_id):
+    """Página de checkout — muestra el formulario de pago de ePayco."""
+
+    diagnostico = get_diagnostico(diagnostico_id)
+    if not diagnostico:
+        abort(404)
+
+    # Si ya pagó, redirigir al reporte
+    pago_existente = get_pago_por_diagnostico(diagnostico_id)
+    if pago_existente:
+        return redirect(url_for('epayco.reporte', diagnostico_id=diagnostico_id))
+
+    lead = diagnostico.get('calculadora_leads', {}) or {}
+
+    # Crear referencia interna y registro pendiente
+    ref_interna = generar_ref_interna(diagnostico_id)
+    crear_pago_pendiente(
+        diagnostico_id=diagnostico_id,
+        lead_id=lead.get('id', ''),
+        ref_interna=ref_interna,
+    )
+
+    # URL base del servidor
+    base_url = os.getenv('BASE_URL', 'https://tuapp.com')
+
+    return render_template('checkout.html',
+        diagnostico=diagnostico,
+        lead=lead,
+        ref_interna=ref_interna,
+        precio_cop=PRECIO_COP,
+        precio_usd=PRECIO_USD,
+        epayco_public_key=EPAYCO_PUBLIC_KEY,
+        epayco_test=str(EPAYCO_TEST).lower(),
+        url_respuesta=f"{base_url}/epayco/respuesta",
+        url_confirmacion=f"{base_url}/epayco/webhook",
+    )
+
+
+@epayco_bp.route('/webhook', methods=['POST'])
+def webhook():
     """
-    Pago aceptado → Activar cuenta del usuario en Supabase.
+    Webhook de confirmación de ePayco.
+    ePayco hace POST con los datos del pago.
     """
     try:
-        # Extraer datos del webhook
-        diagnostico_id = data.get('x_extra1')
-        plan           = data.get('x_extra2', 'pro')
-        email          = data.get('x_extra3') or data.get('x_customer_email')
-        ref_payco      = data.get('x_ref_payco')
-        transaction_id = data.get('x_transaction_id')
-        monto          = data.get('x_amount')
-        
-        if not diagnostico_id or not email:
-            logger.warning("⚠️  Webhook sin diagnostico_id o email")
-            return
-        
-        # 1. Buscar lead por email
-        lead_response = supabase.table('calculadora_leads') \
-            .select('id') \
-            .eq('email', email) \
-            .execute()
-        
-        if not lead_response.data:
-            logger.warning(f"⚠️  Lead no encontrado para email: {email}")
-            return
-        
-        lead_id = lead_response.data[0]['id']
-        
-        # 2. Actualizar lead con datos de suscripción
-        supabase.table('calculadora_leads').update({
-            'epayco_customer_id':     data.get('x_customer_id'),
-            'epayco_subscription_id': transaction_id,
-            'plan_activo':            plan,
-            'suscripcion_activa':     True,
-            'trial_activo':           True,
-            'trial_inicio':           datetime.now().isoformat(),
-            'convertido':             True,
-            'convertido_at':          datetime.now().isoformat(),
-        }).eq('id', lead_id).execute()
-        
-        # 3. Actualizar diagnóstico
-        supabase.table('calculadora_diagnosticos').update({
-            'pago_completado':  True,
-            'plan_contratado':  plan,
-            'epayco_ref_payco': ref_payco,
-        }).eq('id', diagnostico_id).execute()
-        
-        # 4. Registrar interacción (analytics)
-        supabase.table('calculadora_interacciones').insert({
-            'lead_id':        lead_id,
-            'diagnostico_id': diagnostico_id,
-            'accion':         'pago_completado',
-            'metadata': {
-                'plan':           plan,
-                'ref_payco':      ref_payco,
-                'transaction_id': transaction_id,
-                'monto':          monto,
-                'pasarela':       'epayco',
-            }
-        }).execute()
-        
-        logger.info(f"✅ CUENTA ACTIVADA: {email} → {plan} (ref: {ref_payco})")
-        
+        data = request.form.to_dict() or request.get_json(silent=True) or {}
+        logger.info(f"📩 Webhook ePayco recibido: {data.get('x_ref_payco', 'sin_ref')}")
+
+        # Verificar firma
+        if not verificar_firma_epayco(data):
+            logger.warning("⚠️ Firma inválida en webhook ePayco")
+            return jsonify({'error': 'firma_invalida'}), 400
+
+        ref_interna  = data.get('x_extra1', '')   # Enviamos ref_interna en extra1
+        ref_payco    = data.get('x_ref_payco', '')
+        codigo_resp  = str(data.get('x_response_code', '0'))
+
+        # Códigos ePayco: 1=Aceptada, 2=Rechazada, 3=Pendiente, 4=Fallida, 6=Reversada
+        if codigo_resp == '1':
+            marcar_pago_aprobado(ref_interna, ref_payco, data)
+            logger.info(f"✅ Pago aprobado: {ref_interna}")
+        elif codigo_resp in ['2', '4', '6']:
+            marcar_pago_rechazado(ref_interna, ref_payco, data, estado='rechazado')
+            logger.info(f"❌ Pago rechazado ({codigo_resp}): {ref_interna}")
+        elif codigo_resp == '3':
+            marcar_pago_rechazado(ref_interna, ref_payco, data, estado='pendiente')
+            logger.info(f"⏳ Pago pendiente: {ref_interna}")
+
+        return jsonify({'status': 'ok'}), 200
+
     except Exception as e:
-        logger.error(f"❌ Error activando cuenta: {e}")
+        logger.error(f"❌ Error en webhook ePayco: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
-def _on_pago_rechazado(data: dict):
-    """Pago rechazado — Registrar para análisis."""
-    diagnostico_id = data.get('x_extra1')
-    email          = data.get('x_extra3')
-    razon          = data.get('x_response_reason_text', 'Desconocida')
-    
-    logger.warning(f"⚠️  Pago RECHAZADO: {email} - Razón: {razon}")
-    
-    # TODO Fase 2: enviar email al usuario notificando el rechazo
+@epayco_bp.route('/respuesta')
+def respuesta():
+    """
+    Página de retorno post-pago (ePayco redirige aquí).
+    Verifica el estado y redirige al reporte o muestra error.
+    """
+    ref_payco   = request.args.get('ref_payco', '')
+    ref_interna = request.args.get('extra1', '')
+    codigo      = str(request.args.get('response_code', '0'))
+
+    if codigo == '1':
+        # Buscar el diagnóstico por ref_interna
+        try:
+            res = supabase.table('calculadora_pagos')\
+                .select('diagnostico_id')\
+                .eq('ref_interna', ref_interna)\
+                .execute()
+            if res.data:
+                diag_id = res.data[0]['diagnostico_id']
+                return redirect(url_for('epayco.reporte', diagnostico_id=diag_id))
+        except:
+            pass
+
+    # Pago no aprobado — redirigir con mensaje
+    return render_template('pago_fallido.html', codigo=codigo, ref_payco=ref_payco)
 
 
-def _on_pago_pendiente(data: dict):
-    """Pago pendiente — PSE o pago en efectivo."""
-    diagnostico_id = data.get('x_extra1')
-    email          = data.get('x_extra3')
-    
-    logger.info(f"⏳ Pago PENDIENTE: {email} (probablemente PSE o efectivo)")
-    
-    # TODO Fase 2: enviar email notificando que el pago está en proceso
+@epayco_bp.route('/verificar/<ref_payco>')
+def verificar(ref_payco):
+    """Verificación manual de un pago por referencia ePayco."""
+    try:
+        url = f"https://secure.epayco.co/validation/v1/reference/{ref_payco}"
+        headers = {'Authorization': f'Bearer {EPAYCO_PUBLIC_KEY}'}
+        resp = requests.get(url, headers=headers, timeout=10)
+        data = resp.json()
+
+        if data.get('data', {}).get('x_response_code') == '1':
+            return jsonify({'estado': 'aprobado', 'data': data})
+        return jsonify({'estado': 'no_aprobado', 'data': data})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
-# ==============================================================================
-# OBTENER INFORMACIÓN DE PLANES (para el frontend)
-# ==============================================================================
+@epayco_bp.route('/reporte/<diagnostico_id>')
+def reporte(diagnostico_id):
+    """
+    Reporte completo desbloqueado post-pago.
+    Requiere pago aprobado.
+    """
+    pago = get_pago_por_diagnostico(diagnostico_id)
+    if not pago:
+        return redirect(url_for('epayco.checkout', diagnostico_id=diagnostico_id))
 
-def obtener_planes():
-    """Retorna los planes disponibles para mostrar en la UI."""
-    return PLANES
+    diagnostico = get_diagnostico(diagnostico_id)
+    if not diagnostico:
+        abort(404)
+
+    return render_template('reporte_completo.html',
+        diagnostico=diagnostico,
+        pago=pago,
+        lead=diagnostico.get('calculadora_leads', {}),
+    )
