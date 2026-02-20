@@ -170,7 +170,7 @@ def checkout(diagnostico_id):
     # URL base del servidor
     base_url = os.getenv('BASE_URL', 'https://tuapp.com')
 
-    return render_template('checkout.html',
+    return render_template('calculadora/checkout.html',
         diagnostico=diagnostico,
         lead=lead,
         ref_interna=ref_interna,
@@ -244,7 +244,7 @@ def respuesta():
             pass
 
     # Pago no aprobado — redirigir con mensaje
-    return render_template('pago_fallido.html', codigo=codigo, ref_payco=ref_payco)
+    return render_template('calculadora/pago_fallido.html', codigo=codigo, ref_payco=ref_payco)
 
 
 @epayco_bp.route('/verificar/<ref_payco>')
@@ -277,7 +277,7 @@ def reporte(diagnostico_id):
     if not diagnostico:
         abort(404)
 
-    return render_template('reporte_completo.html',
+    return render_template('calculadora/reporte_completo.html',
         diagnostico=diagnostico,
         pago=pago,
         lead=diagnostico.get('calculadora_leads', {}),
