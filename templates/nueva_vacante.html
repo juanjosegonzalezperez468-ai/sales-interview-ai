@@ -6,7 +6,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-50 p-4 md:p-8 font-sans">
-<div class="max-w-3xl mx-auto">
+<div class="max-w-4xl mx-auto">
 
     <div class="mb-6">
         <a href="/dashboard" class="text-slate-400 hover:text-blue-600 font-bold text-sm transition">← Volver al Dashboard</a>
@@ -17,102 +17,380 @@
         <h1 class="text-2xl font-black text-slate-800 tracking-tight">Crear Nueva Vacante</h1>
     </div>
 
+    <!-- Progress bar -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-slate-400">PASO <span id="paso-actual">1</span> DE 4</span>
+            <span class="text-xs font-bold text-slate-400" id="progreso-texto">Información básica</span>
+        </div>
+        <div class="h-2 bg-slate-200 rounded-full overflow-hidden">
+            <div id="barra-progreso" class="h-full bg-blue-600 transition-all duration-300" style="width: 25%"></div>
+        </div>
+    </div>
+
     <form method="POST" id="form-vacante" class="space-y-6">
 
-        <!-- Nombre del cargo -->
-        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-            <label class="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Nombre del Cargo</label>
-            <input type="text" name="cargo" placeholder="Ej: Ejecutivo de Ventas Senior" required
-                   class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-700">
+        <!-- ══════════════════════════════════════════
+             PASO 1: INFORMACIÓN BÁSICA
+        ══════════════════════════════════════════ -->
+        <div id="paso-1" class="paso-contenido">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <span>📋</span> Información Básica
+                </h2>
+                <label class="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Nombre del Cargo</label>
+                <input type="text" name="cargo" id="input-cargo" placeholder="Ej: Ejecutivo de Ventas Senior" required
+                       class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-700">
+                <p class="text-xs text-slate-400 mt-2">Este será el título público de la vacante</p>
+            </div>
+
+            <div class="flex justify-end mt-6">
+                <button type="button" onclick="siguientePaso()" class="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition">
+                    Siguiente →
+                </button>
+            </div>
         </div>
 
         <!-- ══════════════════════════════════════════
-             STACK DE HABILIDADES CRÍTICAS
+             PASO 2: HABILIDADES CRÍTICAS
         ══════════════════════════════════════════ -->
-        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-            <div class="flex items-start justify-between mb-1">
-                <div>
-                    <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest">Stack de Habilidades Críticas</label>
-                    <p class="text-xs text-slate-400 mt-1">Selecciona entre 3 y 5. Guiarán la evaluación y el score de cada candidato.</p>
+        <div id="paso-2" class="paso-contenido hidden">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                <div class="flex items-start justify-between mb-1">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800 mb-2 flex items-center gap-2">
+                            <span>🎯</span> Stack de Habilidades Críticas
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">Selecciona entre 3 y 5. Guiarán la evaluación y el score de cada candidato.</p>
+                    </div>
+                    <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 shrink-0">
+                        <span id="contador-hab" class="text-lg font-black text-slate-300">0</span>
+                        <span class="text-xs text-slate-400 font-bold">/ 5</span>
+                    </div>
                 </div>
-                <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 shrink-0">
-                    <span id="contador-hab" class="text-lg font-black text-slate-300">0</span>
-                    <span class="text-xs text-slate-400 font-bold">/ 5</span>
+
+                <!-- Barra progreso habilidades -->
+                <div class="flex items-center gap-2 mb-5 mt-3">
+                    <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div id="barra-hab" class="h-full rounded-full transition-all duration-300 bg-slate-200" style="width:0%"></div>
+                    </div>
+                    <span class="text-[10px] font-bold text-slate-400 whitespace-nowrap">mín. 3</span>
                 </div>
-            </div>
 
-            <!-- Barra progreso -->
-            <div class="flex items-center gap-2 mb-5 mt-3">
-                <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div id="barra-hab" class="h-full rounded-full transition-all duration-300 bg-slate-200" style="width:0%"></div>
+                <!-- Técnicas -->
+                <p class="text-[10px] font-black uppercase text-slate-300 tracking-widest mb-2">🧠 Técnicas</p>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+                    <button type="button" data-hab="Prospección en Frío" data-cat="Técnica" onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>🎯</span><p class="text-xs font-bold text-slate-600 mt-1">Prospección en Frío</p></button>
+                    <button type="button" data-hab="Cierre de Ventas" data-cat="Técnica" onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>🤝</span><p class="text-xs font-bold text-slate-600 mt-1">Cierre de Ventas</p></button>
+                    <button type="button" data-hab="CRM Management" data-cat="Técnica" onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>💻</span><p class="text-xs font-bold text-slate-600 mt-1">CRM Management</p></button>
+                    <button type="button" data-hab="Análisis de Datos" data-cat="Técnica" onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>📊</span><p class="text-xs font-bold text-slate-600 mt-1">Análisis de Datos</p></button>
+                    <button type="button" data-hab="Gestión de Pipeline" data-cat="Técnica" onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>🔄</span><p class="text-xs font-bold text-slate-600 mt-1">Gestión de Pipeline</p></button>
+                    <button type="button" data-hab="Negociación" data-cat="Técnica" onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>⚖️</span><p class="text-xs font-bold text-slate-600 mt-1">Negociación</p></button>
+                    <button type="button" data-hab="Conocimiento de Producto" data-cat="Técnica" onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>📦</span><p class="text-xs font-bold text-slate-600 mt-1">Conocimiento de Producto</p></button>
+                    <button type="button" data-hab="Gestión de Cuentas Clave" data-cat="Técnica" onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>🏢</span><p class="text-xs font-bold text-slate-600 mt-1">Gestión de Cuentas Clave</p></button>
                 </div>
-                <span class="text-[10px] font-bold text-slate-400 whitespace-nowrap">mín. 3</span>
+
+                <!-- Blandas -->
+                <p class="text-[10px] font-black uppercase text-slate-300 tracking-widest mb-2">🤝 Blandas</p>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+                    <button type="button" data-hab="Comunicación Persuasiva" data-cat="Blandas" onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>📣</span><p class="text-xs font-bold text-slate-600 mt-1">Comunicación Persuasiva</p></button>
+                    <button type="button" data-hab="Escucha Activa" data-cat="Blandas" onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>👂</span><p class="text-xs font-bold text-slate-600 mt-1">Escucha Activa</p></button>
+                    <button type="button" data-hab="Orientación a Resultados" data-cat="Blandas" onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>📈</span><p class="text-xs font-bold text-slate-600 mt-1">Orientación a Resultados</p></button>
+                    <button type="button" data-hab="Trabajo en Equipo" data-cat="Blandas" onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>👥</span><p class="text-xs font-bold text-slate-600 mt-1">Trabajo en Equipo</p></button>
+                    <button type="button" data-hab="Liderazgo" data-cat="Blandas" onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>🏆</span><p class="text-xs font-bold text-slate-600 mt-1">Liderazgo</p></button>
+                    <button type="button" data-hab="Adaptabilidad" data-cat="Blandas" onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>🔀</span><p class="text-xs font-bold text-slate-600 mt-1">Adaptabilidad</p></button>
+                    <button type="button" data-hab="Resolución de Problemas" data-cat="Blandas" onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>🧩</span><p class="text-xs font-bold text-slate-600 mt-1">Resolución de Problemas</p></button>
+                    <button type="button" data-hab="Gestión del Tiempo" data-cat="Blandas" onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>⏱️</span><p class="text-xs font-bold text-slate-600 mt-1">Gestión del Tiempo</p></button>
+                </div>
+
+                <!-- Estratégicas / Experiencia -->
+                <p class="text-[10px] font-black uppercase text-slate-300 tracking-widest mb-2">📈 Estratégicas & Experiencia</p>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+                    <button type="button" data-hab="Pensamiento Analítico" data-cat="Experiencia" onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>🧠</span><p class="text-xs font-bold text-slate-600 mt-1">Pensamiento Analítico</p></button>
+                    <button type="button" data-hab="Toma de Decisiones" data-cat="Experiencia" onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>⚡</span><p class="text-xs font-bold text-slate-600 mt-1">Toma de Decisiones</p></button>
+                    <button type="button" data-hab="Planeación Estratégica" data-cat="Experiencia" onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>🗺️</span><p class="text-xs font-bold text-slate-600 mt-1">Planeación Estratégica</p></button>
+                    <button type="button" data-hab="Gestión de Prioridades" data-cat="Experiencia" onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>🎚️</span><p class="text-xs font-bold text-slate-600 mt-1">Gestión de Prioridades</p></button>
+                </div>
+
+                <p id="msg-hab" class="text-xs font-bold text-rose-400 mt-2 hidden">⚠️ Debes seleccionar al menos 3 habilidades críticas.</p>
+                <input type="hidden" name="habilidades_seleccionadas" id="habilidades-seleccionadas" value="">
             </div>
 
-            <!-- Técnicas -->
-            <p class="text-[10px] font-black uppercase text-slate-300 tracking-widest mb-2">🧠 Técnicas</p>
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
-                <button type="button" data-hab="Prospección en Frío"      onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>🎯</span><p class="text-xs font-bold text-slate-600 mt-1">Prospección en Frío</p></button>
-                <button type="button" data-hab="Cierre de Ventas"         onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>🤝</span><p class="text-xs font-bold text-slate-600 mt-1">Cierre de Ventas</p></button>
-                <button type="button" data-hab="CRM Management"           onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>💻</span><p class="text-xs font-bold text-slate-600 mt-1">CRM Management</p></button>
-                <button type="button" data-hab="Análisis de Datos"        onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>📊</span><p class="text-xs font-bold text-slate-600 mt-1">Análisis de Datos</p></button>
-                <button type="button" data-hab="Gestión de Pipeline"      onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>🔄</span><p class="text-xs font-bold text-slate-600 mt-1">Gestión de Pipeline</p></button>
-                <button type="button" data-hab="Negociación"              onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>⚖️</span><p class="text-xs font-bold text-slate-600 mt-1">Negociación</p></button>
-                <button type="button" data-hab="Conocimiento de Producto" onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>📦</span><p class="text-xs font-bold text-slate-600 mt-1">Conocimiento de Producto</p></button>
-                <button type="button" data-hab="Gestión de Cuentas Clave" onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>🏢</span><p class="text-xs font-bold text-slate-600 mt-1">Gestión de Cuentas Clave</p></button>
+            <div class="flex justify-between mt-6">
+                <button type="button" onclick="pasoAnterior()" class="px-8 py-3 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition">
+                    ← Anterior
+                </button>
+                <button type="button" onclick="siguientePaso()" class="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition">
+                    Siguiente →
+                </button>
             </div>
-
-            <!-- Blandas -->
-            <p class="text-[10px] font-black uppercase text-slate-300 tracking-widest mb-2">🤝 Blandas</p>
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
-                <button type="button" data-hab="Comunicación Persuasiva"  onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>📣</span><p class="text-xs font-bold text-slate-600 mt-1">Comunicación Persuasiva</p></button>
-                <button type="button" data-hab="Escucha Activa"           onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>👂</span><p class="text-xs font-bold text-slate-600 mt-1">Escucha Activa</p></button>
-                <button type="button" data-hab="Orientación a Resultados" onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>📈</span><p class="text-xs font-bold text-slate-600 mt-1">Orientación a Resultados</p></button>
-                <button type="button" data-hab="Trabajo en Equipo"        onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>👥</span><p class="text-xs font-bold text-slate-600 mt-1">Trabajo en Equipo</p></button>
-                <button type="button" data-hab="Liderazgo"                onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>🏆</span><p class="text-xs font-bold text-slate-600 mt-1">Liderazgo</p></button>
-                <button type="button" data-hab="Adaptabilidad"            onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>🔀</span><p class="text-xs font-bold text-slate-600 mt-1">Adaptabilidad</p></button>
-                <button type="button" data-hab="Resolución de Problemas"  onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>🧩</span><p class="text-xs font-bold text-slate-600 mt-1">Resolución de Problemas</p></button>
-                <button type="button" data-hab="Gestión del Tiempo"       onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>⏱️</span><p class="text-xs font-bold text-slate-600 mt-1">Gestión del Tiempo</p></button>
-            </div>
-
-            <!-- Estratégicas -->
-            <p class="text-[10px] font-black uppercase text-slate-300 tracking-widest mb-2">📈 Estratégicas</p>
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
-                <button type="button" data-hab="Pensamiento Analítico"    onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>🧠</span><p class="text-xs font-bold text-slate-600 mt-1">Pensamiento Analítico</p></button>
-                <button type="button" data-hab="Toma de Decisiones"       onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>⚡</span><p class="text-xs font-bold text-slate-600 mt-1">Toma de Decisiones</p></button>
-                <button type="button" data-hab="Planeación Estratégica"   onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>🗺️</span><p class="text-xs font-bold text-slate-600 mt-1">Planeación Estratégica</p></button>
-                <button type="button" data-hab="Gestión de Prioridades"   onclick="toggleHab(this)" class="hab-btn text-left px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50 transition-all"><span>🎚️</span><p class="text-xs font-bold text-slate-600 mt-1">Gestión de Prioridades</p></button>
-            </div>
-
-            <p id="msg-hab" class="text-xs font-bold text-rose-400 mt-2 hidden">⚠️ Debes seleccionar al menos 3 habilidades críticas.</p>
-            <input type="hidden" name="habilidades_seleccionadas" id="habilidades-seleccionadas" value="">
         </div>
 
         <!-- ══════════════════════════════════════════
-             PREGUNTAS CON HABILIDAD ASOCIADA (PASO 3)
+             PASO 3: PREGUNTAS
         ══════════════════════════════════════════ -->
-        <div id="contenedor-preguntas" class="space-y-6"></div>
+        <div id="paso-3" class="paso-contenido hidden">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-6">
+                <h2 class="text-lg font-bold text-slate-800 mb-2 flex items-center gap-2">
+                    <span>❓</span> Preguntas de Evaluación
+                </h2>
+                <p class="text-xs text-slate-400">Asocia cada pregunta a una habilidad crítica. Los pesos deben sumar 100%.</p>
+                
+                <div class="flex items-center gap-3 mt-4 p-3 bg-blue-50 rounded-xl border border-blue-100">
+                    <div class="flex-1">
+                        <p class="text-xs font-bold text-blue-600 uppercase">Peso Total</p>
+                    </div>
+                    <div class="text-right">
+                        <p id="peso-total" class="text-3xl font-black text-slate-300">0%</p>
+                    </div>
+                </div>
+            </div>
 
-        <div class="space-y-4">
+            <div id="contenedor-preguntas" class="space-y-6 mb-6"></div>
+
             <button type="button" onclick="agregarPregunta()"
                     class="w-full py-4 border-2 border-dashed border-slate-200 rounded-3xl text-slate-400 font-bold
                            hover:bg-slate-100 hover:border-blue-300 hover:text-blue-500 transition-all">
                 + Añadir Pregunta
             </button>
-            <div class="sticky bottom-6 pt-4">
-                <button type="submit"
-                        class="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-200
-                               hover:bg-blue-700 active:scale-95 transition-all tracking-widest uppercase">
-                    Crear y Publicar Vacante
+
+            <div class="flex justify-between mt-6">
+                <button type="button" onclick="pasoAnterior()" class="px-8 py-3 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition">
+                    ← Anterior
+                </button>
+                <button type="button" onclick="siguientePaso()" class="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition">
+                    Siguiente →
                 </button>
             </div>
         </div>
+
+        <!-- ══════════════════════════════════════════
+             PASO 4: CONFIGURACIÓN GLOBAL (NUEVO)
+        ══════════════════════════════════════════ -->
+        <div id="paso-4" class="paso-contenido hidden">
+            <div class="bg-gradient-to-br from-purple-50 to-blue-50 p-8 rounded-3xl shadow-sm border border-purple-100 mb-6">
+                <h2 class="text-xl font-bold text-slate-800 mb-2 flex items-center gap-2">
+                    <span>⚖️</span> Configuración del Modelo de Evaluación
+                </h2>
+                <p class="text-sm text-slate-600 mb-6">Define cómo se calculará el score final de cada candidato</p>
+
+                <!-- Distribución por Categoría -->
+                <div class="bg-white rounded-2xl p-6 mb-6 border border-slate-200">
+                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <span>📊</span> Peso por Categoría
+                    </h3>
+                    <p class="text-xs text-slate-500 mb-4">¿Qué tan importante es cada tipo de habilidad? Debe sumar 100%</p>
+
+                    <div class="space-y-4">
+                        <!-- Técnicas -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-sm font-bold text-slate-700">🧠 Técnicas</label>
+                                <span id="valor-tecnicas" class="text-xl font-black text-blue-600">0%</span>
+                            </div>
+                            <input type="range" name="peso_tecnicas" id="slider-tecnicas" min="0" max="100" value="0" step="5"
+                                   oninput="actualizarDistribucion()" 
+                                   class="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer slider-blue">
+                        </div>
+
+                        <!-- Experiencia -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-sm font-bold text-slate-700">📚 Experiencia</label>
+                                <span id="valor-experiencia" class="text-xl font-black text-purple-600">0%</span>
+                            </div>
+                            <input type="range" name="peso_experiencia" id="slider-experiencia" min="0" max="100" value="0" step="5"
+                                   oninput="actualizarDistribucion()" 
+                                   class="w-full h-2 bg-purple-200 rounded-lg appearance-none cursor-pointer slider-purple">
+                        </div>
+
+                        <!-- Blandas -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-sm font-bold text-slate-700">🤝 Blandas</label>
+                                <span id="valor-blandas" class="text-xl font-black text-green-600">0%</span>
+                            </div>
+                            <input type="range" name="peso_blandas" id="slider-blandas" min="0" max="100" value="0" step="5"
+                                   oninput="actualizarDistribucion()" 
+                                   class="w-full h-2 bg-green-200 rounded-lg appearance-none cursor-pointer slider-green">
+                        </div>
+
+                        <!-- Ajuste -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-sm font-bold text-slate-700">🎯 Ajuste Cultural</label>
+                                <span id="valor-ajuste" class="text-xl font-black text-orange-600">0%</span>
+                            </div>
+                            <input type="range" name="peso_ajuste" id="slider-ajuste" min="0" max="100" value="0" step="5"
+                                   oninput="actualizarDistribucion()" 
+                                   class="w-full h-2 bg-orange-200 rounded-lg appearance-none cursor-pointer slider-orange">
+                        </div>
+                    </div>
+
+                    <!-- Total -->
+                    <div class="mt-6 p-4 bg-slate-50 rounded-xl border-2 border-slate-200">
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-slate-700">TOTAL:</span>
+                            <span id="total-distribucion" class="text-3xl font-black text-slate-300">0%</span>
+                        </div>
+                    </div>
+                    <p id="msg-distribucion" class="text-xs text-rose-500 font-bold mt-2 hidden">⚠️ Debe sumar exactamente 100%</p>
+                </div>
+
+                <!-- Fases de Evaluación -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-200">
+                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <span>🎬</span> Fases de Evaluación
+                    </h3>
+                    <p class="text-xs text-slate-500 mb-4">¿Cómo se divide la evaluación del candidato?</p>
+
+                    <div class="space-y-4">
+                        <!-- Pre-screening -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-sm font-bold text-slate-700">📝 Pre-screening (Formulario inicial)</label>
+                                <span id="valor-prescreening" class="text-xl font-black text-blue-600">70%</span>
+                            </div>
+                            <input type="range" name="peso_prescreening" id="slider-prescreening" min="0" max="100" value="70" step="10"
+                                   oninput="actualizarFases()" 
+                                   class="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer">
+                        </div>
+
+                        <!-- Entrevista -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-sm font-bold text-slate-700">🎤 Entrevista</label>
+                                <span id="valor-entrevista" class="text-xl font-black text-purple-600">30%</span>
+                            </div>
+                            <input type="range" name="peso_entrevista" id="slider-entrevista" min="0" max="100" value="30" step="10"
+                                   oninput="actualizarFases()" 
+                                   class="w-full h-2 bg-purple-200 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                    </div>
+
+                    <div class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                        <p class="text-xs text-blue-700">
+                            💡 <strong>Nota:</strong> El score final será: (Pre-screening × <span id="texto-prescreening">70</span>%) + (Entrevista × <span id="texto-entrevista">30</span>%)
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview del modelo -->
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-6">
+                <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <span>👁️</span> Preview del Modelo
+                </h3>
+                
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div class="p-4 bg-blue-50 rounded-xl">
+                        <p class="text-xs font-bold text-blue-600 uppercase mb-2">Habilidades Críticas</p>
+                        <div id="preview-habilidades" class="space-y-1">
+                            <p class="text-xs text-slate-400">Ninguna seleccionada</p>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-purple-50 rounded-xl">
+                        <p class="text-xs font-bold text-purple-600 uppercase mb-2">Distribución</p>
+                        <div id="preview-distribucion" class="space-y-1 text-xs text-slate-600">
+                            <p>🧠 Técnicas: <span class="font-bold">0%</span></p>
+                            <p>📚 Experiencia: <span class="font-bold">0%</span></p>
+                            <p>🤝 Blandas: <span class="font-bold">0%</span></p>
+                            <p>🎯 Ajuste: <span class="font-bold">0%</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-between mt-6">
+                <button type="button" onclick="pasoAnterior()" class="px-8 py-3 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition">
+                    ← Anterior
+                </button>
+                <button type="submit" id="btn-submit" class="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition shadow-lg">
+                    ✨ Crear y Publicar Vacante
+                </button>
+            </div>
+        </div>
+
     </form>
 </div>
 
 <script>
 // ══════════════════════════════════════════════════════
-// SKILL STACK — biblioteca de habilidades
+// NAVEGACIÓN ENTRE PASOS
+// ══════════════════════════════════════════════════════
+let pasoActual = 1;
+const totalPasos = 4;
+
+const nombresPasos = {
+    1: "Información básica",
+    2: "Habilidades críticas",
+    3: "Preguntas de evaluación",
+    4: "Configuración del modelo"
+};
+
+function actualizarProgreso() {
+    document.getElementById('paso-actual').textContent = pasoActual;
+    document.getElementById('progreso-texto').textContent = nombresPasos[pasoActual];
+    document.getElementById('barra-progreso').style.width = ((pasoActual / totalPasos) * 100) + '%';
+}
+
+function mostrarPaso(paso) {
+    document.querySelectorAll('.paso-contenido').forEach(p => p.classList.add('hidden'));
+    document.getElementById(`paso-${paso}`).classList.remove('hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function siguientePaso() {
+    // Validaciones por paso
+    if (pasoActual === 1) {
+        const cargo = document.getElementById('input-cargo').value.trim();
+        if (!cargo) {
+            alert('⚠️ Por favor ingresa el nombre del cargo');
+            return;
+        }
+    }
+    
+    if (pasoActual === 2) {
+        if (seleccionadas.length < MIN_HAB) {
+            document.getElementById('msg-hab').classList.remove('hidden');
+            return;
+        }
+    }
+    
+    if (pasoActual === 3) {
+        const total = calcularPesoTotal();
+        if (Math.abs(total - 100) > 0.01) {
+            alert(`⚠️ Los pesos deben sumar 100%. Actual: ${total.toFixed(1)}%`);
+            return;
+        }
+        if (document.getElementById('contenedor-preguntas').children.length === 0) {
+            alert('⚠️ Debes agregar al menos una pregunta');
+            return;
+        }
+    }
+    
+    if (pasoActual < totalPasos) {
+        pasoActual++;
+        mostrarPaso(pasoActual);
+        actualizarProgreso();
+        
+        // Si llegamos al paso 4, actualizar preview
+        if (pasoActual === 4) {
+            actualizarPreview();
+        }
+    }
+}
+
+function pasoAnterior() {
+    if (pasoActual > 1) {
+        pasoActual--;
+        mostrarPaso(pasoActual);
+        actualizarProgreso();
+    }
+}
+
+// ══════════════════════════════════════════════════════
+// SKILL STACK
 // ══════════════════════════════════════════════════════
 const SKILL_STACK = {
     "🧠 Técnicas": [
@@ -131,13 +409,12 @@ const SKILL_STACK = {
     ]
 };
 
-// Genera <option> agrupadas; marca con ★ las habilidades críticas del rol
 function buildHabilidadesOptions(valorActual = '') {
     let html = '<option value="">— Sin habilidad asociada —</option>';
     for (const [cat, habs] of Object.entries(SKILL_STACK)) {
         html += `<optgroup label="${cat}">`;
         habs.forEach(h => {
-            const sel    = h === valorActual ? 'selected' : '';
+            const sel = h === valorActual ? 'selected' : '';
             const critica = seleccionadas.includes(h) ? ' ★' : '';
             html += `<option value="${h}" ${sel}>${h}${critica}</option>`;
         });
@@ -146,9 +423,6 @@ function buildHabilidadesOptions(valorActual = '') {
     return html;
 }
 
-// ══════════════════════════════════════════════════════
-// HABILIDADES CRÍTICAS
-// ══════════════════════════════════════════════════════
 const MAX_HAB = 5;
 const MIN_HAB = 3;
 let seleccionadas = [];
@@ -169,37 +443,31 @@ function toggleHab(btn) {
         btn.classList.remove('border-blue-500','bg-blue-50','ring-2','ring-blue-200');
         btn.querySelector('p').classList.replace('text-blue-700','text-slate-600');
     }
-    actualizarUI();
+    actualizarUIHabilidades();
 }
 
-function actualizarUI() {
+function actualizarUIHabilidades() {
     const n = seleccionadas.length;
 
-    // Contador
-    const contador = document.getElementById('contador-hab');
-    contador.textContent = n;
-    contador.className = 'text-lg font-black ' + (
+    document.getElementById('contador-hab').textContent = n;
+    document.getElementById('contador-hab').className = 'text-lg font-black ' + (
         n >= MIN_HAB ? 'text-blue-600' : n > 0 ? 'text-rose-400' : 'text-slate-300'
     );
 
-    // Barra
     const barra = document.getElementById('barra-hab');
     barra.style.width = Math.min((n / MAX_HAB) * 100, 100) + '%';
     barra.className = 'h-full rounded-full transition-all duration-300 ' + (
         n >= MIN_HAB ? 'bg-blue-500' : n > 0 ? 'bg-rose-300' : 'bg-slate-200'
     );
 
-    // Bloquear cuando llega a 5
     document.querySelectorAll('.hab-btn').forEach(b => {
         const bloq = n >= MAX_HAB && !seleccionadas.includes(b.dataset.hab);
         b.classList.toggle('opacity-40', bloq);
         b.classList.toggle('cursor-not-allowed', bloq);
     });
 
-    // Actualizar input oculto
     document.getElementById('habilidades-seleccionadas').value = seleccionadas.join(',');
 
-    // Refrescar ★ en todos los selects de habilidad
     document.querySelectorAll('.select-habilidad').forEach(sel => {
         const actual = sel.value;
         sel.innerHTML = buildHabilidadesOptions(actual);
@@ -248,15 +516,13 @@ function agregarPregunta() {
 
         <div class="flex justify-between items-center">
             <span class="text-xs font-black text-blue-600 uppercase tracking-widest">Pregunta #${index + 1}</span>
-            <button type="button" onclick="this.closest('.pregunta-card').remove()"
+            <button type="button" onclick="this.closest('.pregunta-card').remove(); actualizarPesoTotal()"
                     class="text-slate-300 hover:text-rose-500 transition font-bold text-lg">✕</button>
         </div>
 
-        <!-- Texto -->
         <input type="text" name="p_texto[]" required placeholder="Escribe la pregunta aquí..."
                class="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm outline-none focus:bg-white transition">
 
-        <!-- Tipo + Peso -->
         <div class="grid grid-cols-2 gap-4">
             <select name="p_tipo[]" onchange="alternarCampos(this)"
                     class="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-medium">
@@ -264,15 +530,13 @@ function agregarPregunta() {
                 <option value="multiple">Opción Múltiple</option>
                 <option value="abierta">Abierta (IA)</option>
             </select>
-            <input type="number" name="p_peso[]" placeholder="Peso %"
+            <input type="number" name="p_peso[]" placeholder="Peso %" oninput="actualizarPesoTotal()"
                    class="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm">
         </div>
 
-        <!-- ★ PASO 3: Habilidad que evalúa esta pregunta -->
         <div class="bg-blue-50 border border-blue-100 rounded-2xl p-3">
             <label class="block text-[10px] font-black uppercase text-blue-400 mb-1.5 tracking-widest">
                 ★ Habilidad que evalúa esta pregunta
-                <span class="text-blue-300 normal-case font-normal ml-1">(★ = crítica para este rol)</span>
             </label>
             <select name="habilidad_asociada[]"
                     class="select-habilidad w-full p-2.5 bg-white border border-blue-100 rounded-xl text-sm font-medium
@@ -281,7 +545,19 @@ function agregarPregunta() {
             </select>
         </div>
 
-        <!-- Opciones múltiple -->
+        <div class="bg-purple-50 border border-purple-100 rounded-2xl p-3">
+            <label class="block text-[10px] font-black uppercase text-purple-400 mb-1.5 tracking-widest">
+                Categoría
+            </label>
+            <select name="categoria[]"
+                    class="w-full p-2.5 bg-white border border-purple-100 rounded-xl text-sm font-medium outline-none">
+                <option value="Técnica">Técnica</option>
+                <option value="Experiencia">Experiencia</option>
+                <option value="Blandas">Blandas</option>
+                <option value="Ajuste">Ajuste</option>
+            </select>
+        </div>
+
         <div class="seccion-multiple hidden space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
             <label class="block text-[10px] font-black uppercase text-slate-400">Opciones (Máximo 4)</label>
             <div class="lista-opciones space-y-2"></div>
@@ -289,52 +565,211 @@ function agregarPregunta() {
                     class="text-blue-600 text-[10px] font-black uppercase">+ Añadir Opción</button>
         </div>
 
-        <!-- Regla -->
         <div class="seccion-regla">
             <label class="label-regla block text-[10px] font-black uppercase text-slate-400 mb-1">Regla (Ideal / Keywords)</label>
             <input type="text" name="p_regla[]" required placeholder="si / no / palabra clave"
                    class="w-full p-3 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-700 font-bold">
         </div>
 
-        <!-- KO -->
         <div class="flex items-center gap-2">
             <input type="checkbox" name="p_ko[]" value="${index}" class="w-4 h-4 rounded text-blue-600">
             <label class="text-[10px] font-bold text-rose-500 uppercase">¿KO? (Elimina al candidato si falla)</label>
         </div>`;
 
     contenedor.appendChild(div);
+    actualizarPesoTotal();
 }
 
-window.onload = agregarPregunta;
+function calcularPesoTotal() {
+    let total = 0;
+    document.getElementsByName('p_peso[]').forEach(p => {
+        total += parseFloat(p.value || 0);
+    });
+    return total;
+}
+
+function actualizarPesoTotal() {
+    const total = calcularPesoTotal();
+    const elem = document.getElementById('peso-total');
+    elem.textContent = total.toFixed(1) + '%';
+    
+    if (Math.abs(total - 100) < 0.01) {
+        elem.className = 'text-3xl font-black text-green-600';
+    } else if (total > 0) {
+        elem.className = 'text-3xl font-black text-rose-500';
+    } else {
+        elem.className = 'text-3xl font-black text-slate-300';
+    }
+}
 
 // ══════════════════════════════════════════════════════
-// VALIDACIÓN AL ENVIAR
+// CONFIGURACIÓN GLOBAL
+// ══════════════════════════════════════════════════════
+function actualizarDistribucion() {
+    const tecnicas = parseInt(document.getElementById('slider-tecnicas').value);
+    const experiencia = parseInt(document.getElementById('slider-experiencia').value);
+    const blandas = parseInt(document.getElementById('slider-blandas').value);
+    const ajuste = parseInt(document.getElementById('slider-ajuste').value);
+    
+    document.getElementById('valor-tecnicas').textContent = tecnicas + '%';
+    document.getElementById('valor-experiencia').textContent = experiencia + '%';
+    document.getElementById('valor-blandas').textContent = blandas + '%';
+    document.getElementById('valor-ajuste').textContent = ajuste + '%';
+    
+    const total = tecnicas + experiencia + blandas + ajuste;
+    const elemTotal = document.getElementById('total-distribucion');
+    elemTotal.textContent = total + '%';
+    
+    if (total === 100) {
+        elemTotal.className = 'text-3xl font-black text-green-600';
+        document.getElementById('msg-distribucion').classList.add('hidden');
+    } else {
+        elemTotal.className = 'text-3xl font-black text-rose-500';
+        document.getElementById('msg-distribucion').classList.remove('hidden');
+    }
+    
+    actualizarPreview();
+}
+
+function actualizarFases() {
+    const prescreening = parseInt(document.getElementById('slider-prescreening').value);
+    const entrevista = 100 - prescreening;
+    
+    document.getElementById('slider-entrevista').value = entrevista;
+    document.getElementById('valor-prescreening').textContent = prescreening + '%';
+    document.getElementById('valor-entrevista').textContent = entrevista + '%';
+    document.getElementById('texto-prescreening').textContent = prescreening;
+    document.getElementById('texto-entrevista').textContent = entrevista;
+}
+
+function actualizarPreview() {
+    // Preview habilidades
+    const previewHab = document.getElementById('preview-habilidades');
+    if (seleccionadas.length === 0) {
+        previewHab.innerHTML = '<p class="text-xs text-slate-400">Ninguna seleccionada</p>';
+    } else {
+        previewHab.innerHTML = seleccionadas.map(h => 
+            `<div class="flex items-center gap-2">
+                <span class="text-blue-600">★</span>
+                <span class="text-xs font-medium text-slate-700">${h}</span>
+            </div>`
+        ).join('');
+    }
+    
+    // Preview distribución
+    const t = document.getElementById('slider-tecnicas').value;
+    const e = document.getElementById('slider-experiencia').value;
+    const b = document.getElementById('slider-blandas').value;
+    const a = document.getElementById('slider-ajuste').value;
+    
+    document.getElementById('preview-distribucion').innerHTML = `
+        <p>🧠 Técnicas: <span class="font-bold">${t}%</span></p>
+        <p>📚 Experiencia: <span class="font-bold">${e}%</span></p>
+        <p>🤝 Blandas: <span class="font-bold">${b}%</span></p>
+        <p>🎯 Ajuste: <span class="font-bold">${a}%</span></p>
+    `;
+}
+
+// ══════════════════════════════════════════════════════
+// VALIDACIÓN FINAL
 // ══════════════════════════════════════════════════════
 document.getElementById('form-vacante').onsubmit = function(e) {
-
-    // 1. Mínimo 3 habilidades críticas
+    // Validar habilidades
     if (seleccionadas.length < MIN_HAB) {
         e.preventDefault();
-        document.getElementById('msg-hab').classList.remove('hidden');
-        document.querySelector('[data-hab]').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        alert('⚠️ Debes seleccionar al menos 3 habilidades críticas');
+        pasoActual = 2;
+        mostrarPaso(2);
+        actualizarProgreso();
         return false;
     }
-
-    // 2. Pesos suman 100
-    let total = 0;
-    document.getElementsByName('p_peso[]').forEach(p => { total += parseFloat(p.value || 0); });
-    if (total !== 100) {
+    
+    // Validar pesos de preguntas
+    const totalPreguntas = calcularPesoTotal();
+    if (Math.abs(totalPreguntas - 100) > 0.01) {
         e.preventDefault();
-        alert(`🚨 La suma de los pesos debe ser exactamente 100%.\nActualmente suma: ${total}%`);
+        alert(`⚠️ Los pesos de las preguntas deben sumar 100%. Actual: ${totalPreguntas.toFixed(1)}%`);
+        pasoActual = 3;
+        mostrarPaso(3);
+        actualizarProgreso();
         return false;
     }
-
-    // 3. Sincronizar índices KO
+    
+    // Validar distribución por categoría
+    const t = parseInt(document.getElementById('slider-tecnicas').value);
+    const ex = parseInt(document.getElementById('slider-experiencia').value);
+    const b = parseInt(document.getElementById('slider-blandas').value);
+    const a = parseInt(document.getElementById('slider-ajuste').value);
+    const totalCat = t + ex + b + a;
+    
+    if (totalCat !== 100) {
+        e.preventDefault();
+        alert(`⚠️ La distribución por categoría debe sumar 100%. Actual: ${totalCat}%`);
+        return false;
+    }
+    
+    // Sincronizar índices KO
     document.querySelectorAll('.pregunta-card').forEach((card, i) => {
         const cb = card.querySelector('input[type="checkbox"]');
         if (cb) cb.value = i;
     });
+    
+    // Deshabilitar botón para evitar doble submit
+    document.getElementById('btn-submit').disabled = true;
+    document.getElementById('btn-submit').textContent = '⏳ Creando vacante...';
+    
+    return true;
+};
+
+// Inicializar
+window.onload = function() {
+    agregarPregunta();
+    actualizarProgreso();
+    actualizarFases();
 };
 </script>
+
+<style>
+/* Sliders con colores */
+.slider-blue::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #3b82f6;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.5);
+}
+
+.slider-purple::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #a855f7;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(168, 85, 247, 0.5);
+}
+
+.slider-green::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #10b981;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.5);
+}
+
+.slider-orange::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #f97316;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(249, 115, 22, 0.5);
+}
+</style>
 </body>
 </html>
