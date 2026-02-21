@@ -267,35 +267,185 @@ def index():
         logger.error(f"Error en encuesta: {e}")
         return f"Error: {e}", 500
 
+def get_config_modelo(vacante):
+    """
+    Obtiene la configuración del modelo de evaluación de la vacante.
+    Si no existe, retorna valores por defecto.
+    """
+    config = vacante.get('configuracion_modelo', {})
+    
+    distribucion = config.get('distribucion_categorias', {
+        "Técnica": 40,
+        "Experiencia": 20,
+        "Blandas": 30,
+        "Ajuste": 10
+    })
+    
+    fases = config.get('fases_evaluacion', {
+        "pre_screening": {"peso": 70, "activo": True},
+        "entrevista": {"peso": 30, "activo": True}
+    })
+    
+    return {
+        "dist": distribucion,
+        "fases": fases,
+        "metodo": config.get('metodo_scoring', 'skill_stack_v2'),
+        "version": config.get('version', '2.0')
+    }
+
+
+def calcular_score_prescreening(scores_cat, max_cat, distribucion):
+    """
+    Calcula el score de pre-screening usando la distribución de categorías configurada.
+    
+    Parámetros:
+    - scores_cat: dict con puntos obtenidos por categoría {"Técnica": 15, "Experiencia": 8, ...}
+    - max_cat: dict con puntos máximos por categoría {"Técnica": 20, "Experiencia": 10, ...}
+    - distribucion: dict con pesos porcentuales {"Técnica": 40, "Experiencia": 20, ...}
+    
+    Retorna:
+    - float: Score final ponderado de 0-100
+    """
+    score_final = 0.0
+    
+    for cat in ["Técnica", "Experiencia", "Blandas", "Ajuste"]:
+        puntos_obtenidos = scores_cat.get(cat, 0)
+        puntos_maximos = max_cat.get(cat, 0)
+        peso_categoria = distribucion.get(cat, 0) / 100  # Convertir a decimal
+        
+        if puntos_maximos > 0:
+            # Porcentaje de acierto en esta categoría
+            pct_categoria = (puntos_obtenidos / puntos_maximos) * 100
+            # Aplicar el peso de la categoría
+            score_final += (pct_categoria * peso_categoria)
+        # Si no hay preguntas en esta categoría, no suma nada
+    
+    return round(score_final, 1)
+
+
+def aplicar_boost_skill_stack(score_base, scores_habilidades, max_habilidades, skill_stack, boost_factor=1.15):
+    """
+    Aplica un boost al score si el candidato destaca en habilidades críticas.
+    
+    Parámetros:
+    - score_base: Score calculado sin boost
+    - scores_habilidades: dict con puntos obtenidos por habilidad
+    - max_habilidades: dict con puntos máximos por habilidad
+    - skill_stack: lista de habilidades críticas
+    - boost_factor: factor de multiplicación (default 1.15 = +15%)
+    
+    Retorna:
+    - float: Score con boost aplicado (máximo 100)
+    """
+    if not skill_stack:
+        return score_base
+    
+    # Calcular porcentaje promedio en habilidades críticas
+    criticas_scores = []
+    for hab in skill_stack:
+        if hab in scores_habilidades and hab in max_habilidades:
+            max_h = max_habilidades[hab]
+            if max_h > 0:
+                pct = (scores_habilidades[hab] / max_h) * 100
+                criticas_scores.append(pct)
+    
+    if not criticas_scores:
+        return score_base
+    
+    promedio_criticas = sum(criticas_scores) / len(criticas_scores)
+    
+    # Solo aplicar boost si el promedio en críticas es >= 80%
+    if promedio_criticas >= 80:
+        score_boosted = score_base * boost_factor
+        logger.info(f"🚀 Boost aplicado: {score_base:.1f}% → {min(score_boosted, 100):.1f}% (críticas: {promedio_criticas:.1f}%)")
+        return min(score_boosted, 100)  # Máximo 100
+    
+    return score_base
+
+
+def calcular_score_final_combinado(score_prescreening, score_entrevista, fases_config):
+    """
+    Combina el score de pre-screening y entrevista según los pesos configurados.
+    
+    Parámetros:
+    - score_prescreening: Score del formulario inicial (0-100)
+    - score_entrevista: Score de la entrevista (0-100) o None si no hay
+    - fases_config: dict con configuración de fases
+    
+    Retorna:
+    - float: Score final combinado
+    """
+    peso_prescreening = fases_config.get('pre_screening', {}).get('peso', 70) / 100
+    peso_entrevista = fases_config.get('entrevista', {}).get('peso', 30) / 100
+    
+    if score_entrevista is None:
+        # Solo pre-screening
+        return score_prescreening
+    
+    # Combinar ambos scores
+    score_final = (score_prescreening * peso_prescreening) + (score_entrevista * peso_entrevista)
+    return round(score_final, 1)
+
 
 @app.route('/procesar', methods=['POST'])
 def procesar():
+    """
+    Motor de evaluación v2.0 con Skill Stack y configuración personalizada
+    """
     id_publico = request.form.get('id_vacante')
     nombre = request.form.get('nombre')
     cc = request.form.get('cc')
+    
     try:
+        # ============================================
+        # 1. OBTENER VACANTE
+        # ============================================
         result = supabase.table('vacantes').select('*').eq('id_vacante_publico', id_publico).execute()
         if not result.data:
             return "Vacante no encontrada", 404
+        
         v = result.data[0]
+        logger.info(f"🎯 Procesando candidato: {nombre} para cargo: {v['cargo']}")
+        
+        # ============================================
+        # 2. OBTENER CONFIGURACIÓN DEL MODELO
+        # ============================================
+        config = get_config_modelo(v)
+        distribucion_categorias = config['dist']
+        fases_evaluacion = config['fases']
+        skill_stack = v.get('skill_stack', [])
+        
+        logger.info(f"⚙️ Configuración del modelo:")
+        logger.info(f"   - Distribución: T:{distribucion_categorias['Técnica']}% E:{distribucion_categorias['Experiencia']}% B:{distribucion_categorias['Blandas']}% A:{distribucion_categorias['Ajuste']}%")
+        logger.info(f"   - Fases: Pre-screening {fases_evaluacion['pre_screening']['peso']}% / Entrevista {fases_evaluacion['entrevista']['peso']}%")
+        logger.info(f"   - Skill Stack: {len(skill_stack)} habilidades críticas")
+        
+        # ============================================
+        # 3. PROCESAR RESPUESTAS
+        # ============================================
         ids_q = request.form.getlist('preguntas_custom[]')
         vals_r = request.form.getlist('respuestas_custom[]')
-        logger.info(f"🎯 Procesando candidato: {nombre} para cargo: {v['cargo']}")
-
+        
+        # Acumuladores por categoría
         scores_categorias = {"Técnica": 0, "Experiencia": 0, "Blandas": 0, "Ajuste": 0}
         max_categorias = {"Técnica": 0, "Experiencia": 0, "Blandas": 0, "Ajuste": 0}
+        
+        # Acumuladores por habilidad
         scores_habilidades = {}
         max_habilidades = {}
-        peso_total_posible = 0
-        puntos_brutos_acumulados = 0
+        
+        # Control de KO
         hubo_ko = False
         motivo_descarte = ""
+        
+        # Detalle para el análisis IA
         detalle = []
-
+        
         for i in range(len(ids_q)):
             p_orig = next((p for p in v['preguntas'] if p['id'] == ids_q[i]), None)
             if not p_orig:
                 continue
+            
             respuesta_user = vals_r[i].strip()
             peso_pregunta = float(p_orig.get('peso', 0))
             tipo = p_orig.get('tipo')
@@ -304,30 +454,41 @@ def procesar():
             ideal = str(reglas.get('ideal', '')).strip()
             cat_nombre = p_orig.get('categoria', 'Ajuste')
             hab_nombre = p_orig.get('habilidad', 'General')
-
+            
+            # Inicializar acumuladores de habilidad si no existen
             if hab_nombre not in scores_habilidades:
                 scores_habilidades[hab_nombre] = 0
                 max_habilidades[hab_nombre] = 0
-
+            
             puntos_obtenidos = 0
+            
+            # Procesar según tipo de pregunta
             if tipo in ['si_no', 'multiple', 'escala_1_5', 'escala_1_10']:
-                peso_total_posible += peso_pregunta
+                # Acumular máximos
                 if cat_nombre in max_categorias:
                     max_categorias[cat_nombre] += peso_pregunta
                 max_habilidades[hab_nombre] += peso_pregunta
+                
+                # Verificar si la respuesta es correcta
                 if respuesta_user.lower() == ideal.lower():
                     puntos_obtenidos = peso_pregunta
+                    
+                    # Acumular puntos obtenidos
                     if cat_nombre in scores_categorias:
                         scores_categorias[cat_nombre] += peso_pregunta
                     scores_habilidades[hab_nombre] += peso_pregunta
                 else:
+                    # Revisar si es KO
                     if es_ko:
                         hubo_ko = True
-                        motivo_descarte = f"No cumple: {p_orig['texto']}"
+                        motivo_descarte = f"No cumple requisito crítico: {p_orig['texto']}"
+                        logger.warning(f"🔴 KO activado: {motivo_descarte}")
+            
             elif tipo == 'abierta':
-                logger.info(f"📝 Pregunta abierta {p_orig['id']}: Guardada para análisis IA")
-
-            puntos_brutos_acumulados += puntos_obtenidos
+                # Las preguntas abiertas se guardan para análisis IA
+                logger.info(f"📝 Pregunta abierta {p_orig['id']}: '{respuesta_user}' - Guardada para análisis IA")
+            
+            # Agregar al detalle
             detalle.append({
                 "pregunta": p_orig['texto'],
                 "respuesta": respuesta_user,
@@ -335,63 +496,116 @@ def procesar():
                 "peso": peso_pregunta,
                 "tipo": tipo,
                 "categoria": cat_nombre,
-                "habilidad": hab_nombre
+                "habilidad": hab_nombre,
+                "es_critica": hab_nombre in skill_stack
             })
-
-        cfg = get_config_modelo(v)
-        score_final = calcular_score_prescreening(scores_categorias, max_categorias, cfg['dist'])
-
+        
+        # ============================================
+        # 4. CALCULAR SCORE CON NUEVA FÓRMULA
+        # ============================================
+        
+        # Score base usando distribución de categorías
+        score_base = calcular_score_prescreening(scores_categorias, max_categorias, distribucion_categorias)
+        
+        logger.info(f"📊 Score base (por categoría): {score_base}%")
+        logger.info(f"   - Técnica: {scores_categorias['Técnica']}/{max_categorias['Técnica']}")
+        logger.info(f"   - Experiencia: {scores_categorias['Experiencia']}/{max_categorias['Experiencia']}")
+        logger.info(f"   - Blandas: {scores_categorias['Blandas']}/{max_categorias['Blandas']}")
+        logger.info(f"   - Ajuste: {scores_categorias['Ajuste']}/{max_categorias['Ajuste']}")
+        
+        # Aplicar boost por skill stack (si aplica)
+        score_con_boost = aplicar_boost_skill_stack(
+            score_base, 
+            scores_habilidades, 
+            max_habilidades, 
+            skill_stack
+        )
+        
+        # Este es el score final de pre-screening
+        score_prescreening = score_con_boost
+        
+        # ============================================
+        # 5. GENERAR MÉTRICAS PARA RADAR
+        # ============================================
+        
         def calc_pct(obtenido, maximo):
             return round((obtenido / maximo * 100)) if maximo > 0 else 0
-
+        
         metricas_radar = (
             f"T:{calc_pct(scores_categorias['Técnica'], max_categorias['Técnica'])}% "
             f"E:{calc_pct(scores_categorias['Experiencia'], max_categorias['Experiencia'])}% "
             f"B:{calc_pct(scores_categorias['Blandas'], max_categorias['Blandas'])}% "
             f"A:{calc_pct(scores_categorias['Ajuste'], max_categorias['Ajuste'])}%"
         )
-
-        skill_stack_rol = v.get('skill_stack') or []
-
+        
+        # ============================================
+        # 6. GENERAR ANÁLISIS IA
+        # ============================================
+        
         analisis_ia_texto = generar_resumen_profesional(
             cargo=v['cargo'],
-            score_final=score_final,
+            score_final=score_prescreening,
             detalle=detalle,
             hubo_ko=hubo_ko,
             motivo_ko=motivo_descarte,
             metricas_radar=metricas_radar,
-            skill_stack=skill_stack_rol
+            skill_stack=skill_stack
         )
-
+        
+        # ============================================
+        # 7. DETERMINAR VEREDICTO
+        # ============================================
+        
         if hubo_ko:
             veredicto, tag = "DESCARTADO (KO)", "🔴"
-        elif score_final >= 75:
+        elif score_prescreening >= 75:
             veredicto, tag = "RECOMENDADO", "🟢"
-        elif score_final >= 40:
+        elif score_prescreening >= 40:
             veredicto, tag = "REVISAR", "🟡"
         else:
             veredicto, tag = "NO APTO", "🔴"
-
+        
+        # ============================================
+        # 8. GUARDAR ENTREVISTA
+        # ============================================
+        
         nueva_entrevista = {
             "id": str(uuid.uuid4()),
             "vacante_id": v['id'],
             "empresa_id": v['empresa_id'],
             "nombre_candidato": nombre,
             "identificacion": cc,
-            "score": score_final,
+            "score": score_prescreening,  # Score de pre-screening
             "veredicto": veredicto,
             "tag": tag,
             "comentarios_tecnicos": motivo_descarte,
             "respuestas_detalle": detalle,
             "analisis_ia": analisis_ia_texto,
             "fecha": datetime.utcnow().isoformat(),
-            "entity_skill_score": {h: calc_pct(scores_habilidades[h], max_habilidades[h]) for h in scores_habilidades}
+            "entity_skill_score": {
+                h: calc_pct(scores_habilidades[h], max_habilidades[h]) 
+                for h in scores_habilidades
+            },
+            "metricas_categorias": {
+                "Técnica": calc_pct(scores_categorias['Técnica'], max_categorias['Técnica']),
+                "Experiencia": calc_pct(scores_categorias['Experiencia'], max_categorias['Experiencia']),
+                "Blandas": calc_pct(scores_categorias['Blandas'], max_categorias['Blandas']),
+                "Ajuste": calc_pct(scores_categorias['Ajuste'], max_categorias['Ajuste'])
+            }
         }
+        
         supabase.table('entrevistas').insert(nueva_entrevista).execute()
+        
+        logger.info(f"✅ Candidato procesado: {nombre}")
+        logger.info(f"   - Score final: {score_prescreening}%")
+        logger.info(f"   - Veredicto: {veredicto}")
+        
         return render_template('gracias.html')
-
+        
     except Exception as e:
         logger.error(f"❌ Error en procesar: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         return f"Error: {e}", 500
 
 
@@ -508,6 +722,11 @@ def gestionar_vacantes():
         return f"Error: {e}", 500
 
 
+# ============================================
+# RUTA /nueva_vacante ACTUALIZADA
+# Reemplazar la ruta completa en app.py
+# ============================================
+
 @app.route('/nueva_vacante', methods=['GET', 'POST'])
 def nueva_vacante():
     if not session.get('logeado'):
@@ -518,7 +737,9 @@ def nueva_vacante():
         emp_id_str = session.get('empresa_id')
         id_publico = f"JOB-{int(time.time())}"
 
-        # Capturar listas del formulario
+        # ============================================
+        # 1. CAPTURAR PREGUNTAS
+        # ============================================
         textos = request.form.getlist('p_texto[]')
         tipos = request.form.getlist('p_tipo[]')
         pesos = request.form.getlist('p_peso[]')
@@ -528,46 +749,91 @@ def nueva_vacante():
         kos = request.form.getlist('p_ko[]')
         opciones_todas = request.form.getlist('p_opciones_lista[]')
 
-        # Habilidades críticas seleccionadas
+        # ============================================
+        # 2. CAPTURAR SKILL STACK
+        # ============================================
         hab_criticas_raw = request.form.get('habilidades_seleccionadas', '')
         hab_criticas = [h.strip() for h in hab_criticas_raw.split(',') if h.strip()]
 
-        # ⭐ NUEVO: Capturar configuración del modelo
-        config_modelo = {
+        # ============================================
+        # 3. CAPTURAR CONFIGURACIÓN DEL MODELO
+        # ============================================
+        peso_tecnicas = int(request.form.get('peso_tecnicas', 0))
+        peso_experiencia = int(request.form.get('peso_experiencia', 0))
+        peso_blandas = int(request.form.get('peso_blandas', 0))
+        peso_ajuste = int(request.form.get('peso_ajuste', 0))
+        
+        peso_prescreening = int(request.form.get('peso_prescreening', 70))
+        peso_entrevista = int(request.form.get('peso_entrevista', 30))
+
+        # ============================================
+        # 4. VALIDACIONES
+        # ============================================
+        
+        # Validar que los pesos de preguntas sumen 100
+        suma_pesos = sum(float(p) for p in pesos if p)
+        if abs(suma_pesos - 100) > 0.01:
+            logger.warning(f"⚠️ Suma de pesos incorrecta: {suma_pesos}%")
+            return f"Error: La suma de los pesos debe ser 100% (actual: {suma_pesos}%)", 400
+
+        # Validar que distribución de categorías sume 100
+        suma_categorias = peso_tecnicas + peso_experiencia + peso_blandas + peso_ajuste
+        if suma_categorias != 100:
+            logger.warning(f"⚠️ Distribución de categorías incorrecta: {suma_categorias}%")
+            return f"Error: La distribución por categoría debe sumar 100% (actual: {suma_categorias}%)", 400
+
+        # Validar que fases sumen 100
+        suma_fases = peso_prescreening + peso_entrevista
+        if suma_fases != 100:
+            logger.warning(f"⚠️ Distribución de fases incorrecta: {suma_fases}%")
+            return f"Error: Las fases deben sumar 100% (actual: {suma_fases}%)", 400
+
+        # ============================================
+        # 5. CONSTRUIR OBJETO DE CONFIGURACIÓN
+        # ============================================
+        
+        configuracion_modelo = {
             "distribucion_categorias": {
-                "Técnica": int(request.form.get('peso_tecnicas', 0)),
-                "Experiencia": int(request.form.get('peso_experiencia', 0)),
-                "Blandas": int(request.form.get('peso_blandas', 0)),
-                "Ajuste": int(request.form.get('peso_ajuste', 0))
+                "Técnica": peso_tecnicas,
+                "Experiencia": peso_experiencia,
+                "Blandas": peso_blandas,
+                "Ajuste": peso_ajuste
             },
             "fases_evaluacion": {
                 "pre_screening": {
-                    "peso": int(request.form.get('peso_prescreening', 70)),
-                    "activa": True
+                    "peso": peso_prescreening,
+                    "activo": True
                 },
                 "entrevista": {
-                    "peso": int(request.form.get('peso_entrevista', 30)),
-                    "activa": False
+                    "peso": peso_entrevista,
+                    "activo": True
                 }
-            }
+            },
+            "metodo_scoring": "skill_stack_v2",
+            "version": "2.0"
         }
 
-        # Construir preguntas
+        # ============================================
+        # 6. CONSTRUIR PREGUNTAS
+        # ============================================
+        
         nuevas_preguntas = []
         opcion_idx = 0
         
         for i in range(len(textos)):
-            t = tipos[i]
+            tipo_pregunta = tipos[i]
             regla_dict = {}
             
-            if t == 'multiple':
+            # Construir reglas según el tipo
+            if tipo_pregunta == 'multiple':
+                # Extraer las 4 opciones siguientes
                 opciones_pregunta = opciones_todas[opcion_idx: opcion_idx + 4]
                 regla_dict = {
                     "opciones": [o for o in opciones_pregunta if o],
                     "ideal": reglas[i]
                 }
                 opcion_idx += 4
-            elif t == 'abierta':
+            elif tipo_pregunta == 'abierta':
                 palabras = [p.strip() for p in reglas[i].split(',')] if reglas[i] else []
                 regla_dict = {"palabras_clave": palabras}
             else:
@@ -576,16 +842,19 @@ def nueva_vacante():
             nuevas_preguntas.append({
                 "id": f"q{i+1}",
                 "texto": textos[i],
-                "tipo": t,
-                "reglas": regla_dict,
+                "tipo": tipo_pregunta,
                 "peso": float(pesos[i]) if pesos[i] else 0.0,
+                "knockout": str(i) in kos,
+                "reglas": regla_dict,
                 "categoria": categorias[i] if i < len(categorias) else "General",
                 "habilidad": habilidades_asociadas[i] if i < len(habilidades_asociadas) else "General",
-                "knockout": str(i) in kos,
                 "texto_corto": textos[i][:30] + "..."
             })
 
-        # ⭐ NUEVO: Estructura completa de la vacante
+        # ============================================
+        # 7. CONSTRUIR VACANTE COMPLETA
+        # ============================================
+        
         nueva_vacante_data = {
             "id": str(uuid.uuid4()),
             "cargo": cargo,
@@ -593,19 +862,35 @@ def nueva_vacante():
             "empresa_id": emp_id_str,
             "preguntas": nuevas_preguntas,
             "skill_stack": hab_criticas,
-            "configuracion_modelo": config_modelo,  # ⭐ NUEVO CAMPO
+            "configuracion_modelo": configuracion_modelo,
             "activa": True,
             "created_at": datetime.utcnow().isoformat()
         }
         
+        # ============================================
+        # 8. GUARDAR EN SUPABASE
+        # ============================================
+        
         try:
             supabase.table('vacantes').insert(nueva_vacante_data).execute()
+            
             logger.info(f"✅ Vacante creada: {cargo} ({id_publico})")
+            logger.info(f"   - Total preguntas: {len(nuevas_preguntas)}")
+            logger.info(f"   - Habilidades críticas: {len(hab_criticas)}")
+            logger.info(f"   - Distribución: T:{peso_tecnicas}% E:{peso_experiencia}% B:{peso_blandas}% A:{peso_ajuste}%")
+            logger.info(f"   - Fases: Pre-screening {peso_prescreening}% / Entrevista {peso_entrevista}%")
+            
             return redirect(url_for('gestionar_vacantes'))
+            
         except Exception as e:
             logger.error(f"❌ Error al insertar vacante: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return f"Error en el servidor: {e}", 500
 
+    # ============================================
+    # MÉTODO GET - MOSTRAR FORMULARIO
+    # ============================================
     return render_template('nueva_vacante.html')
 
 
@@ -1249,21 +1534,40 @@ def get_habilidades():
 
 @app.route('/api/candidato/<id>')
 def api_candidato(id):
-    """API para obtener datos completos del candidato"""
+    """API para obtener datos completos del candidato con configuración dinámica"""
     if not session.get('logeado'):
         return jsonify({"error": "No autorizado"}), 401
+    
     try:
+        # ============================================
+        # 1. OBTENER CANDIDATO
+        # ============================================
         candidato_result = supabase.table('entrevistas').select('*').eq('id', id).execute()
         if not candidato_result.data:
             return jsonify({"error": "Candidato no encontrado"}), 404
+        
         candidato = candidato_result.data[0]
         emp_id_str = session.get('empresa_id')
+        
         if candidato['empresa_id'] != emp_id_str:
             return jsonify({"error": "No autorizado"}), 403
 
+        # ============================================
+        # 2. OBTENER VACANTE Y CONFIGURACIÓN
+        # ============================================
         vacante_result = supabase.table('vacantes').select('*').eq('id', candidato['vacante_id']).execute()
         cargo = vacante_result.data[0]['cargo'] if vacante_result.data else "N/A"
+        
+        # Obtener configuración del modelo
+        config = get_config_modelo(vacante_result.data[0]) if vacante_result.data else None
+        fases_config = config['fases'] if config else {
+            "pre_screening": {"peso": 70},
+            "entrevista": {"peso": 30}
+        }
 
+        # ============================================
+        # 3. PARSEAR ANÁLISIS IA
+        # ============================================
         try:
             analisis = json.loads(candidato['analisis_ia'])
         except:
@@ -1274,47 +1578,76 @@ def api_candidato(id):
                 "recomendacion": ""
             }
 
+        # ============================================
+        # 4. OBTENER EVALUACIÓN DE ENTREVISTA
+        # ============================================
         evaluacion = None
         criterios_guardados = candidato.get('criterios_entrevista')
+        
         if criterios_guardados:
             evaluacion = {
-                "criterios":             criterios_guardados,
-                "comentario":            candidato.get('comentario_entrevista', ''),
-                "score_interview":       candidato.get('score_interview'),
+                "criterios": criterios_guardados,
+                "comentario": candidato.get('comentario_entrevista', ''),
+                "score_interview": candidato.get('score_interview'),
                 "score_final_combinado": candidato.get('score_final_combinado'),
             }
 
+        # ============================================
+        # 5. CALCULAR SCORES COMBINADOS
+        # ============================================
         score_pre = float(candidato['score'] or 0)
         score_interview = None
         score_final_combinado = None
 
         if evaluacion and evaluacion.get('criterios'):
             criterios = evaluacion['criterios']
+            
+            # Calcular score de entrevista
             bloque_a = [criterios.get(k, 3) for k in ['dominio', 'resolucion']]
             bloque_b = [criterios.get(k, 3) for k in ['comunicacion', 'pensamiento', 'cultura', 'seguridad']]
-            score_a  = sum(bloque_a) / len(bloque_a) if bloque_a else 3
-            score_b  = sum(bloque_b) / len(bloque_b) if bloque_b else 3
-            cfg = get_config_modelo(vacante_result.data[0] if vacante_result.data else {})
-            score_interview       = normalizar_score_interview(evaluacion['criterios'])
-            score_final_combinado = calcular_score_combinado(score_pre, score_interview, cfg['peso_prescreening'], cfg['peso_entrevista'])
+            score_a = sum(bloque_a) / len(bloque_a) if bloque_a else 3
+            score_b = sum(bloque_b) / len(bloque_b) if bloque_b else 3
+            interview_score_raw = score_a * 0.4 + score_b * 0.6
+            score_interview = round((interview_score_raw - 1) / 4 * 100)
+            
+            # Combinar usando configuración de la vacante
+            peso_prescreening = fases_config['pre_screening']['peso'] / 100
+            peso_entrevista = fases_config['entrevista']['peso'] / 100
+            
+            score_final_combinado = round(
+                score_pre * peso_prescreening + score_interview * peso_entrevista, 
+                1
+            )
 
+        # ============================================
+        # 6. RETORNAR DATOS COMPLETOS
+        # ============================================
         return jsonify({
-            "nombre":                candidato['nombre_candidato'],
-            "identificacion":        candidato['identificacion'],
-            "cargo":                 cargo,
-            "score":                 candidato['score'],
-            "veredicto":             candidato['veredicto'],
-            "tag":                   candidato['tag'],
-            "fecha":                 candidato.get('fecha', 'N/A')[:10] if candidato.get('fecha') else "N/A",
-            "analisis":              analisis,
-            "respuestas":            candidato.get('respuestas_detalle', []),
-            "estado":                candidato.get('estado', None),
-            "evaluacion":            evaluacion,
-            "score_interview":       score_interview,
-            "score_final_combinado": score_final_combinado
+            "nombre": candidato['nombre_candidato'],
+            "identificacion": candidato['identificacion'],
+            "cargo": cargo,
+            "score": candidato['score'],
+            "veredicto": candidato['veredicto'],
+            "tag": candidato['tag'],
+            "fecha": candidato.get('fecha', 'N/A')[:10] if candidato.get('fecha') else "N/A",
+            "analisis": analisis,
+            "respuestas": candidato.get('respuestas_detalle', []),
+            "estado": candidato.get('estado', None),
+            "evaluacion": evaluacion,
+            "score_interview": score_interview,
+            "score_final_combinado": score_final_combinado,
+            "metricas_categorias": candidato.get('metricas_categorias', {}),
+            "entity_skill_score": candidato.get('entity_skill_score', {}),
+            "configuracion_fases": {
+                "peso_prescreening": fases_config['pre_screening']['peso'],
+                "peso_entrevista": fases_config['entrevista']['peso']
+            }
         })
+        
     except Exception as e:
-        logger.error(f"Error: {e}")
+        logger.error(f"Error en api_candidato: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         return jsonify({"error": str(e)}), 500
 
 
@@ -1324,40 +1657,89 @@ def api_candidato(id):
 
 @app.route('/api/guardar_evaluacion', methods=['POST'])
 def guardar_evaluacion():
+    """Guarda evaluación de entrevista con configuración dinámica"""
     if not session.get('logeado'):
         return jsonify({"error": "No autorizado"}), 401
+    
     try:
         data = request.json
         entrevista_id = data.get('entrevista_id')
-        criterios     = data.get('criterios', {})
-        comentario    = data.get('comentario', '')
+        criterios = data.get('criterios', {})
+        comentario = data.get('comentario', '')
 
         if not entrevista_id or not criterios:
             return jsonify({"error": "Datos incompletos"}), 400
 
-        # DESPUÉS:
-        cand       = supabase.table('entrevistas').select('score, vacante_id').eq('id', entrevista_id).single().execute()
-        score_pre  = float(cand.data['score'] or 0) if cand.data else 0
-        vacante_id = cand.data['vacante_id'] if cand.data else None
-        cfg        = get_pesos_fases_por_vacante_id(vacante_id) if vacante_id else {}
-        score_interview       = normalizar_score_interview(criterios)
-        score_final_combinado = calcular_score_combinado(score_pre, score_interview, cfg.get('peso_prescreening', 70), cfg.get('peso_entrevista', 30))
+        # ============================================
+        # 1. OBTENER CANDIDATO Y VACANTE
+        # ============================================
+        cand_result = supabase.table('entrevistas').select('score, vacante_id').eq('id', entrevista_id).execute()
+        if not cand_result.data:
+            return jsonify({"error": "Candidato no encontrado"}), 404
+        
+        candidato = cand_result.data[0]
+        score_pre = float(candidato.get('score', 0))
+        
+        # Obtener configuración de la vacante
+        vacante_result = supabase.table('vacantes').select('*').eq('id', candidato['vacante_id']).execute()
+        config = get_config_modelo(vacante_result.data[0]) if vacante_result.data else None
+        fases_config = config['fases'] if config else {
+            "pre_screening": {"peso": 70},
+            "entrevista": {"peso": 30}
+        }
 
+        # ============================================
+        # 2. CALCULAR SCORE DE ENTREVISTA
+        # ============================================
+        bloque_a = [criterios.get(k, 3) for k in ['dominio', 'resolucion']]
+        score_a = sum(bloque_a) / len(bloque_a) if bloque_a else 3
+        
+        bloque_b = [criterios.get(k, 3) for k in ['comunicacion', 'pensamiento', 'cultura', 'seguridad']]
+        score_b = sum(bloque_b) / len(bloque_b) if bloque_b else 3
+        
+        interview_score_raw = round(score_a * 0.4 + score_b * 0.6, 2)
+        score_interview = round((interview_score_raw - 1) / 4 * 100)
+
+        # ============================================
+        # 3. CALCULAR SCORE FINAL COMBINADO
+        # ============================================
+        peso_prescreening = fases_config['pre_screening']['peso'] / 100
+        peso_entrevista = fases_config['entrevista']['peso'] / 100
+        
+        score_final_combinado = round(
+            score_pre * peso_prescreening + score_interview * peso_entrevista, 
+            1
+        )
+
+        # ============================================
+        # 4. GUARDAR EN BASE DE DATOS
+        # ============================================
         supabase.table('entrevistas').update({
-            "criterios_entrevista":  criterios,
+            "criterios_entrevista": criterios,
             "comentario_entrevista": comentario,
-            "score_interview":       score_interview,
+            "score_interview": score_interview,
             "score_final_combinado": score_final_combinado,
         }).eq('id', entrevista_id).execute()
 
-        logger.info(f"✅ Evaluación guardada: {entrevista_id} — score combinado: {score_final_combinado}%")
+        logger.info(f"✅ Evaluación guardada: {entrevista_id}")
+        logger.info(f"   - Score pre-screening: {score_pre}% (peso {fases_config['pre_screening']['peso']}%)")
+        logger.info(f"   - Score entrevista: {score_interview}% (peso {fases_config['entrevista']['peso']}%)")
+        logger.info(f"   - Score final combinado: {score_final_combinado}%")
+        
         return jsonify({
-            "status":                "success",
-            "score_interview":       score_interview,
-            "score_final_combinado": score_final_combinado
+            "status": "success",
+            "score_interview": score_interview,
+            "score_final_combinado": score_final_combinado,
+            "pesos_aplicados": {
+                "prescreening": fases_config['pre_screening']['peso'],
+                "entrevista": fases_config['entrevista']['peso']
+            }
         })
+        
     except Exception as e:
         logger.error(f"❌ Error guardando evaluación: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         return jsonify({"error": str(e)}), 500
 
 
