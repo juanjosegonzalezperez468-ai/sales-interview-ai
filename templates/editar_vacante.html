@@ -2,104 +2,459 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Configuración de Vacante | Sales AI</title>
+    <title>Editar Vacante | Sales AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-slate-50 p-4 md:p-8 font-sans">
-    <div class="max-w-3xl mx-auto">
+<body class="bg-slate-50 font-sans">
+    <div class="max-w-6xl mx-auto p-4 md:p-8">
         
+        <!-- Header -->
         <div class="mb-6">
-            <a href="/dashboard" class="text-slate-400 hover:text-blue-600 font-bold text-sm transition">← Volver al Dashboard</a>
+            <a href="/gestionar_vacantes" class="text-slate-400 hover:text-blue-600 font-bold text-sm transition">← Volver a Vacantes</a>
         </div>
 
         <div class="flex items-center gap-3 mb-8">
-            <div class="bg-blue-600 p-3 rounded-2xl text-2xl shadow-lg shadow-blue-200">⚙️</div>
-            <h1 class="text-2xl font-black text-slate-800 tracking-tight">Configuración de Vacante</h1>
+            <div class="bg-blue-600 p-3 rounded-2xl text-2xl shadow-lg shadow-blue-200">✏️</div>
+            <div>
+                <h1 class="text-2xl font-black text-slate-800 tracking-tight">Editar Vacante</h1>
+                <p class="text-sm text-slate-500">{{ vacante.cargo }}</p>
+            </div>
         </div>
 
-        <form method="POST" id="form-vacante" class="space-y-6">
-            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                <label class="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Nombre del Cargo</label>
-                <input type="text" name="cargo" value="{{ vacante.cargo }}" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-700">
+        <!-- Progress Bar -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between mb-2">
+                <span id="step-indicator" class="text-sm font-bold text-blue-600">Paso 1 de 4</span>
+                <span id="progress-percent" class="text-sm font-bold text-slate-400">25%</span>
+            </div>
+            <div class="h-2 bg-slate-200 rounded-full overflow-hidden">
+                <div id="progress-bar" class="h-full bg-blue-600 transition-all duration-300" style="width: 25%"></div>
+            </div>
+        </div>
+
+        <form method="POST" id="form-vacante">
+            
+            <!-- PASO 1: Información Básica y Preguntas -->
+            <div id="paso-1" class="paso-content">
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-6">
+                    <h2 class="text-xl font-black text-slate-800 mb-4">📋 Información Básica</h2>
+                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Nombre del Cargo</label>
+                    <input type="text" name="cargo" value="{{ vacante.cargo }}" required class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-700">
+                </div>
+
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-6">
+                    <h2 class="text-xl font-black text-slate-800 mb-4">❓ Preguntas de Evaluación</h2>
+                    
+                    <div id="contenedor-preguntas" class="space-y-6">
+                        {% for p in vacante.preguntas %}
+                        <div class="pregunta-card bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-4 relative">
+                            <input type="hidden" name="p_id[]" value="{{ p.id or 'q' ~ loop.index }}">
+                            
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-black text-blue-600 uppercase tracking-widest">Pregunta #{{ loop.index }}</span>
+                                <button type="button" onclick="eliminarPregunta(this)" class="text-slate-300 hover:text-rose-500 transition font-bold text-lg">✕</button>
+                            </div>
+
+                            <div>
+                                <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Texto de la pregunta</label>
+                                <input type="text" name="p_texto[]" value="{{ p.texto }}" required class="w-full p-3 bg-white border border-slate-100 rounded-xl text-sm outline-none focus:bg-slate-50 transition" placeholder="Ej: ¿Tienes experiencia en ventas?">
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Tipo</label>
+                                    <select name="p_tipo[]" onchange="alternarCampos(this)" class="tipo-select w-full p-3 bg-white border border-slate-100 rounded-xl text-sm outline-none font-medium">
+                                        <option value="si_no" {% if p.tipo == 'si_no' %}selected{% endif %}>Sí / No</option>
+                                        <option value="multiple" {% if p.tipo == 'multiple' %}selected{% endif %}>Opción Múltiple</option>
+                                        <option value="abierta" {% if p.tipo == 'abierta' %}selected{% endif %}>Abierta</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Peso (%)</label>
+                                    <input type="number" name="p_peso[]" value="{{ p.peso }}" min="0" max="100" class="peso-input w-full p-3 bg-white border border-slate-100 rounded-xl text-sm font-medium" onchange="actualizarSumaPesos()">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Categoría</label>
+                                    <select name="p_categoria[]" class="w-full p-3 bg-white border border-slate-100 rounded-xl text-sm font-medium">
+                                        <option value="Técnica" {% if p.categoria == 'Técnica' %}selected{% endif %}>Técnica</option>
+                                        <option value="Experiencia" {% if p.categoria == 'Experiencia' %}selected{% endif %}>Experiencia</option>
+                                        <option value="Blandas" {% if p.categoria == 'Blandas' %}selected{% endif %}>Blandas</option>
+                                        <option value="Ajuste" {% if p.categoria == 'Ajuste' %}selected{% endif %}>Ajuste</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="seccion-multiple {% if p.tipo != 'multiple' %}hidden{% endif %} space-y-3 bg-white p-4 rounded-2xl border border-slate-200">
+                                <label class="block text-[10px] font-black uppercase text-slate-400">Opciones (Máximo 4)</label>
+                                <div class="lista-opciones space-y-2">
+                                    {% if p.tipo == 'multiple' and p.reglas.opciones %}
+                                        {% for opcion in p.reglas.opciones %}
+                                        <div class="flex items-center gap-2">
+                                            <input type="text" name="p_opciones_lista[]" value="{{ opcion }}" class="flex-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none">
+                                            <button type="button" onclick="this.parentElement.remove()" class="text-slate-300 hover:text-rose-500">✕</button>
+                                        </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                <button type="button" onclick="agregarOpcion(this)" class="text-blue-600 text-[10px] font-black uppercase hover:underline">+ Añadir Opción</button>
+                            </div>
+
+                            <div class="seccion-regla">
+                                <label class="label-regla block text-[10px] font-black uppercase text-slate-400 mb-1">
+                                    {% if p.tipo == 'multiple' %}Respuesta Correcta{% else %}Regla (Ideal / Keywords){% endif %}
+                                </label>
+                                <input type="text" name="p_regla[]" value="{{ p.reglas.ideal if p.reglas.ideal else p.reglas.palabras_clave }}" 
+                                       class="w-full p-3 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-700 font-bold" placeholder="Ej: si | Opción 1">
+                            </div>
+
+                            <div>
+                                <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Habilidad Asociada</label>
+                                <input type="text" name="p_habilidad[]" value="{{ p.habilidad or '' }}" class="w-full p-3 bg-white border border-slate-100 rounded-xl text-sm" placeholder="Ej: Excel Avanzado, Negociación">
+                            </div>
+
+                            <div class="flex items-center gap-2 pt-2">
+                                <input type="checkbox" name="p_ko[]" value="{{ loop.index0 }}" {% if p.knockout %}checked{% endif %} class="w-4 h-4 rounded border-slate-300 text-blue-600">
+                                <label class="text-[10px] font-bold text-rose-500 uppercase tracking-tighter">¿Pregunta Eliminatoria (KO)?</label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Indicador de suma de pesos -->
+                    <div class="mt-4 p-4 rounded-2xl border-2" id="indicador-pesos">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-bold text-slate-600">Total de pesos:</span>
+                            <span id="suma-pesos" class="text-2xl font-black">0%</span>
+                        </div>
+                        <div class="h-2 bg-slate-200 rounded-full mt-2 overflow-hidden">
+                            <div id="barra-pesos" class="h-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                        <p id="mensaje-pesos" class="text-xs mt-2 font-medium"></p>
+                    </div>
+
+                    <button type="button" onclick="agregarPregunta()" class="w-full mt-6 py-4 border-2 border-dashed border-slate-300 rounded-2xl text-slate-400 font-bold hover:bg-slate-100 hover:border-blue-300 hover:text-blue-500 transition-all">
+                        + Añadir Nueva Pregunta
+                    </button>
+                </div>
+
+                <button type="button" onclick="irAPaso(2)" class="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all">
+                    Siguiente: Habilidades Críticas →
+                </button>
             </div>
 
-            <div id="contenedor-preguntas" class="space-y-6">
-                {% for p in vacante.preguntas %}
-                <div class="pregunta-card bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-4 relative transition-all">
-                    <input type="hidden" name="p_id[]" value="{{ p.id or 'q' ~ loop.index }}">
+            <!-- PASO 2: Skill Stack (Habilidades Críticas) -->
+            <div id="paso-2" class="paso-content hidden">
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-6">
+                    <h2 class="text-xl font-black text-slate-800 mb-2">🎯 Habilidades Críticas (Skill Stack)</h2>
+                    <p class="text-sm text-slate-500 mb-6">Selecciona las habilidades más importantes para este rol. Estas se priorizarán en el análisis.</p>
                     
-                    <div class="flex justify-between items-center">
-                        <span class="text-xs font-black text-blue-600 uppercase tracking-widest">Pregunta #{{ loop.index }}</span>
-                        <button type="button" onclick="this.closest('.pregunta-card').remove()" class="text-slate-300 hover:text-rose-500 transition font-bold text-lg">✕</button>
+                    <div id="contenedor-skills" class="space-y-3 mb-4">
+                        <!-- Se llenará dinámicamente con las habilidades únicas de las preguntas -->
                     </div>
 
-                    <div>
-                        <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Texto de la pregunta</label>
-                        <input type="text" name="p_texto[]" value="{{ p.texto }}" class="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm outline-none focus:bg-white transition" placeholder="Ej: ¿Tienes experiencia en ventas?">
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Tipo de respuesta</label>
-                            <select name="p_tipo[]" onchange="alternarCampos(this)" class="tipo-select w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm outline-none font-medium">
-                                <option value="si_no" {% if p.tipo == 'si_no' %}selected{% endif %}>Sí / No</option>
-                                <option value="multiple" {% if p.tipo == 'multiple' %}selected{% endif %}>Opción Múltiple</option>
-                                <option value="abierta" {% if p.tipo == 'abierta' %}selected{% endif %}>Abierta (IA / Keywords)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Peso en la nota (%)</label>
-                            <input type="number" name="p_peso[]" value="{{ p.peso }}" class="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-medium">
-                        </div>
-                    </div>
-
-                    <div class="seccion-multiple {% if p.tipo != 'multiple' %}hidden{% endif %} space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                        <label class="block text-[10px] font-black uppercase text-slate-400">Opciones (Máximo 4)</label>
-                        <div class="lista-opciones space-y-2">
-                            {% if p.tipo == 'multiple' and p.reglas.opciones %}
-                                {% for opcion in p.reglas.opciones %}
-                                <div class="flex items-center gap-2">
-                                    <input type="text" name="p_opciones_lista[]" value="{{ opcion }}" class="flex-1 p-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-400">
-                                    <button type="button" onclick="this.parentElement.remove()" class="text-slate-300 hover:text-rose-500">✕</button>
-                                </div>
-                                {% endfor %}
-                            {% endif %}
-                        </div>
-                        <button type="button" onclick="agregarOpcion(this)" class="text-blue-600 text-[10px] font-black uppercase hover:underline">+ Añadir Opción</button>
-                    </div>
-
-                    <div class="seccion-regla">
-                        <label class="label-regla block text-[10px] font-black uppercase text-slate-400 mb-1">
-                            {% if p.tipo == 'multiple' %}Respuesta Correcta (Debe ser idéntica a una opción){% else %}Regla (Ideal / Keywords){% endif %}
-                        </label>
-                        <input type="text" name="p_regla[]" value="{{ p.reglas.ideal if p.reglas.ideal else p.reglas.palabras_clave }}" 
-                               class="w-full p-3 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-700 font-bold" placeholder="Ej: si | Opción 1 | ventas">
-                    </div>
-
-                    <div class="flex items-center gap-2 pt-2">
-                        <input type="checkbox" name="p_ko[]" value="{{ loop.index0 }}" {% if p.knockout %}checked{% endif %} class="w-4 h-4 rounded border-slate-300 text-blue-600">
-                        <label class="text-[10px] font-bold text-rose-500 uppercase tracking-tighter">¿Pregunta Eliminatoria (KO)?</label>
+                    <input type="hidden" name="habilidades_seleccionadas" id="habilidades_seleccionadas" value="{{ vacante.skill_stack|join(',') if vacante.skill_stack else '' }}">
+                    
+                    <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-2xl">
+                        <p class="text-xs font-bold text-blue-800 mb-2">💡 Consejo:</p>
+                        <p class="text-xs text-blue-700">Marca solo las habilidades que son <strong>indispensables</strong> para el rol. El sistema las priorizará en el scoring.</p>
                     </div>
                 </div>
-                {% endfor %}
-            </div>
 
-            <div class="space-y-4">
-                <button type="button" onclick="agregarPregunta()" class="w-full py-4 border-2 border-dashed border-slate-200 rounded-3xl text-slate-400 font-bold hover:bg-slate-100 hover:border-blue-300 hover:text-blue-500 transition-all">
-                    + Añadir Nueva Pregunta
-                </button>
-
-                <div class="sticky bottom-6 pt-4">
-                    <button type="submit" class="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all tracking-widest">
-                        GUARDAR CAMBIOS
+                <div class="flex gap-4">
+                    <button type="button" onclick="irAPaso(1)" class="flex-1 bg-slate-200 text-slate-700 font-black py-5 rounded-2xl hover:bg-slate-300 transition-all">
+                        ← Atrás
+                    </button>
+                    <button type="button" onclick="irAPaso(3)" class="flex-1 bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all">
+                        Siguiente: Configuración →
                     </button>
                 </div>
             </div>
+
+            <!-- PASO 3: Configuración de Modelo -->
+            <div id="paso-3" class="paso-content hidden">
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-6">
+                    <h2 class="text-xl font-black text-slate-800 mb-2">⚙️ Configuración del Modelo de Evaluación</h2>
+                    <p class="text-sm text-slate-500 mb-6">Define la importancia de cada categoría y las fases de evaluación.</p>
+                    
+                    <!-- Distribución por Categoría -->
+                    <div class="mb-8">
+                        <h3 class="text-lg font-bold text-slate-700 mb-4">📊 Distribución por Categoría</h3>
+                        
+                        <div class="space-y-6">
+                            {% set config = vacante.configuracion_modelo or {} %}
+                            {% set dist = config.distribucion_categorias or {'Técnica': 40, 'Experiencia': 20, 'Blandas': 30, 'Ajuste': 10} %}
+                            
+                            <!-- Técnicas -->
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <label class="text-sm font-bold text-slate-700">💻 Técnicas</label>
+                                    <span id="valor-tecnicas" class="text-sm font-black text-blue-600">{{ dist.Técnica }}%</span>
+                                </div>
+                                <input type="range" id="slider-tecnicas" name="peso_tecnicas" min="0" max="100" value="{{ dist.Técnica }}" class="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer" oninput="actualizarPesosCategoria()">
+                            </div>
+
+                            <!-- Experiencia -->
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <label class="text-sm font-bold text-slate-700">📈 Experiencia</label>
+                                    <span id="valor-experiencia" class="text-sm font-black text-purple-600">{{ dist.Experiencia }}%</span>
+                                </div>
+                                <input type="range" id="slider-experiencia" name="peso_experiencia" min="0" max="100" value="{{ dist.Experiencia }}" class="w-full h-2 bg-purple-200 rounded-lg appearance-none cursor-pointer" oninput="actualizarPesosCategoria()">
+                            </div>
+
+                            <!-- Blandas -->
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <label class="text-sm font-bold text-slate-700">🤝 Blandas</label>
+                                    <span id="valor-blandas" class="text-sm font-black text-green-600">{{ dist.Blandas }}%</span>
+                                </div>
+                                <input type="range" id="slider-blandas" name="peso_blandas" min="0" max="100" value="{{ dist.Blandas }}" class="w-full h-2 bg-green-200 rounded-lg appearance-none cursor-pointer" oninput="actualizarPesosCategoria()">
+                            </div>
+
+                            <!-- Ajuste -->
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <label class="text-sm font-bold text-slate-700">🎯 Ajuste Cultural</label>
+                                    <span id="valor-ajuste" class="text-sm font-black text-orange-600">{{ dist.Ajuste }}%</span>
+                                </div>
+                                <input type="range" id="slider-ajuste" name="peso_ajuste" min="0" max="100" value="{{ dist.Ajuste }}" class="w-full h-2 bg-orange-200 rounded-lg appearance-none cursor-pointer" oninput="actualizarPesosCategoria()">
+                            </div>
+                        </div>
+
+                        <div class="mt-4 p-4 rounded-2xl border-2" id="indicador-categoria">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-bold text-slate-600">Total:</span>
+                                <span id="suma-categoria" class="text-2xl font-black">100%</span>
+                            </div>
+                            <p id="mensaje-categoria" class="text-xs mt-2 font-medium"></p>
+                        </div>
+                    </div>
+
+                    <!-- Fases de Evaluación -->
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-700 mb-4">🔄 Fases de Evaluación</h3>
+                        {% set fases = config.fases_evaluacion or {'pre_screening': {'peso': 70}, 'entrevista': {'peso': 30}} %}
+                        
+                        <div class="space-y-6">
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <label class="text-sm font-bold text-slate-700">📝 Pre-screening (Encuesta)</label>
+                                    <span id="valor-prescreening" class="text-sm font-black text-blue-600">{{ fases.pre_screening.peso }}%</span>
+                                </div>
+                                <input type="range" id="slider-prescreening" name="peso_prescreening" min="0" max="100" value="{{ fases.pre_screening.peso }}" class="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer" oninput="actualizarPesosFases()">
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <label class="text-sm font-bold text-slate-700">🎤 Entrevista</label>
+                                    <span id="valor-entrevista" class="text-sm font-black text-green-600">{{ fases.entrevista.peso }}%</span>
+                                </div>
+                                <input type="range" id="slider-entrevista" name="peso_entrevista" min="0" max="100" value="{{ fases.entrevista.peso }}" class="w-full h-2 bg-green-200 rounded-lg appearance-none cursor-pointer" oninput="actualizarPesosFases()">
+                            </div>
+                        </div>
+
+                        <div class="mt-4 p-4 rounded-2xl border-2" id="indicador-fases">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-bold text-slate-600">Total:</span>
+                                <span id="suma-fases" class="text-2xl font-black">100%</span>
+                            </div>
+                            <p id="mensaje-fases" class="text-xs mt-2 font-medium"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-4">
+                    <button type="button" onclick="irAPaso(2)" class="flex-1 bg-slate-200 text-slate-700 font-black py-5 rounded-2xl hover:bg-slate-300 transition-all">
+                        ← Atrás
+                    </button>
+                    <button type="button" onclick="irAPaso(4)" class="flex-1 bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all">
+                        Ver Preview →
+                    </button>
+                </div>
+            </div>
+
+            <!-- PASO 4: Preview -->
+            <div id="paso-4" class="paso-content hidden">
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-6">
+                    <h2 class="text-xl font-black text-slate-800 mb-2">👁️ Preview del Modelo</h2>
+                    <p class="text-sm text-slate-500 mb-6">Vista previa de cómo se evaluará esta vacante.</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <!-- Gráfica Radar -->
+                        <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                            <h3 class="text-sm font-bold text-slate-700 mb-4">📊 Distribución por Categoría</h3>
+                            <canvas id="radar-preview" height="250"></canvas>
+                        </div>
+
+                        <!-- Resumen -->
+                        <div class="space-y-4">
+                            <div class="bg-blue-50 p-4 rounded-2xl border border-blue-200">
+                                <p class="text-xs font-bold text-blue-800 mb-1">Habilidades Críticas</p>
+                                <div id="preview-skills" class="flex flex-wrap gap-2 mt-2"></div>
+                            </div>
+
+                            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                                <p class="text-xs font-bold text-slate-700 mb-2">Fases de Evaluación</p>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between text-sm">
+                                        <span>Pre-screening:</span>
+                                        <span id="preview-prescreening" class="font-bold">70%</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm">
+                                        <span>Entrevista:</span>
+                                        <span id="preview-entrevista" class="font-bold">30%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                                <p class="text-xs font-bold text-slate-700 mb-2">Resumen</p>
+                                <div class="space-y-1 text-sm">
+                                    <div class="flex justify-between">
+                                        <span>Total preguntas:</span>
+                                        <span id="preview-total-preguntas" class="font-bold">0</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Preguntas KO:</span>
+                                        <span id="preview-total-ko" class="font-bold">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de Preguntas -->
+                    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                        <h3 class="text-sm font-bold text-slate-700 mb-4">📋 Preguntas Configuradas</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="border-b border-slate-300">
+                                        <th class="text-left py-2 px-3 font-bold text-slate-600">#</th>
+                                        <th class="text-left py-2 px-3 font-bold text-slate-600">Pregunta</th>
+                                        <th class="text-left py-2 px-3 font-bold text-slate-600">Categoría</th>
+                                        <th class="text-center py-2 px-3 font-bold text-slate-600">Peso</th>
+                                        <th class="text-center py-2 px-3 font-bold text-slate-600">KO</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="preview-tabla-preguntas" class="divide-y divide-slate-200">
+                                    <!-- Se llena dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-4">
+                    <button type="button" onclick="irAPaso(3)" class="flex-1 bg-slate-200 text-slate-700 font-black py-5 rounded-2xl hover:bg-slate-300 transition-all">
+                        ← Atrás
+                    </button>
+                    <button type="submit" class="flex-1 bg-green-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-green-200 hover:bg-green-700 transition-all">
+                        ✅ GUARDAR CAMBIOS
+                    </button>
+                </div>
+            </div>
+
         </form>
     </div>
 
     <script>
-        // Cambia la vista si es múltiple o no
+        // ==========================================
+        // VARIABLES GLOBALES
+        // ==========================================
+        let radarChart = null;
+        let pasoActual = 1;
+
+        // ==========================================
+        // NAVEGACIÓN ENTRE PASOS
+        // ==========================================
+        function irAPaso(numeroPaso) {
+            // Validaciones específicas por paso
+            if (numeroPaso > pasoActual) {
+                if (pasoActual === 1 && !validarPaso1()) return;
+                if (pasoActual === 2 && !validarPaso2()) return;
+                if (pasoActual === 3 && !validarPaso3()) return;
+            }
+
+            // Ocultar todos los pasos
+            document.querySelectorAll('.paso-content').forEach(p => p.classList.add('hidden'));
+            
+            // Mostrar el paso solicitado
+            document.getElementById(`paso-${numeroPaso}`).classList.remove('hidden');
+            pasoActual = numeroPaso;
+
+            // Actualizar barra de progreso
+            const progreso = (numeroPaso / 4) * 100;
+            document.getElementById('progress-bar').style.width = progreso + '%';
+            document.getElementById('step-indicator').textContent = `Paso ${numeroPaso} de 4`;
+            document.getElementById('progress-percent').textContent = progreso + '%';
+
+            // Acciones específicas al entrar a cada paso
+            if (numeroPaso === 2) cargarSkills();
+            if (numeroPaso === 4) actualizarPreview();
+        }
+
+        // ==========================================
+        // VALIDACIONES POR PASO
+        // ==========================================
+        function validarPaso1() {
+            const cargo = document.querySelector('input[name="cargo"]').value.trim();
+            if (!cargo) {
+                alert('⚠️ Por favor ingresa el nombre del cargo');
+                return false;
+            }
+
+            const preguntas = document.querySelectorAll('.pregunta-card');
+            if (preguntas.length === 0) {
+                alert('⚠️ Debes agregar al menos una pregunta');
+                return false;
+            }
+
+            // Validar suma de pesos
+            const pesos = Array.from(document.getElementsByName('p_peso[]')).map(p => parseFloat(p.value || 0));
+            const total = pesos.reduce((sum, val) => sum + val, 0);
+            
+            if (Math.abs(total - 100) > 0.01) {
+                alert(`🚨 La suma de los pesos debe ser 100%\n\nActual: ${total.toFixed(1)}%`);
+                return false;
+            }
+
+            return true;
+        }
+
+        function validarPaso2() {
+            // El paso 2 es opcional, siempre puede continuar
+            return true;
+        }
+
+        function validarPaso3() {
+            // Validar distribución de categorías
+            const sumaCat = parseInt(document.getElementById('slider-tecnicas').value) +
+                           parseInt(document.getElementById('slider-experiencia').value) +
+                           parseInt(document.getElementById('slider-blandas').value) +
+                           parseInt(document.getElementById('slider-ajuste').value);
+            
+            if (sumaCat !== 100) {
+                alert(`🚨 La distribución por categoría debe sumar 100%\n\nActual: ${sumaCat}%`);
+                return false;
+            }
+
+            // Validar fases
+            const sumaFases = parseInt(document.getElementById('slider-prescreening').value) +
+                             parseInt(document.getElementById('slider-entrevista').value);
+            
+            if (sumaFases !== 100) {
+                alert(`🚨 Las fases de evaluación deben sumar 100%\n\nActual: ${sumaFases}%`);
+                return false;
+            }
+
+            return true;
+        }
+
+        // ==========================================
+        // GESTIÓN DE PREGUNTAS
+        // ==========================================
         function alternarCampos(select) {
             const card = select.closest('.pregunta-card');
             const seccionMultiple = card.querySelector('.seccion-multiple');
@@ -107,21 +462,20 @@
             
             if (select.value === 'multiple') {
                 seccionMultiple.classList.remove('hidden');
-                labelRegla.innerText = "Respuesta Correcta (Debe ser idéntica a una opción)";
+                labelRegla.textContent = "Respuesta Correcta";
             } else {
                 seccionMultiple.classList.add('hidden');
-                labelRegla.innerText = "Regla (Ideal / Keywords)";
+                labelRegla.textContent = "Regla (Ideal / Keywords)";
             }
         }
 
-        // Añade una opción de respuesta (Max 4)
         function agregarOpcion(btn) {
             const lista = btn.previousElementSibling;
             if (lista.children.length < 4) {
                 const div = document.createElement('div');
                 div.className = "flex items-center gap-2";
                 div.innerHTML = `
-                    <input type="text" name="p_opciones_lista[]" placeholder="Escribe la opción..." class="flex-1 p-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-400">
+                    <input type="text" name="p_opciones_lista[]" placeholder="Escribe la opción..." class="flex-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none">
                     <button type="button" onclick="this.parentElement.remove()" class="text-slate-300 hover:text-rose-500">✕</button>
                 `;
                 lista.appendChild(div);
@@ -130,27 +484,44 @@
             }
         }
 
-        // Añade una pregunta completa
         function agregarPregunta() {
             const contenedor = document.getElementById('contenedor-preguntas');
             const index = contenedor.children.length;
             const nuevaHtml = `
-                <div class="pregunta-card bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-4 relative">
+                <div class="pregunta-card bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-4 relative">
                     <input type="hidden" name="p_id[]" value="q_nueva_${Date.now()}">
                     <div class="flex justify-between items-center">
                         <span class="text-xs font-black text-blue-600 uppercase tracking-widest">Nueva Pregunta</span>
-                        <button type="button" onclick="this.closest('.pregunta-card').remove()" class="text-slate-300 hover:text-rose-500 transition font-bold text-lg">✕</button>
+                        <button type="button" onclick="eliminarPregunta(this)" class="text-slate-300 hover:text-rose-500 transition font-bold text-lg">✕</button>
                     </div>
-                    <input type="text" name="p_texto[]" placeholder="Texto de la pregunta..." class="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm outline-none focus:bg-white transition">
-                    <div class="grid grid-cols-2 gap-4">
-                        <select name="p_tipo[]" onchange="alternarCampos(this)" class="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-medium">
-                            <option value="si_no">Sí / No</option>
-                            <option value="multiple">Opción Múltiple</option>
-                            <option value="abierta">Abierta (IA)</option>
-                        </select>
-                        <input type="number" name="p_peso[]" placeholder="Peso %" class="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm">
+                    <div>
+                        <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Texto de la pregunta</label>
+                        <input type="text" name="p_texto[]" placeholder="Texto de la pregunta..." required class="w-full p-3 bg-white border border-slate-100 rounded-xl text-sm outline-none">
                     </div>
-                    <div class="seccion-multiple hidden space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <div class="grid grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Tipo</label>
+                            <select name="p_tipo[]" onchange="alternarCampos(this)" class="w-full p-3 bg-white border border-slate-100 rounded-xl text-sm font-medium">
+                                <option value="si_no">Sí / No</option>
+                                <option value="multiple">Opción Múltiple</option>
+                                <option value="abierta">Abierta</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Peso (%)</label>
+                            <input type="number" name="p_peso[]" placeholder="0" min="0" max="100" class="peso-input w-full p-3 bg-white border border-slate-100 rounded-xl text-sm" onchange="actualizarSumaPesos()">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Categoría</label>
+                            <select name="p_categoria[]" class="w-full p-3 bg-white border border-slate-100 rounded-xl text-sm font-medium">
+                                <option value="Técnica">Técnica</option>
+                                <option value="Experiencia">Experiencia</option>
+                                <option value="Blandas">Blandas</option>
+                                <option value="Ajuste">Ajuste</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="seccion-multiple hidden space-y-3 bg-white p-4 rounded-2xl border border-slate-200">
                         <label class="block text-[10px] font-black uppercase text-slate-400">Opciones (Máximo 4)</label>
                         <div class="lista-opciones space-y-2"></div>
                         <button type="button" onclick="agregarOpcion(this)" class="text-blue-600 text-[10px] font-black uppercase">+ Añadir Opción</button>
@@ -159,44 +530,268 @@
                         <label class="label-regla block text-[10px] font-black uppercase text-slate-400 mb-1">Regla (Ideal / Keywords)</label>
                         <input type="text" name="p_regla[]" class="w-full p-3 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-700 font-bold">
                     </div>
+                    <div>
+                        <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Habilidad Asociada</label>
+                        <input type="text" name="p_habilidad[]" class="w-full p-3 bg-white border border-slate-100 rounded-xl text-sm" placeholder="Ej: Excel Avanzado">
+                    </div>
                     <div class="flex items-center gap-2">
                         <input type="checkbox" name="p_ko[]" value="${index}" class="w-4 h-4 rounded text-blue-600">
                         <label class="text-[10px] font-bold text-rose-500 uppercase">¿KO?</label>
                     </div>
                 </div>`;
             contenedor.insertAdjacentHTML('beforeend', nuevaHtml);
+            actualizarSumaPesos();
         }
-        
-        // --- VALIDACIÓN DE SUMA 100% Y RE-INDEXACIÓN ---
-        document.getElementById('form-vacante').onsubmit = function(e) {
-            const pesos = document.getElementsByName('p_peso[]');
-            let total = 0;
 
-            // 1. Validar la suma de pesos
-            pesos.forEach(p => {
-                total += parseFloat(p.value || 0);
+        function eliminarPregunta(btn) {
+            if (confirm('¿Seguro que deseas eliminar esta pregunta?')) {
+                btn.closest('.pregunta-card').remove();
+                actualizarSumaPesos();
+            }
+        }
+
+        // ==========================================
+        // SUMA DE PESOS DE PREGUNTAS
+        // ==========================================
+        function actualizarSumaPesos() {
+            const pesos = Array.from(document.getElementsByName('p_peso[]')).map(p => parseFloat(p.value || 0));
+            const total = pesos.reduce((sum, val) => sum + val, 0);
+            
+            document.getElementById('suma-pesos').textContent = total.toFixed(1) + '%';
+            document.getElementById('barra-pesos').style.width = Math.min(total, 100) + '%';
+            
+            const indicador = document.getElementById('indicador-pesos');
+            const mensaje = document.getElementById('mensaje-pesos');
+            const barra = document.getElementById('barra-pesos');
+            
+            if (Math.abs(total - 100) < 0.01) {
+                indicador.className = 'mt-4 p-4 rounded-2xl border-2 border-green-300 bg-green-50';
+                mensaje.textContent = '✅ Perfecto! Los pesos suman 100%';
+                mensaje.className = 'text-xs mt-2 font-medium text-green-700';
+                barra.className = 'h-full transition-all duration-300 bg-green-500';
+            } else if (total < 100) {
+                indicador.className = 'mt-4 p-4 rounded-2xl border-2 border-orange-300 bg-orange-50';
+                mensaje.textContent = `⚠️ Faltan ${(100 - total).toFixed(1)}% para completar`;
+                mensaje.className = 'text-xs mt-2 font-medium text-orange-700';
+                barra.className = 'h-full transition-all duration-300 bg-orange-500';
+            } else {
+                indicador.className = 'mt-4 p-4 rounded-2xl border-2 border-red-300 bg-red-50';
+                mensaje.textContent = `🚨 Sobran ${(total - 100).toFixed(1)}%`;
+                mensaje.className = 'text-xs mt-2 font-medium text-red-700';
+                barra.className = 'h-full transition-all duration-300 bg-red-500';
+            }
+        }
+
+        // ==========================================
+        // SKILL STACK (PASO 2)
+        // ==========================================
+        function cargarSkills() {
+            const habilidades = new Set();
+            const inputs = document.getElementsByName('p_habilidad[]');
+            inputs.forEach(input => {
+                const val = input.value.trim();
+                if (val) habilidades.add(val);
             });
 
-            // Usamos un pequeño margen de error para decimales si fuera necesario (99.99 a 100.01)
-            if (Math.abs(total - 100) > 0.01) {
-                e.preventDefault();
-                alert("🚨 No se puede guardar: La suma de los pesos debe ser exactamente 100%.\n\nActual total: " + total + "%");
-                return false;
+            const contenedor = document.getElementById('contenedor-skills');
+            contenedor.innerHTML = '';
+
+            const skillsSeleccionadas = document.getElementById('habilidades_seleccionadas').value.split(',').filter(s => s);
+
+            habilidades.forEach(skill => {
+                const isChecked = skillsSeleccionadas.includes(skill);
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200 hover:bg-blue-50 transition';
+                div.innerHTML = `
+                    <input type="checkbox" ${isChecked ? 'checked' : ''} value="${skill}" onchange="actualizarSkillsSeleccionadas()" class="w-5 h-5 rounded border-slate-300 text-blue-600">
+                    <label class="flex-1 text-sm font-medium text-slate-700">${skill}</label>
+                    <span class="text-xs font-bold px-2 py-1 rounded-full bg-blue-100 text-blue-700">Crítica</span>
+                `;
+                contenedor.appendChild(div);
+            });
+
+            if (habilidades.size === 0) {
+                contenedor.innerHTML = '<p class="text-sm text-slate-500 italic">No hay habilidades definidas en las preguntas. Puedes continuar sin seleccionar.</p>';
+            }
+        }
+
+        function actualizarSkillsSeleccionadas() {
+            const checkboxes = document.querySelectorAll('#contenedor-skills input[type="checkbox"]:checked');
+            const seleccionadas = Array.from(checkboxes).map(cb => cb.value);
+            document.getElementById('habilidades_seleccionadas').value = seleccionadas.join(',');
+        }
+
+        // ==========================================
+        // CONFIGURACIÓN DE PESOS (PASO 3)
+        // ==========================================
+        function actualizarPesosCategoria() {
+            const tecnicas = parseInt(document.getElementById('slider-tecnicas').value);
+            const experiencia = parseInt(document.getElementById('slider-experiencia').value);
+            const blandas = parseInt(document.getElementById('slider-blandas').value);
+            const ajuste = parseInt(document.getElementById('slider-ajuste').value);
+            const total = tecnicas + experiencia + blandas + ajuste;
+
+            document.getElementById('valor-tecnicas').textContent = tecnicas + '%';
+            document.getElementById('valor-experiencia').textContent = experiencia + '%';
+            document.getElementById('valor-blandas').textContent = blandas + '%';
+            document.getElementById('valor-ajuste').textContent = ajuste + '%';
+            document.getElementById('suma-categoria').textContent = total + '%';
+
+            const indicador = document.getElementById('indicador-categoria');
+            const mensaje = document.getElementById('mensaje-categoria');
+
+            if (total === 100) {
+                indicador.className = 'mt-4 p-4 rounded-2xl border-2 border-green-300 bg-green-50';
+                mensaje.textContent = '✅ Distribución correcta';
+                mensaje.className = 'text-xs mt-2 font-medium text-green-700';
+            } else {
+                indicador.className = 'mt-4 p-4 rounded-2xl border-2 border-red-300 bg-red-50';
+                mensaje.textContent = `🚨 Debe sumar 100% (actual: ${total}%)`;
+                mensaje.className = 'text-xs mt-2 font-medium text-red-700';
+            }
+        }
+
+        function actualizarPesosFases() {
+            const prescreening = parseInt(document.getElementById('slider-prescreening').value);
+            const entrevista = parseInt(document.getElementById('slider-entrevista').value);
+            const total = prescreening + entrevista;
+
+            document.getElementById('valor-prescreening').textContent = prescreening + '%';
+            document.getElementById('valor-entrevista').textContent = entrevista + '%';
+            document.getElementById('suma-fases').textContent = total + '%';
+
+            const indicador = document.getElementById('indicador-fases');
+            const mensaje = document.getElementById('mensaje-fases');
+
+            if (total === 100) {
+                indicador.className = 'mt-4 p-4 rounded-2xl border-2 border-green-300 bg-green-50';
+                mensaje.textContent = '✅ Distribución correcta';
+                mensaje.className = 'text-xs mt-2 font-medium text-green-700';
+            } else {
+                indicador.className = 'mt-4 p-4 rounded-2xl border-2 border-red-300 bg-red-50';
+                mensaje.textContent = `🚨 Debe sumar 100% (actual: ${total}%)`;
+                mensaje.className = 'text-xs mt-2 font-medium text-red-700';
+            }
+        }
+
+        // ==========================================
+        // PREVIEW (PASO 4)
+        // ==========================================
+        function actualizarPreview() {
+            // Actualizar gráfica radar
+            actualizarRadarChart();
+
+            // Actualizar skills críticas
+            const skills = document.getElementById('habilidades_seleccionadas').value.split(',').filter(s => s);
+            const contenedorSkills = document.getElementById('preview-skills');
+            contenedorSkills.innerHTML = skills.length > 0 
+                ? skills.map(s => `<span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">${s}</span>`).join('')
+                : '<span class="text-xs text-slate-500 italic">Ninguna seleccionada</span>';
+
+            // Actualizar fases
+            document.getElementById('preview-prescreening').textContent = document.getElementById('slider-prescreening').value + '%';
+            document.getElementById('preview-entrevista').textContent = document.getElementById('slider-entrevista').value + '%';
+
+            // Actualizar resumen
+            const totalPreguntas = document.querySelectorAll('.pregunta-card').length;
+            const totalKO = document.querySelectorAll('input[name="p_ko[]"]:checked').length;
+            document.getElementById('preview-total-preguntas').textContent = totalPreguntas;
+            document.getElementById('preview-total-ko').textContent = totalKO;
+
+            // Actualizar tabla de preguntas
+            const tbody = document.getElementById('preview-tabla-preguntas');
+            tbody.innerHTML = '';
+            
+            const preguntas = document.querySelectorAll('.pregunta-card');
+            preguntas.forEach((card, index) => {
+                const texto = card.querySelector('input[name="p_texto[]"]').value;
+                const categoria = card.querySelector('select[name="p_categoria[]"]').value;
+                const peso = card.querySelector('input[name="p_peso[]"]').value;
+                const isKO = card.querySelector('input[name="p_ko[]"]').checked;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-2 px-3 text-slate-600">${index + 1}</td>
+                    <td class="py-2 px-3 text-slate-700">${texto.substring(0, 50)}${texto.length > 50 ? '...' : ''}</td>
+                    <td class="py-2 px-3"><span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">${categoria}</span></td>
+                    <td class="py-2 px-3 text-center font-bold text-slate-700">${peso}%</td>
+                    <td class="py-2 px-3 text-center">${isKO ? '🔴' : '⚪'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function actualizarRadarChart() {
+            const ctx = document.getElementById('radar-preview').getContext('2d');
+            
+            const tecnicas = parseInt(document.getElementById('slider-tecnicas').value);
+            const experiencia = parseInt(document.getElementById('slider-experiencia').value);
+            const blandas = parseInt(document.getElementById('slider-blandas').value);
+            const ajuste = parseInt(document.getElementById('slider-ajuste').value);
+
+            if (radarChart) {
+                radarChart.destroy();
             }
 
-            // 2. Sincronizar índices de los Checkboxes de KO
-            // Esto es vital porque si el usuario borró la pregunta 1, 
-            // la que era la 2 ahora debe enviar el índice 0 al backend.
-            const cards = document.querySelectorAll('.pregunta-card');
-            cards.forEach((card, i) => {
-                const checkbox = card.querySelector('input[type="checkbox"]');
-                if (checkbox) {
-                    checkbox.value = i; // Re-asignamos el índice real según la posición actual
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Técnicas', 'Experiencia', 'Blandas', 'Ajuste'],
+                    datasets: [{
+                        label: 'Peso por Categoría',
+                        data: [tecnicas, experiencia, blandas, ajuste],
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(59, 130, 246, 1)'
+                    }]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                stepSize: 20
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
                 }
             });
-            
+        }
+
+        // ==========================================
+        // SUBMIT FINAL
+        // ==========================================
+        document.getElementById('form-vacante').onsubmit = function(e) {
+            // Re-indexar checkboxes de KO
+            const cards = document.querySelectorAll('.pregunta-card');
+            cards.forEach((card, i) => {
+                const checkbox = card.querySelector('input[type="checkbox"][name="p_ko[]"]');
+                if (checkbox) {
+                    checkbox.value = i;
+                }
+            });
+
             return true;
         };
+
+        // ==========================================
+        // INICIALIZACIÓN
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', function() {
+            actualizarSumaPesos();
+            actualizarPesosCategoria();
+            actualizarPesosFases();
+        });
     </script>
 </body>
 </html>

@@ -474,23 +474,48 @@ def nueva_vacante():
         emp_id_str = session.get('empresa_id')
         id_publico = f"JOB-{int(time.time())}"
 
-        textos = request.form.getlist('pregunta[]')
-        tipos = request.form.getlist('tipo[]')
-        pesos = request.form.getlist('peso[]')
-        reglas = request.form.getlist('regla_valor[]')
+        # Capturar listas del formulario
+        textos = request.form.getlist('p_texto[]')
+        tipos = request.form.getlist('p_tipo[]')
+        pesos = request.form.getlist('p_peso[]')
+        reglas = request.form.getlist('p_regla[]')
         habilidades_asociadas = request.form.getlist('habilidad_asociada[]')
         categorias = request.form.getlist('categoria[]')
-        kos = request.form.getlist('ko[]')
+        kos = request.form.getlist('p_ko[]')
         opciones_todas = request.form.getlist('p_opciones_lista[]')
 
+        # Habilidades críticas seleccionadas
         hab_criticas_raw = request.form.get('habilidades_seleccionadas', '')
         hab_criticas = [h.strip() for h in hab_criticas_raw.split(',') if h.strip()]
 
+        # ⭐ NUEVO: Capturar configuración del modelo
+        config_modelo = {
+            "distribucion_categorias": {
+                "Técnica": int(request.form.get('peso_tecnicas', 0)),
+                "Experiencia": int(request.form.get('peso_experiencia', 0)),
+                "Blandas": int(request.form.get('peso_blandas', 0)),
+                "Ajuste": int(request.form.get('peso_ajuste', 0))
+            },
+            "fases_evaluacion": {
+                "pre_screening": {
+                    "peso": int(request.form.get('peso_prescreening', 70)),
+                    "activa": True
+                },
+                "entrevista": {
+                    "peso": int(request.form.get('peso_entrevista', 30)),
+                    "activa": False
+                }
+            }
+        }
+
+        # Construir preguntas
         nuevas_preguntas = []
         opcion_idx = 0
+        
         for i in range(len(textos)):
             t = tipos[i]
             regla_dict = {}
+            
             if t == 'multiple':
                 opciones_pregunta = opciones_todas[opcion_idx: opcion_idx + 4]
                 regla_dict = {
@@ -516,6 +541,7 @@ def nueva_vacante():
                 "texto_corto": textos[i][:30] + "..."
             })
 
+        # ⭐ NUEVO: Estructura completa de la vacante
         nueva_vacante_data = {
             "id": str(uuid.uuid4()),
             "cargo": cargo,
@@ -523,14 +549,17 @@ def nueva_vacante():
             "empresa_id": emp_id_str,
             "preguntas": nuevas_preguntas,
             "skill_stack": hab_criticas,
+            "configuracion_modelo": config_modelo,  # ⭐ NUEVO CAMPO
             "activa": True,
             "created_at": datetime.utcnow().isoformat()
         }
+        
         try:
             supabase.table('vacantes').insert(nueva_vacante_data).execute()
+            logger.info(f"✅ Vacante creada: {cargo} ({id_publico})")
             return redirect(url_for('gestionar_vacantes'))
         except Exception as e:
-            logger.error(f"Error al insertar vacante: {e}")
+            logger.error(f"❌ Error al insertar vacante: {e}")
             return f"Error en el servidor: {e}", 500
 
     return render_template('nueva_vacante.html')
@@ -555,52 +584,166 @@ def vacante_lista(id_publico):
 def editar_vacante(id_publico):
     if not session.get('logeado'):
         return redirect(url_for('login'))
+    
     try:
         result = supabase.table('vacantes').select('*').eq('id_vacante_publico', id_publico).execute()
         if not result.data:
             return "Vacante no encontrada", 404
+        
         v = result.data[0]
         emp_id_str = session.get('empresa_id')
+        
         if v['empresa_id'] != emp_id_str:
             return "No autorizado", 403
 
         if request.method == 'POST':
+            # ============================================
+            # 1. INFORMACIÓN BÁSICA
+            # ============================================
             cargo = request.form.get('cargo')
+            
+            # ============================================
+            # 2. PREGUNTAS
+            # ============================================
             ids = request.form.getlist('p_id[]')
             textos = request.form.getlist('p_texto[]')
             tipos = request.form.getlist('p_tipo[]')
             pesos = request.form.getlist('p_peso[]')
             reglas = request.form.getlist('p_regla[]')
+            categorias = request.form.getlist('p_categoria[]')
+            habilidades = request.form.getlist('p_habilidad[]')
             kos = request.form.getlist('p_ko[]')
+            opciones_todas = request.form.getlist('p_opciones_lista[]')
 
             nuevas_preguntas = []
+            opcion_idx = 0
+            
             for i in range(len(textos)):
-                regla_obj = {}
-                if tipos[i] == "si_no":
-                    regla_obj = {"ideal": reglas[i]}
-                elif tipos[i] == "multiple":
-                    regla_obj = {"ideal": reglas[i]}
+                tipo_pregunta = tipos[i]
+                regla_dict = {}
+                
+                # Construir reglas según el tipo
+                if tipo_pregunta == 'multiple':
+                    # Extraer las 4 opciones siguientes
+                    opciones_pregunta = opciones_todas[opcion_idx: opcion_idx + 4]
+                    regla_dict = {
+                        "opciones": [o for o in opciones_pregunta if o],
+                        "ideal": reglas[i]
+                    }
+                    opcion_idx += 4
+                elif tipo_pregunta == 'abierta':
+                    palabras = [p.strip() for p in reglas[i].split(',')] if reglas[i] else []
+                    regla_dict = {"palabras_clave": palabras}
                 else:
-                    regla_obj = {"palabras_clave": reglas[i]}
+                    regla_dict = {"ideal": reglas[i]}
+
                 nuevas_preguntas.append({
                     "id": ids[i] if i < len(ids) else f"q{i+1}",
                     "texto": textos[i],
-                    "tipo": tipos[i],
-                    "peso": int(pesos[i]) if pesos[i] else 0,
+                    "tipo": tipo_pregunta,
+                    "peso": float(pesos[i]) if pesos[i] else 0.0,
                     "knockout": str(i) in kos,
-                    "reglas": regla_obj
+                    "reglas": regla_dict,
+                    "categoria": categorias[i] if i < len(categorias) else "General",
+                    "habilidad": habilidades[i] if i < len(habilidades) else "General",
+                    "texto_corto": textos[i][:30] + "..."
                 })
 
-            supabase.table('vacantes').update({
+            # ============================================
+            # 3. SKILL STACK (Habilidades Críticas)
+            # ============================================
+            habilidades_criticas_raw = request.form.get('habilidades_seleccionadas', '')
+            habilidades_criticas = [h.strip() for h in habilidades_criticas_raw.split(',') if h.strip()]
+
+            # ============================================
+            # 4. CONFIGURACIÓN DEL MODELO
+            # ============================================
+            
+            # Distribución por categoría
+            peso_tecnicas = int(request.form.get('peso_tecnicas', 40))
+            peso_experiencia = int(request.form.get('peso_experiencia', 20))
+            peso_blandas = int(request.form.get('peso_blandas', 30))
+            peso_ajuste = int(request.form.get('peso_ajuste', 10))
+            
+            # Fases de evaluación
+            peso_prescreening = int(request.form.get('peso_prescreening', 70))
+            peso_entrevista = int(request.form.get('peso_entrevista', 30))
+
+            # Construir objeto de configuración
+            configuracion_modelo = {
+                "distribucion_categorias": {
+                    "Técnica": peso_tecnicas,
+                    "Experiencia": peso_experiencia,
+                    "Blandas": peso_blandas,
+                    "Ajuste": peso_ajuste
+                },
+                "fases_evaluacion": {
+                    "pre_screening": {
+                        "peso": peso_prescreening,
+                        "activo": True
+                    },
+                    "entrevista": {
+                        "peso": peso_entrevista,
+                        "activo": True
+                    }
+                },
+                "metodo_scoring": "skill_stack_v2",
+                "version": "2.0"
+            }
+
+            # ============================================
+            # 5. VALIDACIONES
+            # ============================================
+            
+            # Validar que los pesos de preguntas sumen 100
+            suma_pesos = sum(float(p) for p in pesos if p)
+            if abs(suma_pesos - 100) > 0.01:
+                logger.warning(f"⚠️ Suma de pesos incorrecta: {suma_pesos}%")
+                return f"Error: La suma de los pesos debe ser 100% (actual: {suma_pesos}%)", 400
+
+            # Validar que distribución de categorías sume 100
+            suma_categorias = peso_tecnicas + peso_experiencia + peso_blandas + peso_ajuste
+            if suma_categorias != 100:
+                logger.warning(f"⚠️ Distribución de categorías incorrecta: {suma_categorias}%")
+                return f"Error: La distribución por categoría debe sumar 100% (actual: {suma_categorias}%)", 400
+
+            # Validar que fases sumen 100
+            suma_fases = peso_prescreening + peso_entrevista
+            if suma_fases != 100:
+                logger.warning(f"⚠️ Distribución de fases incorrecta: {suma_fases}%")
+                return f"Error: Las fases deben sumar 100% (actual: {suma_fases}%)", 400
+
+            # ============================================
+            # 6. ACTUALIZAR EN SUPABASE
+            # ============================================
+            
+            datos_actualizados = {
                 "cargo": cargo,
-                "preguntas": nuevas_preguntas
-            }).eq('id_vacante_publico', id_publico).execute()
+                "preguntas": nuevas_preguntas,
+                "skill_stack": habilidades_criticas,
+                "configuracion_modelo": configuracion_modelo,
+                "updated_at": datetime.utcnow().isoformat()
+            }
+
+            supabase.table('vacantes').update(datos_actualizados).eq('id_vacante_publico', id_publico).execute()
+            
             logger.info(f"✅ Vacante actualizada: {id_publico}")
+            logger.info(f"   - Total preguntas: {len(nuevas_preguntas)}")
+            logger.info(f"   - Habilidades críticas: {len(habilidades_criticas)}")
+            logger.info(f"   - Distribución: T:{peso_tecnicas}% E:{peso_experiencia}% B:{peso_blandas}% A:{peso_ajuste}%")
+            logger.info(f"   - Fases: Pre-screening {peso_prescreening}% / Entrevista {peso_entrevista}%")
+            
             return redirect(url_for('gestionar_vacantes'))
 
+        # ============================================
+        # MÉTODO GET - MOSTRAR FORMULARIO
+        # ============================================
         return render_template('editar_vacante.html', vacante=v)
+        
     except Exception as e:
-        logger.error(f"Error editando vacante: {e}")
+        logger.error(f"❌ Error editando vacante: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         return f"Error: {e}", 500
 
 
