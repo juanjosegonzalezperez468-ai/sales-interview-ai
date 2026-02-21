@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CRM Candidatos | Sales AI</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
@@ -44,6 +45,16 @@
         .score-medium { color: #92400e; background: #fef3c7; border: 1px solid #fde68a; }
         .score-low    { color: #991b1b; background: #fee2e2; border: 1px solid #fecaca; }
 
+        /* ⭐ NUEVO: Badges de breakdown */
+        .breakdown-badge {
+            display: inline-block; padding: 2px 6px; border-radius: 4px;
+            font-size: 0.7rem; font-weight: 600; margin-right: 4px; margin-bottom: 2px;
+        }
+        .breakdown-badge.tecnica     { background: #dbeafe; color: #1e40af; }
+        .breakdown-badge.experiencia { background: #fef3c7; color: #92400e; }
+        .breakdown-badge.blandas     { background: #e0e7ff; color: #4338ca; }
+        .breakdown-badge.ajuste      { background: #f3e8ff; color: #6b21a8; }
+
         /* Comparador */
         .check-comparar { width: 16px; height: 16px; cursor: pointer; accent-color: #4f46e5; }
         .candidato-row.seleccionada { background: #eef2ff !important; }
@@ -57,6 +68,9 @@
         #hint-comparar {
             font-size: 0.8rem; color: var(--gray-400); font-style: italic;
         }
+        
+        /* ⭐ NUEVO: Chart container */
+        .chart-container { position: relative; height: 300px; width: 100%; }
     </style>
 </head>
 <body style="background-color: var(--gray-50);">
@@ -117,6 +131,7 @@
                         <th style="padding: 1.25rem 0.75rem; width: 40px;"></th>
                         <th style="padding: 1.25rem; color: var(--gray-700); font-weight: 600;">CANDIDATO / VACANTE</th>
                         <th style="padding: 1.25rem; color: var(--gray-700); font-weight: 600;">SCORE IA</th>
+                        <th style="padding: 1.25rem; color: var(--gray-700); font-weight: 600;">BREAKDOWN</th>
                         <th style="padding: 1.25rem; color: var(--gray-700); font-weight: 600;">ESTADO PROCESO</th>
                         <th style="padding: 1.25rem; color: var(--gray-700); font-weight: 600;">ACCIONES</th>
                     </tr>
@@ -153,6 +168,24 @@
                             </span>
                         </td>
 
+                        <!-- ⭐ NUEVA COLUMNA: Breakdown por categorías -->
+                        <td style="padding: 1.25rem;">
+                            <div style="display: flex; flex-wrap: wrap; gap: 2px; max-width: 200px;">
+                                <span class="breakdown-badge tecnica" title="Habilidades Técnicas">
+                                    🔧 {{ c.metricas_categorias.Técnica|default(0)|int }}%
+                                </span>
+                                <span class="breakdown-badge experiencia" title="Experiencia">
+                                    📚 {{ c.metricas_categorias.Experiencia|default(0)|int }}%
+                                </span>
+                                <span class="breakdown-badge blandas" title="Habilidades Blandas">
+                                    🤝 {{ c.metricas_categorias.Blandas|default(0)|int }}%
+                                </span>
+                                <span class="breakdown-badge ajuste" title="Ajuste Cultural">
+                                    🎯 {{ c.metricas_categorias.Ajuste|default(0)|int }}%
+                                </span>
+                            </div>
+                        </td>
+
                         <td style="padding: 1.25rem;">
                             <select onchange="cambiarEstado('{{ c.id }}', this)"
                                     class="crm-select
@@ -168,9 +201,9 @@
                         </td>
 
                         <td style="padding: 1.25rem; display: flex; gap: 0.5rem; align-items: center;">
-                            <button onclick="verDetalle('{{ c.nombre_candidato }}', '{{ c.fortalezas }}', '{{ c.debilidades }}', '{{ c.analisis_ia }}', '{{ c.score }}')"
+                            <button onclick="verAnalisisDetallado('{{ c.id }}')"
                                     class="btn-secondary" style="padding: 0.5rem 0.8rem; font-size: 0.8rem;">
-                                👁️ Detalle
+                                👁️ Análisis Completo
                             </button>
                             {% if c.telefono %}
                             <a href="https://wa.me/{{ c.telefono }}?text=Hola%20{{ c.nombre_candidato }},%20nos%20gustaría%20agendar%20una%20entrevista%20por%20Meet..."
@@ -187,22 +220,64 @@
         </div>
     </main>
 
-    <!-- Modal detalle -->
+        <!-- ⭐ MODAL MEJORADO CON GRÁFICA RADAR -->
     <div id="detalleModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="cerrarModal()">&times;</span>
-            <h2 id="modalNombre" style="color: var(--gray-900);">Nombre</h2>
-            <div id="modalScoreValue" style="display:inline-block; padding: 5px 15px; border-radius: 8px; font-weight: bold; margin-bottom: 1rem;">0%</div>
+            
+            <!-- Header -->
+            <div style="margin-bottom: 2rem;">
+                <h2 id="modalNombre" style="color: var(--gray-900); margin-bottom: 0.5rem;">Nombre</h2>
+                <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                    <div id="modalScoreValue" style="display:inline-block; padding: 8px 16px; border-radius: 12px; font-weight: bold; font-size: 1.25rem;">0%</div>
+                    <span id="modalCargo" style="color: #6b7280; font-size: 0.9rem;"></span>
+                </div>
+            </div>
+
             <hr style="border: 0; border-top: 1px solid var(--gray-200); margin-bottom: 2rem;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+
+            <!-- Gráfica Radar -->
+            <div style="background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                <h4 style="margin-bottom: 1rem; color: #1e40af; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>📊</span> Análisis por Categorías
+                </h4>
+                <div class="chart-container" style="background: white; border-radius: 8px; padding: 1rem;">
+                    <canvas id="radarCandidato"></canvas>
+                </div>
+                
+                <!-- Config modelo -->
+                <div id="configModeloInfo" style="display: none; margin-top: 1rem; padding: 0.75rem; background: rgba(255,255,255,0.7); border-radius: 8px; font-size: 0.8rem; color: #374151;">
+                    <strong>⚙️ Modelo:</strong> Pre-screening <strong id="pesoPreDisplay">70%</strong> + Entrevista <strong id="pesoEntDisplay">30%</strong>
+                </div>
+            </div>
+
+            <!-- Skill Stack -->
+            <div id="skillStackSection" style="display: none; background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                <h4 style="margin-bottom: 1rem; color: #065f46; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🎯</span> Habilidades Críticas del Rol
+                </h4>
+                <div id="skillStackGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem;"></div>
+            </div>
+
+            <!-- Fortalezas y Riesgos -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
                 <div style="background: #f0fdf4; padding: 1.5rem; border-radius: 12px;">
-                    <h4>✅ Fortalezas</h4>
-                    <p id="modalFortalezas"></p>
+                    <h4 style="color: #065f46; margin-bottom: 0.75rem;">✅ Fortalezas</h4>
+                    <div id="modalFortalezas" style="color: #374151; font-size: 0.9rem; line-height: 1.6;"></div>
                 </div>
                 <div style="background: #fef2f2; padding: 1.5rem; border-radius: 12px;">
-                    <h4>❌ Debilidades</h4>
-                    <p id="modalDebilidades"></p>
+                    <h4 style="color: #991b1b; margin-bottom: 0.75rem;">⚠️ Riesgos</h4>
+                    <div id="modalRiesgos" style="color: #374151; font-size: 0.9rem; line-height: 1.6;"></div>
                 </div>
+            </div>
+
+            <!-- Análisis IA -->
+            <div style="padding: 1.5rem; background: var(--gray-50); border-radius: 12px;">
+                <h4 style="color: #374151; margin-bottom: 0.75rem;">💡 Análisis Profundo (IA)</h4>
+                <p id="modalAnalisis" style="color: #6b7280; font-size: 0.9rem; line-height: 1.6;"></p>
+            </div>
+        </div>
+    </div>
             </div>
             <div style="margin-top: 2rem; padding: 1.5rem; background: var(--gray-50); border-radius: 12px;">
                 <h4>💡 Análisis Profundo (IA)</h4>
@@ -261,20 +336,166 @@
             });
         }
 
-        // ── Modal detalle ─────────────────────────────────────
-        function verDetalle(nombre, fortalezas, debilidades, analisis, score) {
-            document.getElementById('modalNombre').innerText     = nombre;
-            document.getElementById('modalFortalezas').innerText = fortalezas || 'N/A';
-            document.getElementById('modalDebilidades').innerText= debilidades || 'N/A';
-            document.getElementById('modalAnalisis').innerText   = analisis   || 'N/A';
-            const scoreDiv = document.getElementById('modalScoreValue');
-            scoreDiv.innerText = 'Score IA: ' + score + '%';
-            const s = parseInt(score);
-            scoreDiv.style.background = s >= 75 ? '#d1fae5' : s >= 50 ? '#fef3c7' : '#fee2e2';
-            scoreDiv.style.color      = s >= 75 ? '#065f46' : s >= 50 ? '#92400e' : '#991b1b';
+        // ⭐ NUEVO: Variable global para la gráfica radar
+        let radarChart = null;
+
+        // ⭐ NUEVA FUNCIÓN: Ver análisis detallado con API
+        async function verAnalisisDetallado(candidatoId) {
             document.getElementById('detalleModal').style.display = 'block';
+            
+            try {
+                const response = await fetch(`/api/candidato/${candidatoId}`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    return;
+                }
+
+                // Header
+                document.getElementById('modalNombre').textContent = data.nombre;
+                document.getElementById('modalCargo').textContent = data.cargo;
+
+                // Score
+                const score = data.score;
+                const scoreDiv = document.getElementById('modalScoreValue');
+                scoreDiv.textContent = score + '%';
+                scoreDiv.style.background = score >= 75 ? '#d1fae5' : score >= 50 ? '#fef3c7' : '#fee2e2';
+                scoreDiv.style.color = score >= 75 ? '#065f46' : score >= 50 ? '#92400e' : '#991b1b';
+
+                // Gráfica Radar
+                dibujarRadar(data.breakdown_categorias || {});
+
+                // Configuración del modelo
+                if (data.configuracion_fases) {
+                    document.getElementById('configModeloInfo').style.display = 'block';
+                    document.getElementById('pesoPreDisplay').textContent = data.configuracion_fases.peso_prescreening + '%';
+                    document.getElementById('pesoEntDisplay').textContent = data.configuracion_fases.peso_entrevista + '%';
+                }
+
+                // Skill Stack
+                if (data.skill_stack && data.skill_stack.length > 0) {
+                    document.getElementById('skillStackSection').style.display = 'block';
+                    const grid = document.getElementById('skillStackGrid');
+                    const entityScores = data.entity_skill_score || {};
+                    
+                    grid.innerHTML = data.skill_stack.map(skill => {
+                        const score = entityScores[skill] || 0;
+                        const isHigh = score >= 75;
+                        const isMed = score >= 50 && score < 75;
+                        const bgColor = isHigh ? '#d1fae5' : isMed ? '#fef3c7' : '#fee2e2';
+                        const textColor = isHigh ? '#065f46' : isMed ? '#92400e' : '#991b1b';
+                        const label = isHigh ? '✓ Fuerte' : isMed ? '⚠ Moderado' : '✕ Débil';
+                        
+                        return `
+                            <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: white; border-radius: 8px; border: 1px solid ${isHigh ? '#a7f3d0' : isMed ? '#fde68a' : '#fecaca'};">
+                                <div style="flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.75rem; background: ${bgColor}; color: ${textColor};">
+                                    ${score}%
+                                </div>
+                                <div style="flex: 1; min-width: 0;">
+                                    <p style="font-weight: 600; font-size: 0.85rem; color: #374151; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${skill}</p>
+                                    <p style="font-size: 0.7rem; color: ${textColor}; margin: 0;">${label}</p>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+
+                // Fortalezas
+                const analisis = data.analisis || {};
+                const fortalezas = analisis.fortalezas || [];
+                document.getElementById('modalFortalezas').innerHTML = fortalezas.length > 0
+                    ? fortalezas.map(f => `<div style="margin-bottom: 0.5rem;">• ${f}</div>`).join('')
+                    : 'Sin fortalezas destacadas';
+
+                // Riesgos
+                const riesgos = analisis.riesgos || [];
+                document.getElementById('modalRiesgos').innerHTML = riesgos.length > 0
+                    ? riesgos.map(r => `<div style="margin-bottom: 0.5rem;">• ${r}</div>`).join('')
+                    : 'Sin riesgos identificados';
+
+                // Análisis IA
+                document.getElementById('modalAnalisis').textContent = analisis.resumen || 'Análisis no disponible';
+
+            } catch (error) {
+                console.error('Error cargando análisis:', error);
+                alert('Error al cargar el análisis completo');
+            }
         }
-        function cerrarModal() { document.getElementById('detalleModal').style.display = 'none'; }
+
+        // ⭐ FUNCIÓN: Dibujar gráfica radar
+        function dibujarRadar(breakdown) {
+            const canvas = document.getElementById('radarCandidato');
+            const ctx = canvas.getContext('2d');
+
+            if (radarChart) {
+                radarChart.destroy();
+            }
+
+            const valores = [
+                breakdown.Técnica || 0,
+                breakdown.Experiencia || 0,
+                breakdown.Blandas || 0,
+                breakdown.Ajuste || 0
+            ];
+
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Técnicas', 'Experiencia', 'Blandas', 'Cultura'],
+                    datasets: [{
+                        label: 'Score',
+                        data: valores,
+                        backgroundColor: 'rgba(59,130,246,0.2)',
+                        borderColor: 'rgba(59,130,246,1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(59,130,246,1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(59,130,246,1)',
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                stepSize: 25,
+                                callback: v => v + '%',
+                                font: { size: 10 },
+                                color: '#6b7280'
+                            },
+                            grid: { color: 'rgba(0,0,0,0.1)' },
+                            angleLines: { color: 'rgba(0,0,0,0.1)' },
+                            pointLabels: {
+                                font: { size: 12, weight: '600' },
+                                color: '#374151'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        // Cerrar modal mejorado
+        function cerrarModal() {
+            document.getElementById('detalleModal').style.display = 'none';
+            if (radarChart) {
+                radarChart.destroy();
+                radarChart = null;
+            }
+            // Ocultar secciones condicionales
+            document.getElementById('configModeloInfo').style.display = 'none';
+            document.getElementById('skillStackSection').style.display = 'none';
+        }
 
         // ── COMPARADOR ────────────────────────────────────────
         const seleccionados = {};

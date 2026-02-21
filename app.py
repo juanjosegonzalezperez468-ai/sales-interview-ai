@@ -617,6 +617,12 @@ def candidatos():
         result = supabase.table('entrevistas').select('*').order('score', desc=True).execute()
         entrevistas = result.data
         for e in entrevistas:
+            e['metricas_categorias'] = {
+            'Técnica': e.get('breakdown_tecnica', 0),
+            'Experiencia': e.get('breakdown_experiencia', 0),
+            'Blandas': e.get('breakdown_blandas', 0),
+            'Ajuste': e.get('breakdown_ajuste', 0)
+        }
             if e.get('analisis_ia'):
                 try:
                     e['analisis_ia_obj'] = json.loads(e['analisis_ia'])
@@ -1560,10 +1566,10 @@ def api_candidato(id):
         
         # Obtener configuración del modelo
         config = get_config_modelo(vacante_result.data[0]) if vacante_result.data else None
-        fases_config = config['fases'] if config else {
-            "pre_screening": {"peso": 70},
-            "entrevista": {"peso": 30}
-        }
+        fases_config = {
+            "pre_screening": {"peso": config['peso_prescreening']},
+            "entrevista": {"peso": config['peso_entrevista']}
+        } if config else {"pre_screening": {"peso": 70}, "entrevista": {"peso": 30}}
 
         # ============================================
         # 3. PARSEAR ANÁLISIS IA
@@ -1641,7 +1647,14 @@ def api_candidato(id):
             "configuracion_fases": {
                 "peso_prescreening": fases_config['pre_screening']['peso'],
                 "peso_entrevista": fases_config['entrevista']['peso']
-            }
+            },
+            "breakdown_categorias": {
+                "Técnica": candidato.get('metricas_categorias', {}).get('Técnica', 0),
+                "Experiencia": candidato.get('metricas_categorias', {}).get('Experiencia', 0),
+                "Blandas": candidato.get('metricas_categorias', {}).get('Blandas', 0),
+                "Ajuste": candidato.get('metricas_categorias', {}).get('Ajuste', 0)
+            },
+            "skill_stack": vacante_result.data[0].get('skill_stack', []) if vacante_result.data else []
         })
         
     except Exception as e:

@@ -487,6 +487,28 @@
                 <div class="chart-container bg-white rounded-xl p-4 shadow-sm">
                     <canvas id="graficaCandidato"></canvas>
                 </div>
+                
+                <!-- ⭐ NUEVO: Configuración del Modelo Usada -->
+                <div id="config-modelo-info" class="mt-4 p-3 bg-white/60 rounded-lg border border-blue-200 hidden">
+                    <p class="text-xs font-bold text-blue-700 mb-2">⚙️ Modelo de Evaluación:</p>
+                    <div class="flex items-center gap-4 text-xs text-gray-600">
+                        <span>Pre-screening: <strong id="peso-pre-display" class="text-blue-600">70%</strong></span>
+                        <span class="text-gray-300">+</span>
+                        <span>Entrevista: <strong id="peso-ent-display" class="text-purple-600">30%</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ⭐ NUEVO: Skill Stack Visual -->
+            <div id="skill-stack-section" class="hidden px-8 py-6 bg-gradient-to-br from-emerald-50 to-teal-50 border-b border-gray-200">
+                <div class="flex items-center gap-2 mb-4">
+                    <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+                    </svg>
+                    <h3 class="text-lg font-bold text-emerald-900">Habilidades Críticas del Rol</h3>
+                </div>
+                <div id="skill-stack-grid" class="grid grid-cols-2 gap-3"></div>
             </div>
 
             <!-- Resumen ejecutivo -->
@@ -924,6 +946,43 @@
                 // Gráfica
                 if (data.analisis) { dibujarGrafica(data.analisis); }
 
+                // ⭐ NUEVO: Mostrar configuración de pesos si está disponible
+                if (data.configuracion_fases) {
+                    const configDiv = document.getElementById('config-modelo-info');
+                    document.getElementById('peso-pre-display').textContent = data.configuracion_fases.peso_prescreening + '%';
+                    document.getElementById('peso-ent-display').textContent = data.configuracion_fases.peso_entrevista + '%';
+                    configDiv.classList.remove('hidden');
+                }
+
+                // ⭐ NUEVO: Mostrar skill stack si está disponible
+                if (data.skill_stack && data.skill_stack.length > 0) {
+                    const skillSection = document.getElementById('skill-stack-section');
+                    const skillGrid = document.getElementById('skill-stack-grid');
+                    skillSection.classList.remove('hidden');
+                    
+                    const entityScores = data.entity_skill_score || {};
+                    
+                    skillGrid.innerHTML = data.skill_stack.map(skill => {
+                        const score = entityScores[skill] || 0;
+                        const isHigh = score >= 75;
+                        const isMed = score >= 50 && score < 75;
+                        
+                        return `
+                            <div class="flex items-center gap-3 p-3 bg-white rounded-lg border ${isHigh ? 'border-emerald-300' : isMed ? 'border-yellow-300' : 'border-red-300'} shadow-sm">
+                                <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${isHigh ? 'bg-emerald-100 text-emerald-700' : isMed ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}">
+                                    ${score}%
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-semibold text-gray-900 truncate">${skill}</p>
+                                    <p class="text-xs ${isHigh ? 'text-emerald-600' : isMed ? 'text-yellow-600' : 'text-red-600'}">
+                                        ${isHigh ? '✓ Fuerte' : isMed ? '⚠ Moderado' : '✕ Débil'}
+                                    </p>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+
                 // Textos del análisis
                 const analisis = data.analisis || {};
                 document.getElementById('modal-resumen').textContent       = analisis.resumen       || 'Sin análisis disponible';
@@ -1012,6 +1071,9 @@
     function cerrarModal() {
         document.getElementById('modal-analisis').classList.add('hidden');
         if (graficaActual) { graficaActual.destroy(); graficaActual = null; }
+        // ⭐ Ocultar secciones nuevas
+        document.getElementById('config-modelo-info').classList.add('hidden');
+        document.getElementById('skill-stack-section').classList.add('hidden');
     }
 
     function eliminarCandidato(candidatoId) {
