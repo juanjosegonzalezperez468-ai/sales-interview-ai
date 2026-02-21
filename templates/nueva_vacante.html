@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Nueva Vacante | Sales AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-slate-50 p-4 md:p-8 font-sans">
 <div class="max-w-4xl mx-auto">
@@ -281,22 +282,50 @@
                 <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
                     <span>👁️</span> Preview del Modelo
                 </h3>
-                
-                <div class="grid md:grid-cols-2 gap-4">
-                    <div class="p-4 bg-blue-50 rounded-xl">
-                        <p class="text-xs font-bold text-blue-600 uppercase mb-2">Habilidades Críticas</p>
-                        <div id="preview-habilidades" class="space-y-1">
-                            <p class="text-xs text-slate-400">Ninguna seleccionada</p>
+
+                <div class="grid md:grid-cols-2 gap-6 mb-6">
+                    <!-- Radar chart -->
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                        <p class="text-xs font-bold text-slate-500 uppercase mb-3">Distribución por Categoría</p>
+                        <canvas id="radar-preview" height="220"></canvas>
+                    </div>
+
+                    <!-- Resumen lateral -->
+                    <div class="space-y-4">
+                        <div class="p-4 bg-blue-50 rounded-xl">
+                            <p class="text-xs font-bold text-blue-600 uppercase mb-2">Habilidades Críticas</p>
+                            <div id="preview-habilidades" class="space-y-1">
+                                <p class="text-xs text-slate-400">Ninguna seleccionada</p>
+                            </div>
+                        </div>
+                        <div class="p-4 bg-purple-50 rounded-xl">
+                            <p class="text-xs font-bold text-purple-600 uppercase mb-2">Distribución</p>
+                            <div id="preview-distribucion" class="space-y-1 text-xs text-slate-600">
+                                <p>🧠 Técnicas: <span class="font-bold">0%</span></p>
+                                <p>📚 Experiencia: <span class="font-bold">0%</span></p>
+                                <p>🤝 Blandas: <span class="font-bold">0%</span></p>
+                                <p>🎯 Ajuste: <span class="font-bold">0%</span></p>
+                            </div>
                         </div>
                     </div>
-                    <div class="p-4 bg-purple-50 rounded-xl">
-                        <p class="text-xs font-bold text-purple-600 uppercase mb-2">Distribución</p>
-                        <div id="preview-distribucion" class="space-y-1 text-xs text-slate-600">
-                            <p>🧠 Técnicas: <span class="font-bold">0%</span></p>
-                            <p>📚 Experiencia: <span class="font-bold">0%</span></p>
-                            <p>🤝 Blandas: <span class="font-bold">0%</span></p>
-                            <p>🎯 Ajuste: <span class="font-bold">0%</span></p>
-                        </div>
+                </div>
+
+                <!-- Tabla de preguntas -->
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                    <p class="text-xs font-bold text-slate-600 uppercase mb-3">Preguntas Configuradas</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-slate-300">
+                                    <th class="text-left py-2 px-3 font-bold text-slate-500 text-xs">#</th>
+                                    <th class="text-left py-2 px-3 font-bold text-slate-500 text-xs">Pregunta</th>
+                                    <th class="text-left py-2 px-3 font-bold text-slate-500 text-xs">Categoría</th>
+                                    <th class="text-center py-2 px-3 font-bold text-slate-500 text-xs">Peso</th>
+                                    <th class="text-center py-2 px-3 font-bold text-slate-500 text-xs">KO</th>
+                                </tr>
+                            </thead>
+                            <tbody id="preview-tabla-preguntas" class="divide-y divide-slate-200"></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -656,7 +685,7 @@ function actualizarPreview() {
         ).join('');
     }
     
-    // Preview distribución
+    // Preview distribución (texto)
     const t = document.getElementById('slider-tecnicas').value;
     const e = document.getElementById('slider-experiencia').value;
     const b = document.getElementById('slider-blandas').value;
@@ -668,6 +697,84 @@ function actualizarPreview() {
         <p>🤝 Blandas: <span class="font-bold">${b}%</span></p>
         <p>🎯 Ajuste: <span class="font-bold">${a}%</span></p>
     `;
+
+    // Radar chart
+    actualizarRadarChart();
+
+    // Tabla de preguntas
+    const catColors = {
+        'Técnica':    'bg-blue-100 text-blue-700',
+        'Experiencia':'bg-purple-100 text-purple-700',
+        'Blandas':    'bg-green-100 text-green-700',
+        'Ajuste':     'bg-orange-100 text-orange-700',
+    };
+    const tbody = document.getElementById('preview-tabla-preguntas');
+    tbody.innerHTML = '';
+    document.querySelectorAll('.pregunta-card').forEach((card, i) => {
+        const texto     = card.querySelector('input[name="p_texto[]"]')?.value    || '';
+        const categoria = card.querySelector('select[name="categoria[]"]')?.value || '';
+        const peso      = card.querySelector('input[name="p_peso[]"]')?.value     || '0';
+        const isKO      = card.querySelector('input[name="p_ko[]"]')?.checked     || false;
+        const catClass  = catColors[categoria] || 'bg-slate-100 text-slate-600';
+        const tr        = document.createElement('tr');
+        tr.innerHTML    = `
+            <td class="py-2 px-3 text-slate-500 text-xs">${i + 1}</td>
+            <td class="py-2 px-3 text-slate-700 text-xs">${texto.substring(0, 55)}${texto.length > 55 ? '…' : ''}</td>
+            <td class="py-2 px-3"><span class="px-2 py-1 ${catClass} rounded text-xs font-medium">${categoria}</span></td>
+            <td class="py-2 px-3 text-center font-black text-slate-700 text-xs">${peso}%</td>
+            <td class="py-2 px-3 text-center text-xs">${isKO ? '🔴' : '⚪'}</td>`;
+        tbody.appendChild(tr);
+    });
+}
+
+// ══════════════════════════════════════════════════════
+// RADAR CHART
+// ══════════════════════════════════════════════════════
+let radarChart = null;
+
+function actualizarRadarChart() {
+    const ctx = document.getElementById('radar-preview').getContext('2d');
+    const t   = parseInt(document.getElementById('slider-tecnicas').value);
+    const e   = parseInt(document.getElementById('slider-experiencia').value);
+    const b   = parseInt(document.getElementById('slider-blandas').value);
+    const a   = parseInt(document.getElementById('slider-ajuste').value);
+
+    if (radarChart) {
+        radarChart.data.datasets[0].data = [t, e, b, a];
+        radarChart.update();
+        return;
+    }
+
+    radarChart = new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: ['Técnicas', 'Experiencia', 'Blandas', 'Ajuste'],
+            datasets: [{
+                label: 'Peso %',
+                data: [t, e, b, a],
+                backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                borderColor:     'rgba(59, 130, 246, 0.9)',
+                borderWidth: 2,
+                pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                pointBorderColor:     '#fff',
+                pointRadius: 5,
+                pointHoverRadius: 7,
+            }]
+        },
+        options: {
+            scales: {
+                r: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: { stepSize: 25, font: { size: 10 } },
+                    grid: { color: 'rgba(148, 163, 184, 0.3)' },
+                    pointLabels: { font: { size: 12, weight: 'bold' }, color: '#475569' }
+                }
+            },
+            plugins: { legend: { display: false } },
+            animation: { duration: 300 }
+        }
+    });
 }
 
 // ══════════════════════════════════════════════════════
