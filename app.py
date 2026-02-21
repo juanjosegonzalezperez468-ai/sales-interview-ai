@@ -33,6 +33,50 @@ logger.info("✅ Módulo de calculadora registrado en /calculadora")
 
 supabase: Client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_KEY'))
 
+def get_config_modelo(vacante: dict) -> dict:
+    config = vacante.get('configuracion_modelo') or {}
+    dist = config.get('distribucion_categorias') or {
+        'Técnica': 40, 'Experiencia': 20, 'Blandas': 30, 'Ajuste': 10
+    }
+    fases = config.get('fases_evaluacion') or {
+        'pre_screening': {'peso': 70}, 'entrevista': {'peso': 30}
+    }
+    return {
+        'dist':              dist,
+        'peso_prescreening': int(fases.get('pre_screening', {}).get('peso', 70)),
+        'peso_entrevista':   int(fases.get('entrevista',    {}).get('peso', 30)),
+    }
+
+def get_pesos_fases_por_vacante_id(vacante_id: str) -> dict:
+    try:
+        res = supabase.table('vacantes').select('configuracion_modelo').eq('id', vacante_id).single().execute()
+        return get_config_modelo(res.data or {})
+    except Exception as e:
+        logger.warning(f"⚠️ No se pudo leer configuracion_modelo: {e}")
+        return {'dist': {}, 'peso_prescreening': 70, 'peso_entrevista': 30}
+
+def calcular_score_prescreening(scores_cat, max_cat, dist_cat) -> float:
+    suma_ponderada = 0.0
+    suma_pesos     = 0.0
+    for cat, peso_config in dist_cat.items():
+        if peso_config <= 0: continue
+        max_posible = max_cat.get(cat, 0)
+        pct_cat = (scores_cat.get(cat, 0) / max_posible * 100) if max_posible > 0 else 0
+        suma_ponderada += pct_cat * peso_config
+        suma_pesos     += peso_config
+    return round(suma_ponderada / suma_pesos, 1) if suma_pesos > 0 else 0.0
+
+def normalizar_score_interview(criterios: dict) -> float:
+    bloque_a = [criterios.get(k, 3) for k in ['dominio', 'resolucion']]
+    bloque_b = [criterios.get(k, 3) for k in ['comunicacion', 'pensamiento', 'cultura', 'seguridad']]
+    raw = (sum(bloque_a)/len(bloque_a)) * 0.4 + (sum(bloque_b)/len(bloque_b)) * 0.6
+    return round((raw - 1) / 4 * 100)
+
+def calcular_score_combinado(score_pre, score_interview, peso_pre, peso_entrevista) -> float:
+    total = peso_pre + peso_entrevista
+    if total == 0: return 0.0
+    return round(score_pre * (peso_pre/total) + score_interview * (peso_entrevista/total), 1)
+
 # ============================================
 # MOTOR DE EVALUACIÓN - LÓGICA
 # ============================================
@@ -294,8 +338,8 @@ def procesar():
                 "habilidad": hab_nombre
             })
 
-        score_final = (puntos_brutos_acumulados / peso_total_posible * 100) if peso_total_posible > 0 else 0
-        score_final = round(score_final, 1)
+        cfg = get_config_modelo(v)
+        score_final = calcular_score_prescreening(scores_categorias, max_categorias, cfg['dist'])
 
         def calc_pct(obtenido, maximo):
             return round((obtenido / maximo * 100)) if maximo > 0 else 0
@@ -1250,9 +1294,9 @@ def api_candidato(id):
             bloque_b = [criterios.get(k, 3) for k in ['comunicacion', 'pensamiento', 'cultura', 'seguridad']]
             score_a  = sum(bloque_a) / len(bloque_a) if bloque_a else 3
             score_b  = sum(bloque_b) / len(bloque_b) if bloque_b else 3
-            interview_score_raw = score_a * 0.4 + score_b * 0.6
-            score_interview = round((interview_score_raw - 1) / 4 * 100)
-            score_final_combinado = round(score_pre * 0.7 + score_interview * 0.3, 1)
+            cfg = get_config_modelo(vacante_result.data[0] if vacante_result.data else {})
+            score_interview       = normalizar_score_interview(evaluacion['criterios'])
+            score_final_combinado = calcular_score_combinado(score_pre, score_interview, cfg['peso_prescreening'], cfg['peso_entrevista'])
 
         return jsonify({
             "nombre":                candidato['nombre_candidato'],
@@ -1291,16 +1335,13 @@ def guardar_evaluacion():
         if not entrevista_id or not criterios:
             return jsonify({"error": "Datos incompletos"}), 400
 
-        bloque_a = [criterios.get(k, 3) for k in ['dominio', 'resolucion']]
-        score_a  = sum(bloque_a) / len(bloque_a) if bloque_a else 3
-        bloque_b = [criterios.get(k, 3) for k in ['comunicacion', 'pensamiento', 'cultura', 'seguridad']]
-        score_b  = sum(bloque_b) / len(bloque_b) if bloque_b else 3
-        interview_score_raw = round(score_a * 0.4 + score_b * 0.6, 2)
-        score_interview = round((interview_score_raw - 1) / 4 * 100)
-
-        cand = supabase.table('entrevistas').select('score').eq('id', entrevista_id).single().execute()
-        score_pre = float(cand.data['score'] or 0) if cand.data else 0
-        score_final_combinado = round(score_pre * 0.7 + score_interview * 0.3, 1)
+        # DESPUÉS:
+        cand       = supabase.table('entrevistas').select('score, vacante_id').eq('id', entrevista_id).single().execute()
+        score_pre  = float(cand.data['score'] or 0) if cand.data else 0
+        vacante_id = cand.data['vacante_id'] if cand.data else None
+        cfg        = get_pesos_fases_por_vacante_id(vacante_id) if vacante_id else {}
+        score_interview       = normalizar_score_interview(criterios)
+        score_final_combinado = calcular_score_combinado(score_pre, score_interview, cfg.get('peso_prescreening', 70), cfg.get('peso_entrevista', 30))
 
         supabase.table('entrevistas').update({
             "criterios_entrevista":  criterios,
